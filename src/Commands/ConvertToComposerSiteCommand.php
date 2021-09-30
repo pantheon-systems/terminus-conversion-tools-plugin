@@ -5,15 +5,14 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 
 /**
- * Class D8ComposerCommand.
+ * Class ConvertToComposerSiteCommand.
  */
-class D8ComposerCommand extends TerminusCommand
+class ConvertToComposerSiteCommand extends TerminusCommand
 {
     /**
      * Convert a standard Drupal8 site into a Drupal8 site managed by Composer.
      *
-     * @command conversion:d8composer
-     * @aliases d8composer
+     * @command conversion:composer
      *
      * @param string $site_id
      */
