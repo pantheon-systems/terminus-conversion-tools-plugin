@@ -2,8 +2,12 @@
 
 namespace Pantheon\TerminusConversionTools\Commands;
 
+use League\Container\ContainerAwareTrait;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\Terminus\Helpers\LocalMachineHelper;
+use Pantheon\Terminus\Models\Environment;
+use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 
@@ -13,6 +17,12 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
+    use ContainerAwareTrait;
+
+    /**
+     * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
+     */
+    private $localMachineHelper;
 
     /**
      * Convert a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -40,5 +50,62 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 ['site_name' => $site->getName()]
             );
         }
+
+        /** @var \Pantheon\Terminus\Models\Environment $env */
+        $env = $site->getEnvironments()->get('dev');
+
+        $sourceSitePath = $this->cloneSiteGitRepository(
+            $site,
+            $env,
+            sprintf('%s_source', $site->getName())
+        );
+        $destinationSitePath = $this->cloneSiteGitRepository(
+            $site,
+            $env,
+            sprintf('%s_destination', $site->getName())
+        );
+    }
+
+    /**
+     * Clones the site repository to local machine and return the absolute path to the local copy.
+     *
+     * @param \Pantheon\Terminus\Models\Site $site
+     * @param \Pantheon\Terminus\Models\Environment $env
+     * @param $siteDirName
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function cloneSiteGitRepository(Site $site, Environment $env, $siteDirName): string
+    {
+        $path = $site->getLocalCopyDir($siteDirName);
+        $this->log()->notice(
+            sprintf('Cloning %s site repository into "%s"...', $site->getName(), $path)
+        );
+        $gitUrl = $env->connectionInfo()['git_url'] ?? null;
+        $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
+        $this->log()->notice(
+            sprintf('The %s site repository has been cloned into "%s"', $site->getName(), $path)
+        );
+
+        return $path;
+    }
+
+    /**
+     * Returns the LocalMachineHelper.
+     *
+     * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
+     */
+    private function getLocalMachineHelper(): LocalMachineHelper
+    {
+        if (isset($this->localMachineHelper)) {
+            return $this->localMachineHelper;
+        }
+
+        $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
+
+        return $this->localMachineHelper;
     }
 }
