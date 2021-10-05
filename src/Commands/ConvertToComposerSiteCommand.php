@@ -10,6 +10,7 @@ use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
+use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 
 /**
  * Class ConvertToComposerSiteCommand.
@@ -59,6 +60,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $env,
             sprintf('%s_source', $site->getName())
         );
+        $drupal8ComponentsDetector = new Drupal8Projects($this->getContainer());
+        $projects = $drupal8ComponentsDetector->getContribProjects($sourceSitePath);
+        print_r($projects);
+
         $destinationSitePath = $this->cloneSiteGitRepository(
             $site,
             $env,
