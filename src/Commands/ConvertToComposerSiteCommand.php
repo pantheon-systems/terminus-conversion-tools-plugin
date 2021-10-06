@@ -105,6 +105,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Contrib projects have been added to Composer');
 
         if ($git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)
+            && !$this->input()->getOption('yes')
             && !$this->io()
                 ->confirm(
                     sprintf(
