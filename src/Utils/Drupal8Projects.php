@@ -2,15 +2,15 @@
 
 namespace Pantheon\TerminusConversionTools\Utils;
 
-use League\Container\ContainerAwareTrait;
-use Psr\Container\ContainerInterface;
-
 /**
  * Class Drupal8Projects.
  */
 class Drupal8Projects
 {
-    use ContainerAwareTrait;
+    /**
+     * @var string
+     */
+    private string $siteRootPath;
 
     /**
      * @var \Pantheon\TerminusConversionTools\Utils\FileSystem
@@ -19,31 +19,26 @@ class Drupal8Projects
 
     /**
      * Drupal8Projects constructor.
-     *
-     * @param \Psr\Container\ContainerInterface $container
      */
-    public function __construct(ContainerInterface $container)
+    public function __construct(string $siteRootPath)
     {
-        $container->add(FileSystem::class);
-        $this->fileSystem = $container->get(FileSystem::class);
+        $this->siteRootPath = $siteRootPath;
+        $this->fileSystem = new FileSystem();
     }
 
     /**
-     * Detects and returns contrib Drupal8 projects.
-     *
-     * @param string $siteRootPath
+     * Detects and returns the list of contrib Drupal8 projects.
      *
      * @return array
-     *   The list of contrib Drupal8 projects where the key is a project machine name, the value is a collection of
-     *   "*.info.yml" file attributes:
-     *     "project" - the project name;
+     *   The list of contrib Drupal8 projects where the value is the following metadata:
+     *     "name" - the project name;
      *     "version" - the version of the project;
      *     "path" - the project's path.
      */
-    public function getContribProjects(string $siteRootPath)
+    public function getContribProjects()
     {
         $infoFiles = [];
-        foreach ($this->getContribProjectDirectories($siteRootPath) as $projectDir) {
+        foreach ($this->getProjectDirectories() as $projectDir) {
             $infoFiles = array_merge($infoFiles, $this->fileSystem->getFilesByPattern(
                 $projectDir,
                 '/\.info\.yml$/'
@@ -76,11 +71,16 @@ class Drupal8Projects
             preg_match('/^(.*)\.info\.yml$/', $infoFileName, $projectMachineName);
             $projectMachineName = $projectMachineName[1];
 
-            preg_match('/version: \'(.*)\'/', $infoFileContent, $version);
-            $version = $version[1] ?? null;
+            if ($project !== $projectMachineName) {
+                // Exclude sub-modules.
+                continue;
+            }
 
-            $projects[$projectMachineName] = [
-                'project' => $project,
+            preg_match('/version: \'(.*)\'/', $infoFileContent, $version);
+            $version = isset($version[1]) ? str_replace('8.x-', '', $version[1]) : null;
+
+            $projects[] = [
+                'name' => $project,
                 'version' => $version,
                 'path' => $infoFilePath,
             ];
@@ -90,19 +90,17 @@ class Drupal8Projects
     }
 
     /**
-     * Returns contrib projects' directories.
-     *
-     * @param string $siteRootPath
+     * Returns projects' directories.
      *
      * @return array
      */
-    private function getContribProjectDirectories(string $siteRootPath): array
+    private function getProjectDirectories(): array
     {
         return [
-            implode(DIRECTORY_SEPARATOR, [$siteRootPath, 'modules']),
-            implode(DIRECTORY_SEPARATOR, [$siteRootPath, 'sites', 'all', 'modules']),
-            implode(DIRECTORY_SEPARATOR, [$siteRootPath, 'themes']),
-            implode(DIRECTORY_SEPARATOR, [$siteRootPath, 'sites', 'all', 'themes']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes']),
         ];
     }
 }

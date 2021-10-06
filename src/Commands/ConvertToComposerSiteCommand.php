@@ -2,7 +2,6 @@
 
 namespace Pantheon\TerminusConversionTools\Commands;
 
-use League\Container\ContainerAwareTrait;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
@@ -18,7 +17,6 @@ use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
-    use ContainerAwareTrait;
 
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
@@ -60,8 +58,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $env,
             sprintf('%s_source', $site->getName())
         );
-        $drupal8ComponentsDetector = new Drupal8Projects($this->getContainer());
-        $projects = $drupal8ComponentsDetector->getContribProjects($sourceSitePath);
+        $drupal8ComponentsDetector = new Drupal8Projects($sourceSitePath);
+        $projects = $drupal8ComponentsDetector->getContribProjects();
         print_r($projects);
 
         $destinationSitePath = $this->cloneSiteGitRepository(
