@@ -86,17 +86,6 @@ class Git
     }
 
     /**
-     * Resets uncommitted changes.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    public function hardReset(): void
-    {
-        $this->execute(sprintf('git -C %s reset --hard', $this->workingDirectory));
-        $this->execute(sprintf('git -C %s clean -fd', $this->workingDirectory));
-    }
-
-    /**
      * Returns TRUE if the branch exists in the remote.
      *
      * @param string $branch
