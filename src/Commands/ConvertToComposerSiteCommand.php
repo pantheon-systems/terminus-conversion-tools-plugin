@@ -58,9 +58,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $env,
             sprintf('%s_source', $site->getName())
         );
+
+        $this->log()->notice(sprintf('Detecting contrib modules and themes in %s...', $sourceSitePath));
         $drupal8ComponentsDetector = new Drupal8Projects($sourceSitePath);
         $projects = $drupal8ComponentsDetector->getContribProjects();
-        print_r($projects);
+        if (0 < count($projects)) {
+            $projectsInline = array_map(
+                fn ($project) => sprintf('%s (%s)', $project['name'], $project['version']),
+                $projects
+            );
+
+            $this->log()->notice(
+                sprintf(
+                    '%d contrib modules and/or themes are detected: %s',
+                    count($projects),
+                    implode(', ', $projectsInline)
+                )
+            );
+        } else {
+            $this->log()->notice(sprintf('No contrib modules or themes were detected in %s', $sourceSitePath));
+        }
 
         $destinationSitePath = $this->cloneSiteGitRepository(
             $site,
