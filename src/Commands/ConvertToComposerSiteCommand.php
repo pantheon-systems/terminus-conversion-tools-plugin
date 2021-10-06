@@ -45,7 +45,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        if (!$site->getUpstream()->isDrops8Upstream()) {
+        if ('drupal8' !== $site->getUpstream()->get('machine_name')) {
             throw new TerminusException(
                 'The site {site_name} is not a "drops-8" upstream based site.',
                 ['site_name' => $site->getName()]
