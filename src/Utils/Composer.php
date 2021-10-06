@@ -22,7 +22,7 @@ class Composer
      *
      * @param string $workingDirectory
      *
-     * @throws \Exception
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     public function __construct(string $workingDirectory)
     {
