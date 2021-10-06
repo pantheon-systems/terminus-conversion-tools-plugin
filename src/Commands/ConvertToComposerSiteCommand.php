@@ -9,7 +9,9 @@ use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
+use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
+use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
  * Class ConvertToComposerSiteCommand.
@@ -17,6 +19,8 @@ use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
+
+    private const TARGET_GIT_BRANCH = 'composerify';
 
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
@@ -84,6 +88,37 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $env,
             sprintf('%s_destination', $site->getName())
         );
+
+        $this->log()->notice(sprintf('Checking out "%s" git branch...', self::TARGET_GIT_BRANCH));
+        $git = new Git($destinationSitePath);
+        $git->createAndCheckoutBranch(self::TARGET_GIT_BRANCH);
+
+        $this->log()->notice('Adding contrib projects to Composer...');
+        $composer = new Composer($destinationSitePath);
+        foreach ($projects as $project) {
+            $packageName = sprintf('drupal/%s', $project['name']);
+            $packageVersion = sprintf('^%s', $project['version']);
+            $composer->require($packageName, $packageVersion);
+            $git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
+            $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+        }
+        $this->log()->notice('Contrib projects have been added to Composer');
+
+        if ($git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)
+            && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'The branch "%s" already exists. Are you sure you want to override it?',
+                        self::TARGET_GIT_BRANCH
+                    )
+                )
+        ) {
+            return;
+        }
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
+        $git->forcePush(self::TARGET_GIT_BRANCH);
+
+        $this->log()->notice('Done!');
     }
 
     /**
