@@ -103,4 +103,9 @@ class Git
 
         return '' !== trim($output);
     }
+
+    public function executeGitCommand(string $command)
+    {
+        $this->execute(sprintf('git -C %s %s', $this->workingDirectory, $command));
+    }
 }
