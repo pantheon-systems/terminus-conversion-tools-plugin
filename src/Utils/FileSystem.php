@@ -25,6 +25,11 @@ class FileSystem
      */
     public function getFilesByPattern(string $path, string $pattern)
     {
+        if (!is_dir($path)) {
+            // @todo: throw exception?
+            return [];
+        }
+
         $directoryIterator = new RecursiveDirectoryIterator($path);
         $fileIterator = new RecursiveIteratorIterator($directoryIterator);
         $files = [];
