@@ -38,7 +38,7 @@ class Drupal8Projects
     public function getContribProjects()
     {
         $infoFiles = [];
-        foreach ($this->getProjectDirectories() as $projectDir) {
+        foreach ($this->getContribProjectDirectories() as $projectDir) {
             $infoFiles = array_merge($infoFiles, $this->fileSystem->getFilesByPattern(
                 $projectDir,
                 '/\.info\.yml$/'
@@ -90,11 +90,11 @@ class Drupal8Projects
     }
 
     /**
-     * Returns projects' directories.
+     * Returns contrib projects' directories.
      *
      * @return array
      */
-    private function getProjectDirectories(): array
+    private function getContribProjectDirectories(): array
     {
         return [
             implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules']),
@@ -102,5 +102,22 @@ class Drupal8Projects
             implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes']),
             implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes']),
         ];
+    }
+
+    /**
+     * Returns custom projects' directories.
+     *
+     * @return array
+     *   The key is the relative path, the value is the absolute path.
+     */
+    public function getCustomProjectDirectories(): array
+    {
+        return array_filter([
+            // @todo: optimize.
+            implode(DIRECTORY_SEPARATOR, ['modules', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules', 'custom']),
+            implode(DIRECTORY_SEPARATOR, ['sites', 'all', 'modules', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules', 'custom']),
+            implode(DIRECTORY_SEPARATOR, ['themes', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes', 'custom']),
+            implode(DIRECTORY_SEPARATOR, ['sites', 'all', 'themes', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes', 'custom']),
+        ], fn($directory) => is_dir($directory));
     }
 }
