@@ -64,13 +64,16 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         /** @var \Pantheon\Terminus\Models\Environment $env */
         $env = $site->getEnvironments()->get('dev');
 
-        $sourceSitePath = $this->cloneSiteGitRepository(
-            $site,
-            $env,
-            sprintf('%s_source', $site->getName())
-        );
+        // @todo: consider using just one repository.
 
-        $this->log()->notice(sprintf('Detecting contrib modules and themes in %s...', $sourceSitePath));
+//        $sourceSitePath = $this->cloneSiteGitRepository(
+//            $site,
+//            $env,
+//            sprintf('%s_source', $site->getName())
+//        );
+        $sourceSitePath = '/Users/sergei.churilo/pantheon-local-copies/schurilo-d8-sandbox-001_source';
+
+        $this->log()->notice(sprintf('Detecting contrib modules and themes in "%s"...', $sourceSitePath));
         $drupal8ComponentsDetector = new Drupal8Projects($sourceSitePath);
         $projects = $drupal8ComponentsDetector->getContribProjects();
         if (0 < count($projects)) {
@@ -88,7 +91,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         } else {
             // todo: do not stop, continue (core + custom modules left).
-            $this->log()->notice(sprintf('No contrib modules or themes were detected in %s', $sourceSitePath));
+            $this->log()->notice(sprintf('No contrib modules or themes were detected in "%s"', $sourceSitePath));
         }
 
         $destinationSitePath = $this->cloneSiteGitRepository(
@@ -96,6 +99,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $env,
             sprintf('%s_destination', $site->getName())
         );
+
+        $this->log()->notice(sprintf('Detecting custom modules and themes in "%s"...', $sourceSitePath));
+        $drupal8ComponentsDetector2 = new Drupal8Projects($destinationSitePath);
+        $customProjectsDirs = $drupal8ComponentsDetector2->getCustomProjectDirectories();
 
         // @todo: change notice to something that includes info about repo "https://github.com/pantheon-upstreams/drupal-project" add detailed messages for other operations.
         $this->log()->notice('Adding Pantheon drupal-project upstream...');
@@ -195,6 +202,24 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
         }
         $this->log()->notice('Packages have been added to Composer');
+
+        if (count($customProjectsDirs) > 0) {
+            $this->log()->notice('Copying custom projects (modules and themes)...');
+            foreach ($customProjectsDirs as $relativePath => $absolutePath) {
+                // @todo: refactor.
+                $targetPath = sprintf('%s/web/modules/custom', $destinationSitePath);
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0755, true);
+                }
+                $git->executeGitCommand(sprintf('checkout master %s', $relativePath));
+                // @todo: separate modules and themes
+                $git->executeGitCommand(sprintf('mv %s/* %s', $absolutePath, $targetPath));
+                // @todo: check if there is anything to commit
+                $git->commit(sprintf('Copy custom projects from %s', $relativePath));
+            }
+        } else {
+            $this->log()->notice('No custom projects (modules and themes) to copy');
+        }
 
         $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
         // @todo: create a method for updating a file.
