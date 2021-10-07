@@ -3,7 +3,9 @@
 namespace Pantheon\TerminusConversionTools\Commands;
 
 use Pantheon\Terminus\Commands\TerminusCommand;
+use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
@@ -19,8 +21,11 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
+    use WorkflowProcessingTrait;
 
     private const TARGET_GIT_BRANCH = 'composerify';
+    private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
+    private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
 
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
@@ -82,6 +87,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 )
             );
         } else {
+            // todo: do not stop, continue (core + custom modules left).
             $this->log()->notice(sprintf('No contrib modules or themes were detected in %s', $sourceSitePath));
         }
 
@@ -91,35 +97,116 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             sprintf('%s_destination', $site->getName())
         );
 
-        $this->log()->notice(sprintf('Checking out "%s" git branch...', self::TARGET_GIT_BRANCH));
+        // @todo: change notice to something that includes info about repo "https://github.com/pantheon-upstreams/drupal-project" add detailed messages for other operations.
+        $this->log()->notice('Adding Pantheon drupal-project upstream...');
         $git = new Git($destinationSitePath);
-        $git->createAndCheckoutBranch(self::TARGET_GIT_BRANCH);
+        $git->executeGitCommand('remote add ic git@github.com:pantheon-upstreams/drupal-project.git');
+        $git->executeGitCommand('fetch ic');
+        $git->executeGitCommand(sprintf('checkout --no-track -b %s ic/master', self::TARGET_GIT_BRANCH));
 
-        $this->log()->notice('Adding contrib projects to Composer...');
+        $this->log()->notice('Copying configuration files...');
+        // Pull in the default configuration files.
+        $git->executeGitCommand('checkout master sites/default/config');
+        $git->executeGitCommand(sprintf('mv %s/sites/default/config/* %s/config', $destinationSitePath, $destinationSitePath));
+        $git->executeGitCommand(sprintf('rm -f %s/sites/default/config/.htaccess', $destinationSitePath));
+        // @todo: check if there is anything to commit
+        $git->commit('Pull in configuration from default branch');
+
+        $this->log()->notice('Copying pantheon.yml file...');
+        // Copy pantheon.yml file.
+        $git->executeGitCommand('checkout master pantheon.yml');
+        $git->commit('Copy pantheon.yml');
+        // @todo: check if build_step is already there.
+        $pantheonYml = fopen($destinationSitePath . '/' . 'pantheon.yml', 'a');
+        fwrite($pantheonYml, PHP_EOL . 'build_step: true');
+        fclose($pantheonYml);
+        $git->commit('Add build_step:true to pantheon.yml');
+
+        $this->log()->notice(sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH));
+        try {
+            /** @var \Pantheon\Terminus\Models\Environment $multidev */
+            $multidev = $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
+            if (!$this->input()->getOption('yes')
+                && !$this->io()
+                    ->confirm(
+                        sprintf(
+                            'Multidev environment "%s" already exists. Are you sure you want to delete it and its source branch?',
+                            self::TARGET_GIT_BRANCH
+                        )
+                    )
+            ) {
+                return;
+            }
+
+            $workflow = $multidev->delete(['delete_branch' => true]);
+            // @todo: check the result of the workflow.
+            $this->processWorkflow($workflow);
+        } catch (TerminusNotFoundException $e) {
+            if ($git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
+                if (!$this->input()->getOption('yes')
+                    && !$this->io()->confirm(
+                        sprintf(
+                            'The branch "%s" already exists. Are you sure you want to delete it?',
+                            self::TARGET_GIT_BRANCH
+                        )
+                    )
+                ) {
+                    return;
+                }
+
+                $git->executeGitCommand(sprintf('push origin --delete %s', self::TARGET_GIT_BRANCH));
+            }
+        }
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
+        $git->forcePush(self::TARGET_GIT_BRANCH);
+
+        $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
+        // @todo: create MD env, check if exists - propose deletion.
+        // @todo: quietly delete/create MD envs.
+        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $env);
+        // @todo: check the result of the workflow.
+        $this->processWorkflow($workflow);
+
+        $this->log()->notice('Adding packages to Composer...');
         $composer = new Composer($destinationSitePath);
+        $composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
+        $git->commit(
+            sprintf(
+                'Add %s (%s) project to Composer',
+                self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                self::COMPOSER_DRUPAL_PACKAGE_VERSION
+            )
+        );
+        $this->log()->notice(
+            sprintf(
+                '%s (%s) is added',
+                self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                self::COMPOSER_DRUPAL_PACKAGE_VERSION
+            )
+        );
+
         foreach ($projects as $project) {
+            // @todo: create a method to add a composer package.
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
             $composer->require($packageName, $packageVersion);
             $git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
             $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
         }
-        $this->log()->notice('Contrib projects have been added to Composer');
+        $this->log()->notice('Packages have been added to Composer');
 
-        if ($git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)
-            && !$this->input()->getOption('yes')
-            && !$this->io()
-                ->confirm(
-                    sprintf(
-                        'The branch "%s" already exists. Are you sure you want to override it?',
-                        self::TARGET_GIT_BRANCH
-                    )
-                )
-        ) {
-            return;
-        }
+        $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
+        // @todo: create a method for updating a file.
+        $pantheonUpstreamYml = fopen($destinationSitePath . '/' . 'pantheon.upstream.yml', 'a');
+        fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
+        fclose($pantheonUpstreamYml);
+        $git->commit('Trigger Pantheon build');
+
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
         $git->forcePush(self::TARGET_GIT_BRANCH);
+
+        // @todo: execute "drush cr" on MD env.
 
         $this->log()->notice('Done!');
     }
