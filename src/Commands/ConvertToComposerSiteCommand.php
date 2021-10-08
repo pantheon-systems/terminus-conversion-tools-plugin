@@ -24,6 +24,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use WorkflowProcessingTrait;
 
     private const TARGET_GIT_BRANCH = 'composerify';
+    private const IC_GIT_REMOTE = 'ic';
     private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
 
@@ -31,6 +32,21 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
      */
     private $localMachineHelper;
+
+    /**
+     * @var string
+     */
+    private string $localPath;
+
+    /**
+     * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
+     */
+    private Drupal8Projects $drupal8ComponentsDetector;
+
+    /**
+     * @var \Pantheon\TerminusConversionTools\Utils\Git
+     */
+    private Git $git;
 
     /**
      * Convert a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -64,176 +80,33 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         /** @var \Pantheon\Terminus\Models\Environment $env */
         $env = $site->getEnvironments()->get('dev');
 
-        // @todo: consider using just one repository.
-
-//        $sourceSitePath = $this->cloneSiteGitRepository(
-//            $site,
-//            $env,
-//            sprintf('%s_source', $site->getName())
-//        );
-        $sourceSitePath = '/Users/sergei.churilo/pantheon-local-copies/schurilo-d8-sandbox-001_source';
-
-        $this->log()->notice(sprintf('Detecting contrib modules and themes in "%s"...', $sourceSitePath));
-        $drupal8ComponentsDetector = new Drupal8Projects($sourceSitePath);
-        $projects = $drupal8ComponentsDetector->getContribProjects();
-        if (0 < count($projects)) {
-            $projectsInline = array_map(
-                fn ($project) => sprintf('%s (%s)', $project['name'], $project['version']),
-                $projects
-            );
-
-            $this->log()->notice(
-                sprintf(
-                    '%d contrib modules and/or themes are detected: %s',
-                    count($projects),
-                    implode(', ', $projectsInline)
-                )
-            );
-        } else {
-            // todo: do not stop, continue (core + custom modules left).
-            $this->log()->notice(sprintf('No contrib modules or themes were detected in "%s"', $sourceSitePath));
-        }
-
-        $destinationSitePath = $this->cloneSiteGitRepository(
+        $this->localPath = $this->cloneSiteGitRepository(
             $site,
             $env,
-            sprintf('%s_destination', $site->getName())
+            sprintf('%s_composer_conversion', $site->getName())
         );
+        $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
+        $this->git = new Git($this->localPath);
 
-        $this->log()->notice(sprintf('Detecting custom modules and themes in "%s"...', $sourceSitePath));
-        $drupal8ComponentsDetector2 = new Drupal8Projects($destinationSitePath);
-        $customProjectsDirs = $drupal8ComponentsDetector2->getCustomProjectDirectories();
+        $contribProjects = $this->getContribDrupal8Projects();
+        $customProjectsDirs = $this->getCustomProjectsDirectories();
 
-        // @todo: change notice to something that includes info about repo "https://github.com/pantheon-upstreams/drupal-project" add detailed messages for other operations.
-        $this->log()->notice('Adding Pantheon drupal-project upstream...');
-        $git = new Git($destinationSitePath);
-        $git->executeGitCommand('remote add ic git@github.com:pantheon-upstreams/drupal-project.git');
-        $git->executeGitCommand('fetch ic');
-        $git->executeGitCommand(sprintf('checkout --no-track -b %s ic/master', self::TARGET_GIT_BRANCH));
+        $this->createLocalGitBranch();
+        $this->copyConfigurationFiles();
+        $this->copyPantheonYml();
 
-        $this->log()->notice('Copying configuration files...');
-        // Pull in the default configuration files.
-        $git->executeGitCommand('checkout master sites/default/config');
-        $git->executeGitCommand(sprintf('mv %s/sites/default/config/* %s/config', $destinationSitePath, $destinationSitePath));
-        $git->executeGitCommand(sprintf('rm -f %s/sites/default/config/.htaccess', $destinationSitePath));
-        // @todo: check if there is anything to commit
-        $git->commit('Pull in configuration from default branch');
-
-        $this->log()->notice('Copying pantheon.yml file...');
-        // Copy pantheon.yml file.
-        $git->executeGitCommand('checkout master pantheon.yml');
-        $git->commit('Copy pantheon.yml');
-        // @todo: check if build_step is already there.
-        $pantheonYml = fopen($destinationSitePath . '/' . 'pantheon.yml', 'a');
-        fwrite($pantheonYml, PHP_EOL . 'build_step: true');
-        fclose($pantheonYml);
-        $git->commit('Add build_step:true to pantheon.yml');
-
-        $this->log()->notice(sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH));
-        try {
-            /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
-            if (!$this->input()->getOption('yes')
-                && !$this->io()
-                    ->confirm(
-                        sprintf(
-                            'Multidev environment "%s" already exists. Are you sure you want to delete it and its source branch?',
-                            self::TARGET_GIT_BRANCH
-                        )
-                    )
-            ) {
-                return;
-            }
-
-            $workflow = $multidev->delete(['delete_branch' => true]);
-            // @todo: check the result of the workflow.
-            $this->processWorkflow($workflow);
-        } catch (TerminusNotFoundException $e) {
-            if ($git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
-                if (!$this->input()->getOption('yes')
-                    && !$this->io()->confirm(
-                        sprintf(
-                            'The branch "%s" already exists. Are you sure you want to delete it?',
-                            self::TARGET_GIT_BRANCH
-                        )
-                    )
-                ) {
-                    return;
-                }
-
-                $git->executeGitCommand(sprintf('push origin --delete %s', self::TARGET_GIT_BRANCH));
-            }
-        }
+        $this->deleteMultidevIfExists($site);
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $git->forcePush(self::TARGET_GIT_BRANCH);
+        $this->git->push(self::TARGET_GIT_BRANCH);
 
-        $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
-        // @todo: create MD env, check if exists - propose deletion.
-        // @todo: quietly delete/create MD envs.
-        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $env);
-        // @todo: check the result of the workflow.
-        $this->processWorkflow($workflow);
-
-        $this->log()->notice('Adding packages to Composer...');
-        $composer = new Composer($destinationSitePath);
-        $composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
-        $git->commit(
-            sprintf(
-                'Add %s (%s) project to Composer',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
-        $this->log()->notice(
-            sprintf(
-                '%s (%s) is added',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
-
-        foreach ($projects as $project) {
-            // @todo: create a method to add a composer package.
-            $packageName = sprintf('drupal/%s', $project['name']);
-            $packageVersion = sprintf('^%s', $project['version']);
-            $composer->require($packageName, $packageVersion);
-            $git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
-            $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
-        }
-        $this->log()->notice('Packages have been added to Composer');
-
-        if (count($customProjectsDirs) > 0) {
-            $this->log()->notice('Copying custom projects (modules and themes)...');
-            foreach ($customProjectsDirs as $relativePath => $absolutePath) {
-                // @todo: refactor.
-                $targetPath = sprintf('%s/web/modules/custom', $destinationSitePath);
-                if (!is_dir($targetPath)) {
-                    mkdir($targetPath, 0755, true);
-                }
-                $git->executeGitCommand(sprintf('checkout master %s', $relativePath));
-                // @todo: separate modules and themes
-                $git->executeGitCommand(sprintf('mv %s/* %s', $absolutePath, $targetPath));
-                // @todo: check if there is anything to commit
-                $git->commit(sprintf('Copy custom projects from %s', $relativePath));
-            }
-        } else {
-            $this->log()->notice('No custom projects (modules and themes) to copy');
-        }
-
-        $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        // @todo: create a method for updating a file.
-        $pantheonUpstreamYml = fopen($destinationSitePath . '/' . 'pantheon.upstream.yml', 'a');
-        fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
-        fclose($pantheonUpstreamYml);
-        $git->commit('Trigger Pantheon build');
+        $this->createMultidev($site, $env);
+        $this->addComposerPackages($contribProjects);
+        $this->copyCustomProjects($customProjectsDirs);
+        $this->addCommitToTriggerBuild();
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $git->forcePush(self::TARGET_GIT_BRANCH);
-
-        // @todo: execute "drush cr" on MD env.
-
-        $this->log()->notice('Done!');
+        $this->git->push(self::TARGET_GIT_BRANCH);
     }
 
     /**
@@ -277,5 +150,242 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
 
         return $this->localMachineHelper;
+    }
+
+    /**
+     * Detects and returns the list of contrib Drupal8 projects (modules and themes).
+     *
+     * @return array
+     */
+    private function getContribDrupal8Projects(): array
+    {
+        $this->log()->notice(sprintf('Detecting contrib modules and themes in "%s"...', $this->localPath));
+        $projects = $this->drupal8ComponentsDetector->getContribProjects();
+        if (0 === count($projects)) {
+            $this->log()->notice(sprintf('No contrib modules or themes were detected in "%s"', $this->localPath));
+
+            return [];
+        }
+
+        $projectsInline = array_map(
+            fn($project) => sprintf('%s (%s)', $project['name'], $project['version']),
+            $projects
+        );
+        $this->log()->notice(
+            sprintf(
+                '%d contrib modules and/or themes are detected: %s',
+                count($projects),
+                implode(', ', $projectsInline)
+            )
+        );
+
+        return $projects;
+    }
+
+    /**
+     * Returns the list directories of custom projects.
+     *
+     * @return array
+     */
+    private function getCustomProjectsDirectories(): array
+    {
+        $this->log()->notice(sprintf('Detecting custom modules and themes in "%s"...', $this->localPath));
+        $customProjectsDirs = $this->drupal8ComponentsDetector->getCustomProjectDirectories();
+        foreach ($customProjectsDirs as $dir) {
+            $this->log()->notice(sprintf('"%s" directory found', $dir));
+        }
+
+        return $customProjectsDirs;
+    }
+
+    /**
+     * Creates the target local git branch based on Pantheon's "drupal-project" upstream.
+     */
+    private function createLocalGitBranch(): void
+    {
+        $this->log()->notice('Creating "%s" branch based on "drupal-project" upstream...');
+        $this->git->addRemote('git@github.com:pantheon-upstreams/drupal-project.git', self::IC_GIT_REMOTE);
+        $this->git->fetch(self::IC_GIT_REMOTE);
+        $this->git->checkout(sprintf('--no-track -b %s %s/master', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE));
+    }
+
+    /**
+     * Copies configuration files.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function copyConfigurationFiles(): void
+    {
+        $this->log()->notice('Copying configuration files...');
+        $this->git->checkout('master sites/default/config');
+        $this->git->move(sprintf('%s/sites/default/config/* %s/config', $this->localPath, $this->localPath));
+        $this->git->remove(sprintf('-f %s/sites/default/config/.htaccess', $this->localPath));
+        // @todo: check if there is anything to commit
+        $this->git->commit('Pull in configuration from default branch');
+    }
+
+    /**
+     * Copies pantheon.yml file and sets the "build_step" flag.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function copyPantheonYml(): void
+    {
+        $this->log()->notice('Copying pantheon.yml file...');
+        $this->git->checkout('master pantheon.yml');
+        $this->git->commit('Copy pantheon.yml');
+        // @todo: check if build_step is already there.
+        $pantheonYml = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml', 'a');
+        fwrite($pantheonYml, PHP_EOL . 'build_step: true');
+        fclose($pantheonYml);
+        $this->git->commit('Add build_step:true to pantheon.yml');
+    }
+
+    /**
+     * Deletes the target multidev environment and associated git branch if exists.
+     *
+     * @param \Pantheon\Terminus\Models\Site $site
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function deleteMultidevIfExists(Site $site)
+    {
+        try {
+            /** @var \Pantheon\Terminus\Models\Environment $multidev */
+            $multidev = $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
+            if (!$this->input()->getOption('yes')
+                && !$this->io()
+                    ->confirm(
+                        sprintf(
+                            'Multidev "%s" already exists. Are you sure you want to delete it and its source branch?',
+                            self::TARGET_GIT_BRANCH
+                        )
+                    )
+            ) {
+                return;
+            }
+
+            $this->log()->notice(
+                sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH)
+            );
+            $workflow = $multidev->delete(['delete_branch' => true]);
+            // @todo: check the result of the workflow.
+            $this->processWorkflow($workflow);
+        } catch (TerminusNotFoundException $e) {
+            if ($this->git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
+                if (!$this->input()->getOption('yes')
+                    && !$this->io()->confirm(
+                        sprintf(
+                            'The branch "%s" already exists. Are you sure you want to delete it?',
+                            self::TARGET_GIT_BRANCH
+                        )
+                    )
+                ) {
+                    return;
+                }
+
+                $this->git->deleteRemoteBranch(self::TARGET_GIT_BRANCH);
+            }
+        }
+    }
+
+    /**
+     * Creates the target multidev environment.
+     *
+     * @param \Pantheon\Terminus\Models\Site $site
+     * @param \Pantheon\Terminus\Models\Environment $env
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function createMultidev(Site $site, Environment $env): void
+    {
+        $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
+        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $env);
+        // @todo: check the result of the workflow.
+        $this->processWorkflow($workflow);
+    }
+
+    /**
+     * Adds dependencies to composer.json.
+     *
+     * @param array $contribProjects
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function addComposerPackages(array $contribProjects): void
+    {
+        $this->log()->notice('Adding packages to Composer...');
+        $composer = new Composer($this->localPath);
+
+        $composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
+        $this->git->commit(
+            sprintf(
+                'Add %s (%s) project to Composer',
+                self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                self::COMPOSER_DRUPAL_PACKAGE_VERSION
+            )
+        );
+        $this->log()->notice(
+            sprintf(
+                '%s (%s) is added',
+                self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                self::COMPOSER_DRUPAL_PACKAGE_VERSION
+            )
+        );
+
+        foreach ($contribProjects as $project) {
+            $packageName = sprintf('drupal/%s', $project['name']);
+            $packageVersion = sprintf('^%s', $project['version']);
+            $composer->require($packageName, $packageVersion);
+            $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
+            $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+        }
+        $this->log()->notice('Packages have been added to Composer');
+    }
+
+    /**
+     * Copies custom projects (modules and themes).
+     *
+     * @param array $customProjectsDirs
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function copyCustomProjects(array $customProjectsDirs): void
+    {
+        if (0 === count($customProjectsDirs)) {
+            $this->log()->notice('No custom projects (modules and themes) to copy');
+
+            return;
+        }
+
+        $this->log()->notice('Copying custom projects (modules and themes)...');
+        foreach ($customProjectsDirs as $relativePath => $absolutePath) {
+            // @todo: refactor.
+            // @todo: use DIRECTORY_SEPARATOR
+            $targetPath = sprintf('%s/web/modules/custom', $this->localPath);
+            if (!is_dir($targetPath)) {
+                mkdir($targetPath, 0755, true);
+            }
+            $this->git->checkout(sprintf('master %s', $relativePath));
+            // @todo: separate modules and themes
+            $this->git->move(sprintf('%s/* %s', $absolutePath, $targetPath));
+            // @todo: check if there is anything to commit
+            $this->git->commit(sprintf('Copy custom projects from %s', $relativePath));
+        }
+    }
+
+    /**
+     * Adds a commit to trigger a Pantheon's Integrated Composer build.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function addCommitToTriggerBuild(): void
+    {
+        $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
+        // @todo: create a method for updating a file.
+        $pantheonUpstreamYml = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.upstream.yml', 'a');
+        fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
+        fclose($pantheonUpstreamYml);
+        $this->git->commit('Trigger Pantheon build');
     }
 }
