@@ -24,7 +24,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use WorkflowProcessingTrait;
 
     private const TARGET_GIT_BRANCH = 'composerify';
-    private const IC_GIT_REMOTE = 'ic';
+    private const IC_GIT_REMOTE_NAME = 'ic';
+    private const IC_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-project.git';
     private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
 
@@ -200,13 +201,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
     /**
      * Creates the target local git branch based on Pantheon's "drupal-project" upstream.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function createLocalGitBranch(): void
     {
         $this->log()->notice('Creating "%s" branch based on "drupal-project" upstream...');
-        $this->git->addRemote('git@github.com:pantheon-upstreams/drupal-project.git', self::IC_GIT_REMOTE);
-        $this->git->fetch(self::IC_GIT_REMOTE);
-        $this->git->checkout(sprintf('--no-track -b %s %s/master', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE));
+        $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
+        $this->git->fetch(self::IC_GIT_REMOTE_NAME);
+        $this->git->checkout(sprintf('--no-track -b %s %s/master', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME));
     }
 
     /**
