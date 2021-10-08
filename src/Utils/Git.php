@@ -8,6 +8,8 @@ use Throwable;
 
 /**
  * Class Git.
+ *
+ * @todo: replace with Symfony Process component.
  */
 class Git
 {
@@ -46,19 +48,6 @@ class Git
     }
 
     /**
-     * Creates and checks-out the branch.
-     *
-     * @param string $branch
-     *  The name of the branch.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    public function createAndCheckoutBranch(string $branch): void
-    {
-        $this->execute(sprintf('git -C %s checkout -b %s', $this->workingDirectory, $branch));
-    }
-
-    /**
      * Commits the changes.
      *
      * @param string $commitMessage
@@ -80,9 +69,9 @@ class Git
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function forcePush(string $branchName): void
+    public function push(string $branchName): void
     {
-        $this->execute(sprintf('git -C %s push %s %s --force', $this->workingDirectory, $this->remote, $branchName));
+        $this->execute(sprintf('git -C %s push %s %s', $this->workingDirectory, $this->remote, $branchName));
     }
 
     /**
@@ -104,8 +93,76 @@ class Git
         return '' !== trim($output);
     }
 
-    public function executeGitCommand(string $command)
+    /**
+     * Adds remote.
+     *
+     * @param string $remote
+     * @param string $name
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function addRemote(string $remote, string $name)
     {
-        $this->execute(sprintf('git -C %s %s', $this->workingDirectory, $command));
+        $this->execute(sprintf('git -C %s remote add %s %s', $this->workingDirectory, $name, $remote));
+    }
+
+    /**
+     * Fetches from the remote.
+     *
+     * @param string $remote
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function fetch(string $remote)
+    {
+        $this->execute(sprintf('git -C %s fetch %s', $this->workingDirectory, $remote));
+    }
+
+    /**
+     * Performs checkout operation.
+     *
+     * @param string $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function checkout(string $options)
+    {
+        $this->execute(sprintf('git -C %s checkout %s', $this->workingDirectory, $options));
+    }
+
+    /**
+     * Move files.
+     *
+     * @param string $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function move(string $options)
+    {
+        $this->execute(sprintf('git -C %s mv %s', $this->workingDirectory, $options));
+    }
+
+    /**
+     * Removes files.
+     *
+     * @param string $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function remove(string $options)
+    {
+        $this->execute(sprintf('git -C %s rm %s', $this->workingDirectory, $options));
+    }
+
+    /**
+     * Deletes remote branch.
+     *
+     * @param string $branch
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function deleteRemoteBranch(string $branch)
+    {
+        $this->execute(sprintf('git -C %s push origin --delete %s', $this->workingDirectory, $branch));
     }
 }
