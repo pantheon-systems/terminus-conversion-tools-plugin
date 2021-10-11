@@ -108,6 +108,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->createMultidev($site, $env);
         $this->addComposerPackages($contribProjects);
         $this->copyCustomProjects($customProjectsDirs);
+        $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
@@ -217,7 +218,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function createLocalGitBranch(): void
     {
-        $this->log()->notice('Creating "%s" branch based on "drupal-project" upstream...');
+        $this->log()->notice(
+            sprintf('Creating "%s" branch based on "drupal-project" upstream...', self::TARGET_GIT_BRANCH)
+        );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
         $this->git->checkout(sprintf('--no-track -b %s %s/master', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME));
@@ -409,6 +412,30 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 }
             }
         }
+    }
+
+    /**
+     * Copies settings.php file.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function copySettingsPhp(): void
+    {
+        $this->log()->notice('Copying settings.php file...');
+        $this->git->checkout(
+            sprintf(
+                'master %s',
+                FileSystem::buildPath('sites', 'default', 'settings.php')
+            )
+        );
+        $this->git->move(
+            sprintf(
+                '%s %s --force',
+                FileSystem::buildPath('sites', 'default', 'settings.php'),
+                FileSystem::buildPath('web', 'sites', 'default', 'settings.php')
+            )
+        );
+        $this->git->commit('Copy settings.php');
     }
 
     /**
