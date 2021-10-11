@@ -11,5 +11,8 @@
         "terminus": {
             "compatible-version": "^3"
         }
+    },
+    "require": {
+        "symfony/yaml": "^5"
     }
 }
