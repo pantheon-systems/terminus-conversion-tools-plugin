@@ -14,6 +14,7 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ConvertToComposerSiteCommand.
@@ -240,10 +241,17 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying pantheon.yml file...');
         $this->git->checkout('master pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
-        // @todo: check if build_step is already there.
-        $pantheonYml = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml', 'a');
-        fwrite($pantheonYml, PHP_EOL . 'build_step: true');
-        fclose($pantheonYml);
+
+        $pantheonYmlContent = Yaml::parseFile($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml');
+        if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
+            return;
+        }
+
+        $pantheonYmlContent['build_step'] = true;
+        $pantheonYmlFile = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml', 'wa+');
+        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent));
+        fclose($pantheonYmlFile);
+
         $this->git->commit('Add build_step:true to pantheon.yml');
     }
 
