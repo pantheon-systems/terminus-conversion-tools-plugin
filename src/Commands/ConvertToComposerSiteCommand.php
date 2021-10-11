@@ -283,7 +283,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH)
             );
             $workflow = $multidev->delete(['delete_branch' => true]);
-            // @todo: check the result of the workflow.
             $this->processWorkflow($workflow);
         } catch (TerminusNotFoundException $e) {
             if ($this->git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
@@ -315,7 +314,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
         $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $env);
-        // @todo: check the result of the workflow.
         $this->processWorkflow($workflow);
     }
 
@@ -397,7 +395,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function addCommitToTriggerBuild(): void
     {
         $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        // @todo: create a method for updating a file.
         $pantheonUpstreamYml = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.upstream.yml', 'a');
         fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
         fclose($pantheonUpstreamYml);
