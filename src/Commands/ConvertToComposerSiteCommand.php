@@ -26,6 +26,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use SiteAwareTrait;
     use WorkflowProcessingTrait;
 
+    private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const TARGET_GIT_BRANCH = 'composerify';
     private const IC_GIT_REMOTE_NAME = 'ic';
     private const IC_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-project.git';
@@ -76,7 +77,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        if ('drupal8' !== $site->getUpstream()->get('machine_name')) {
+        if (self::DROPS_8_UPSTREAM_ID !== $site->getUpstream()->get('machine_name')) {
             throw new TerminusException(
                 'The site {site_name} is not a "drops-8" upstream based site.',
                 ['site_name' => $site->getName()]
