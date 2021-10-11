@@ -223,8 +223,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->checkout('master sites/default/config');
         $this->git->move(sprintf('%s/sites/default/config/* %s/config', $this->localPath, $this->localPath));
         $this->git->remove(sprintf('-f %s/sites/default/config/.htaccess', $this->localPath));
-        // @todo: check if there is anything to commit
-        $this->git->commit('Pull in configuration from default branch');
+        if ($this->git->isAnythingToCommit()) {
+            $this->git->commit('Pull in configuration from default branch');
+        } else {
+            $this->log()->notice('No configuration files found');
+        }
     }
 
     /**
@@ -372,8 +375,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->git->checkout(sprintf('master %s', $relativePath));
             // @todo: separate modules and themes
             $this->git->move(sprintf('%s/* %s', $absolutePath, $targetPath));
-            // @todo: check if there is anything to commit
-            $this->git->commit(sprintf('Copy custom projects from %s', $relativePath));
+            if ($this->git->isAnythingToCommit()) {
+                $this->git->commit(sprintf('Copy custom projects from %s', $relativePath));
+            }
         }
     }
 

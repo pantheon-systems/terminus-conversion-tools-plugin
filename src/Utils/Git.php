@@ -62,6 +62,18 @@ class Git
     }
 
     /**
+     * Returns TRUE is there is anything to commit.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function isAnythingToCommit(): bool
+    {
+        [$output] = $this->execute(sprintf('git -C %s status --porcelain', $this->workingDirectory));
+
+        return '' !== $output;
+    }
+
+    /**
      * Performs force push of the branch.
      *
      * @param string $branchName
