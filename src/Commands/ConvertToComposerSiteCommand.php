@@ -13,6 +13,7 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
+use Pantheon\TerminusConversionTools\Utils\FileSystem;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
 
@@ -230,9 +231,19 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout('master sites/default/config');
-        $this->git->move(sprintf('%s/sites/default/config/* %s/config', $this->localPath, $this->localPath));
-        $this->git->remove(sprintf('-f %s/sites/default/config/.htaccess', $this->localPath));
+        $this->git->checkout(
+            sprintf(
+                'master %s',
+                FileSystem::buildPath('sites', 'default', 'config')
+            )
+        );
+        $sourcePath = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config');
+        $destinationPath = FileSystem::buildPath($this->localPath, 'config');
+        $this->git->move(sprintf('%s%s* %s', $sourcePath, DIRECTORY_SEPARATOR, $destinationPath));
+
+        $htaccessFile = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config', '.htaccess');
+        $this->git->remove(sprintf('-f %s', $htaccessFile));
+
         if ($this->git->isAnythingToCommit()) {
             $this->git->commit('Pull in configuration from default branch');
         } else {
@@ -251,13 +262,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->checkout('master pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
-        $pantheonYmlContent = Yaml::parseFile($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml');
+        $path = FileSystem::buildPath($this->localPath, 'pantheon.yml');
+        $pantheonYmlContent = Yaml::parseFile($path);
         if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
             return;
         }
 
         $pantheonYmlContent['build_step'] = true;
-        $pantheonYmlFile = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.yml', 'wa+');
+        $pantheonYmlFile = fopen($path, 'wa+');
         fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent));
         fclose($pantheonYmlFile);
 
@@ -384,12 +396,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             foreach ($dirs as $path) {
                 $relativePath = str_replace($this->localPath . DIRECTORY_SEPARATOR, '', $path);
                 $this->git->checkout(sprintf('master %s', $relativePath));
+                $targetPath = FileSystem::buildPath($this->localPath, 'web', $subDir, 'custom');
 
-                $targetPath = implode(DIRECTORY_SEPARATOR, [$this->localPath, 'web', $subDir, 'custom']);
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
                 }
-                $this->git->move(sprintf('%s/* %s', $path, $targetPath));
+                $this->git->move(sprintf('%s%s* %s', $path, DIRECTORY_SEPARATOR, $targetPath));
 
                 if ($this->git->isAnythingToCommit()) {
                     $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
@@ -407,7 +419,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function addCommitToTriggerBuild(): void
     {
         $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        $pantheonUpstreamYml = fopen($this->localPath . DIRECTORY_SEPARATOR . 'pantheon.upstream.yml', 'a');
+        $path = FileSystem::buildPath($this->localPath, 'pantheon.upstream.yml');
+        $pantheonUpstreamYml = fopen($path, 'a');
         fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
         fclose($pantheonUpstreamYml);
         $this->git->commit('Trigger Pantheon build');

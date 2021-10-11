@@ -26,7 +26,6 @@ class FileSystem
     public function getFilesByPattern(string $path, string $pattern)
     {
         if (!is_dir($path)) {
-            // @todo: throw exception?
             return [];
         }
 
@@ -43,5 +42,17 @@ class FileSystem
         }
 
         return $files;
+    }
+
+    /**
+     * Returns path to the file built from parts.
+     *
+     * @param string[] $parts
+     *
+     * @return string
+     */
+    public static function buildPath(...$parts): string
+    {
+        return implode(DIRECTORY_SEPARATOR, $parts);
     }
 }
