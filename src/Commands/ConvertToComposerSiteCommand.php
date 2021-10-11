@@ -9,6 +9,7 @@ use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
+use Pantheon\Terminus\Models\TerminusModel;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
@@ -105,7 +106,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
         $this->git->push(self::TARGET_GIT_BRANCH);
 
-        $this->createMultidev($site, $env);
+        $mdEnv = $this->createMultidev($site, $env);
         $this->addComposerPackages($contribProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
@@ -113,6 +114,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
         $this->git->push(self::TARGET_GIT_BRANCH);
+
+        $this->log()->notice(
+            sprintf('Link to "%s" multidev environment dashboard: %s', self::TARGET_GIT_BRANCH, $mdEnv->dashboardUrl())
+        );
     }
 
     /**
@@ -330,15 +335,19 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Creates the target multidev environment.
      *
      * @param \Pantheon\Terminus\Models\Site $site
-     * @param \Pantheon\Terminus\Models\Environment $env
+     * @param \Pantheon\Terminus\Models\Environment $sourceEnv
+     *
+     * @return \Pantheon\Terminus\Models\Environment
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function createMultidev(Site $site, Environment $env): void
+    private function createMultidev(Site $site, Environment $sourceEnv): TerminusModel
     {
         $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
-        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $env);
+        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $sourceEnv);
         $this->processWorkflow($workflow);
+
+        return $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
     }
 
     /**
