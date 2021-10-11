@@ -29,6 +29,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private const IC_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-project.git';
     private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
+    private const MODULES_SUBDIR = 'modules';
+    private const THEMES_SUBDIR = 'themes';
 
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
@@ -191,13 +193,20 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getCustomProjectsDirectories(): array
     {
-        $this->log()->notice(sprintf('Detecting custom modules and themes in "%s"...', $this->localPath));
-        $customProjectsDirs = $this->drupal8ComponentsDetector->getCustomProjectDirectories();
-        foreach ($customProjectsDirs as $dir) {
-            $this->log()->notice(sprintf('"%s" directory found', $dir));
+        $this->log()->notice(sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->localPath));
+        $customModuleDirs = $this->drupal8ComponentsDetector->getCustomModuleDirectories();
+        foreach ($customModuleDirs as $path) {
+            $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
+        }
+        $customThemeDirs = $this->drupal8ComponentsDetector->getCustomThemeDirectories();
+        foreach ($customThemeDirs as $path) {
+            $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
         }
 
-        return $customProjectsDirs;
+        return [
+            self::MODULES_SUBDIR => $customModuleDirs,
+            self::THEMES_SUBDIR => $customThemeDirs,
+        ];
     }
 
     /**
@@ -364,25 +373,28 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function copyCustomProjects(array $customProjectsDirs): void
     {
-        if (0 === count($customProjectsDirs)) {
+        if (0 === count(array_filter($customProjectsDirs))) {
             $this->log()->notice('No custom projects (modules and themes) to copy');
 
             return;
         }
 
-        $this->log()->notice('Copying custom projects (modules and themes)...');
-        foreach ($customProjectsDirs as $relativePath => $absolutePath) {
-            // @todo: refactor.
-            // @todo: use DIRECTORY_SEPARATOR
-            $targetPath = sprintf('%s/web/modules/custom', $this->localPath);
-            if (!is_dir($targetPath)) {
-                mkdir($targetPath, 0755, true);
-            }
-            $this->git->checkout(sprintf('master %s', $relativePath));
-            // @todo: separate modules and themes
-            $this->git->move(sprintf('%s/* %s', $absolutePath, $targetPath));
-            if ($this->git->isAnythingToCommit()) {
-                $this->git->commit(sprintf('Copy custom projects from %s', $relativePath));
+        $this->log()->notice('Copying custom modules and themes...');
+        foreach ($customProjectsDirs as $subDir => $dirs) {
+            foreach ($dirs as $path) {
+                $relativePath = str_replace($this->localPath . DIRECTORY_SEPARATOR, '', $path);
+                $this->git->checkout(sprintf('master %s', $relativePath));
+
+                $targetPath = implode(DIRECTORY_SEPARATOR, [$this->localPath, 'web', $subDir, 'custom']);
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0755, true);
+                }
+                $this->git->move(sprintf('%s/* %s', $path, $targetPath));
+
+                if ($this->git->isAnythingToCommit()) {
+                    $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
+                    $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
+                }
             }
         }
     }

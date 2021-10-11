@@ -105,19 +105,28 @@ class Drupal8Projects
     }
 
     /**
-     * Returns custom projects' directories.
+     * Returns custom module directories.
      *
      * @return array
-     *   The key is the relative path, the value is the absolute path.
      */
-    public function getCustomProjectDirectories(): array
+    public function getCustomModuleDirectories(): array
     {
         return array_filter([
-            // @todo: optimize.
-            implode(DIRECTORY_SEPARATOR, ['modules', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules', 'custom']),
-            implode(DIRECTORY_SEPARATOR, ['sites', 'all', 'modules', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules', 'custom']),
-            implode(DIRECTORY_SEPARATOR, ['themes', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes', 'custom']),
-            implode(DIRECTORY_SEPARATOR, ['sites', 'all', 'themes', 'custom']) => implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes', 'custom']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules', 'custom']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules', 'custom']),
+        ], fn($directory) => is_dir($directory));
+    }
+
+    /**
+     * Returns custom theme directories.
+     *
+     * @return array
+     */
+    public function getCustomThemeDirectories(): array
+    {
+        return array_filter([
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes', 'custom']),
+            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes', 'custom']),
         ], fn($directory) => is_dir($directory));
     }
 }
