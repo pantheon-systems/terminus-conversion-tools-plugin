@@ -141,9 +141,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
         $gitUrl = $env->connectionInfo()['git_url'] ?? null;
         $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
-        $this->log()->notice(
-            sprintf('The %s site repository has been cloned into "%s"', $site->getName(), $path)
-        );
 
         return $path;
     }
@@ -386,7 +383,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
             $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
         }
-        $this->log()->notice('Packages have been added to Composer');
     }
 
     /**
