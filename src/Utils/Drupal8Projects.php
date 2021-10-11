@@ -61,7 +61,7 @@ class Drupal8Projects
         // Extract "project" and "version" attributes out of info files.
         $projects = [];
         foreach ($topLevelInfoFiles as $infoFilePath => $infoFileName) {
-            $infoFileContent = file_get_contents($infoFilePath . DIRECTORY_SEPARATOR . $infoFileName);
+            $infoFileContent = file_get_contents(FileSystem::buildPath($infoFilePath, $infoFileName));
             if (!preg_match('/project: \'(.*)\'/', $infoFileContent, $project)) {
                 continue;
             }
@@ -97,10 +97,10 @@ class Drupal8Projects
     private function getContribProjectDirectories(): array
     {
         return [
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules']),
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules']),
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes']),
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes']),
+            FileSystem::buildPath($this->siteRootPath, 'modules'),
+            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'modules'),
+            FileSystem::buildPath($this->siteRootPath, 'themes'),
+            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'themes'),
         ];
     }
 
@@ -112,8 +112,8 @@ class Drupal8Projects
     public function getCustomModuleDirectories(): array
     {
         return array_filter([
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'modules', 'custom']),
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'modules', 'custom']),
+            FileSystem::buildPath($this->siteRootPath, 'modules', 'custom'),
+            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'modules', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 
@@ -125,8 +125,8 @@ class Drupal8Projects
     public function getCustomThemeDirectories(): array
     {
         return array_filter([
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'themes', 'custom']),
-            implode(DIRECTORY_SEPARATOR, [$this->siteRootPath, 'sites', 'all', 'themes', 'custom']),
+            FileSystem::buildPath($this->siteRootPath, 'themes', 'custom'),
+            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'themes', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 }
