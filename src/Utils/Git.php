@@ -3,27 +3,20 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Pantheon\Terminus\Exceptions\TerminusException;
-use Pantheon\Terminus\Helpers\Traits\CommandExecutorTrait;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 /**
  * Class Git.
- *
- * @todo: replace with Symfony Process component.
  */
 class Git
 {
-    use CommandExecutorTrait;
-
     /**
      * @var string
      */
     private string $workingDirectory;
 
-    /**
-     * @var string
-     */
-    private string $remote;
+    private const DEFAULT_REMOTE = 'origin';
 
     /**
      * Git constructor.
@@ -34,17 +27,16 @@ class Git
      */
     public function __construct(string $workingDirectory)
     {
+        $this->workingDirectory = $workingDirectory;
+
         try {
-            $this->execute(sprintf('git -C %s status', $workingDirectory));
+            $this->execute(['status']);
         } catch (Throwable $t) {
             throw new TerminusException(
                 'Failed verify that {working_directory} is a valid Git repository: {error_message}',
                 ['working_directory' => $workingDirectory, 'error_message' => $t->getMessage()]
             );
         }
-
-        $this->workingDirectory = $workingDirectory;
-        $this->remote = 'origin';
     }
 
     /**
@@ -57,8 +49,8 @@ class Git
      */
     public function commit(string $commitMessage): void
     {
-        $this->execute(sprintf('git -C %s add -A', $this->workingDirectory));
-        $this->execute(sprintf('git -C %s commit -m "%s"', $this->workingDirectory, $commitMessage));
+        $this->execute(['add', '-A']);
+        $this->execute(['commit', '-m', $commitMessage]);
     }
 
     /**
@@ -68,9 +60,7 @@ class Git
      */
     public function isAnythingToCommit(): bool
     {
-        [$output] = $this->execute(sprintf('git -C %s status --porcelain', $this->workingDirectory));
-
-        return '' !== $output;
+        return '' !== $this->execute(['status', '--porcelain']);
     }
 
     /**
@@ -83,7 +73,7 @@ class Git
      */
     public function push(string $branchName): void
     {
-        $this->execute(sprintf('git -C %s push %s %s', $this->workingDirectory, $this->remote, $branchName));
+        $this->execute(['push', self::DEFAULT_REMOTE, $branchName]);
     }
 
     /**
@@ -98,11 +88,7 @@ class Git
      */
     public function isRemoteBranchExists(string $branch): bool
     {
-        [$output] = $this->execute(
-            sprintf('git -C %s ls-remote %s %s', $this->workingDirectory, $this->remote, $branch)
-        );
-
-        return '' !== trim($output);
+        return '' !== trim($this->execute(['ls-remote', self::DEFAULT_REMOTE, $branch]));
     }
 
     /**
@@ -115,7 +101,7 @@ class Git
      */
     public function addRemote(string $remote, string $name)
     {
-        $this->execute(sprintf('git -C %s remote add %s %s', $this->workingDirectory, $name, $remote));
+        $this->execute(['remote', 'add', $name, $remote]);
     }
 
     /**
@@ -127,43 +113,43 @@ class Git
      */
     public function fetch(string $remote)
     {
-        $this->execute(sprintf('git -C %s fetch %s', $this->workingDirectory, $remote));
+        $this->execute(['fetch', $remote]);
     }
 
     /**
      * Performs checkout operation.
      *
-     * @param string $options
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function checkout(string $options)
+    public function checkout(...$options)
     {
-        $this->execute(sprintf('git -C %s checkout %s', $this->workingDirectory, $options));
+        $this->execute(['checkout', ...$options]);
     }
 
     /**
      * Move files.
      *
-     * @param string $options
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function move(string $options)
+    public function move(...$options)
     {
-        $this->execute(sprintf('git -C %s mv %s', $this->workingDirectory, $options));
+        $this->execute(sprintf('git mv %s', implode(' ', $options)));
     }
 
     /**
      * Removes files.
      *
-     * @param string $options
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function remove(string $options)
+    public function remove(...$options)
     {
-        $this->execute(sprintf('git -C %s rm %s', $this->workingDirectory, $options));
+        $this->execute(['rm', ...$options]);
     }
 
     /**
@@ -175,6 +161,33 @@ class Git
      */
     public function deleteRemoteBranch(string $branch)
     {
-        $this->execute(sprintf('git -C %s push origin --delete %s', $this->workingDirectory, $branch));
+        $this->execute(['push', self::DEFAULT_REMOTE, '--delete', $branch]);
+    }
+
+    /**
+     * Executes the Git command.
+     *
+     * @param array|string $command
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function execute($command): string
+    {
+        try {
+            if (is_string($command)) {
+                $process = Process::fromShellCommandline($command, $this->workingDirectory);
+            } else {
+                $process = new Process(['git', ...$command], $this->workingDirectory);
+            }
+            $process->mustRun();
+        } catch (Throwable $t) {
+            throw new TerminusException(
+                sprintf('Failed executing Git command: %s', $t->getMessage())
+            );
+        }
+
+        return $process->getOutput();
     }
 }

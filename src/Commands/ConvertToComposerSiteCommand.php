@@ -226,7 +226,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
-        $this->git->checkout(sprintf('--no-track -b %s %s/master', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME));
+        $this->git->checkout('--no-track', '-b', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME . '/master');
     }
 
     /**
@@ -237,18 +237,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout(
-            sprintf(
-                'master %s',
-                FileSystem::buildPath('sites', 'default', 'config')
-            )
-        );
+        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'config'));
         $sourcePath = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config');
         $destinationPath = FileSystem::buildPath($this->localPath, 'config');
-        $this->git->move(sprintf('%s%s* %s', $sourcePath, DIRECTORY_SEPARATOR, $destinationPath));
+        $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-        $htaccessFile = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config', '.htaccess');
-        $this->git->remove(sprintf('-f %s', $htaccessFile));
+        $htaccessFile = FileSystem::buildPath('sites', 'default', 'config', '.htaccess');
+        $this->git->remove('-f', $htaccessFile);
 
         if ($this->git->isAnythingToCommit()) {
             $this->git->commit('Pull in configuration from default branch');
@@ -265,7 +260,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyPantheonYml(): void
     {
         $this->log()->notice('Copying pantheon.yml file...');
-        $this->git->checkout('master pantheon.yml');
+        $this->git->checkout('master', 'pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
         $path = FileSystem::buildPath($this->localPath, 'pantheon.yml');
@@ -402,15 +397,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->log()->notice('Copying custom modules and themes...');
         foreach ($customProjectsDirs as $subDir => $dirs) {
-            foreach ($dirs as $path) {
-                $relativePath = str_replace($this->localPath . DIRECTORY_SEPARATOR, '', $path);
-                $this->git->checkout(sprintf('master %s', $relativePath));
-                $targetPath = FileSystem::buildPath($this->localPath, 'web', $subDir, 'custom');
+            foreach ($dirs as $relativePath) {
+                $this->git->checkout('master', $relativePath);
+                $targetPath = FileSystem::buildPath('web', $subDir, 'custom');
 
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
                 }
-                $this->git->move(sprintf('%s%s* %s', $path, DIRECTORY_SEPARATOR, $targetPath));
+                $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
 
                 if ($this->git->isAnythingToCommit()) {
                     $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
@@ -428,18 +422,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copySettingsPhp(): void
     {
         $this->log()->notice('Copying settings.php file...');
-        $this->git->checkout(
-            sprintf(
-                'master %s',
-                FileSystem::buildPath('sites', 'default', 'settings.php')
-            )
-        );
+        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'settings.php'));
         $this->git->move(
-            sprintf(
-                '%s %s --force',
-                FileSystem::buildPath('sites', 'default', 'settings.php'),
-                FileSystem::buildPath('web', 'sites', 'default', 'settings.php')
-            )
+            FileSystem::buildPath('sites', 'default', 'settings.php'),
+            FileSystem::buildPath('web', 'sites', 'default', 'settings.php'),
+            '-f',
         );
         $this->git->commit('Copy settings.php');
     }

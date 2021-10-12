@@ -84,7 +84,7 @@ class Drupal8Projects
     }
 
     /**
-     * Returns contrib projects' directories.
+     * Returns contrib projects' absolute directories.
      *
      * @return array
      */
@@ -99,28 +99,28 @@ class Drupal8Projects
     }
 
     /**
-     * Returns custom module directories.
+     * Returns custom module relative directories.
      *
      * @return array
      */
     public function getCustomModuleDirectories(): array
     {
         return array_filter([
-            FileSystem::buildPath($this->siteRootPath, 'modules', 'custom'),
-            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'modules', 'custom'),
+            FileSystem::buildPath('modules', 'custom'),
+            FileSystem::buildPath('sites', 'all', 'modules', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 
     /**
-     * Returns custom theme directories.
+     * Returns custom theme relative directories.
      *
      * @return array
      */
     public function getCustomThemeDirectories(): array
     {
         return array_filter([
-            FileSystem::buildPath($this->siteRootPath, 'themes', 'custom'),
-            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'themes', 'custom'),
+            FileSystem::buildPath('themes', 'custom'),
+            FileSystem::buildPath('sites', 'all', 'themes', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 }
