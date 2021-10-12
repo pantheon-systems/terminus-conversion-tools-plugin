@@ -1,0 +1,13 @@
+name: Terminus Conversion Tools Plugin
+on: push
+jobs:
+  validate_code:
+    runs-on: ubuntu-latest
+    name: Validate Code
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Run 'composer install'
+        run: composer install
+      - name: Run 'cs' composer script
+        run: composer cs

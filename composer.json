@@ -20,8 +20,14 @@
         "squizlabs/php_codesniffer": "^3.6"
     },
     "scripts": {
-        "code:lint": [
-            "vendor/bin/phpcs --standard=PSR2 src"
+        "cs": "phpcs --standard=PSR2 -n src",
+        "cbf": "phpcbf --standard=PSR2 -n src",
+        "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "unit": "phpunit --colors=always tests",
+        "test": [
+            "@lint",
+            "@unit",
+            "@cs"
         ]
     }
 }
