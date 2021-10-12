@@ -13,17 +13,11 @@ class Drupal8Projects
     private string $siteRootPath;
 
     /**
-     * @var \Pantheon\TerminusConversionTools\Utils\FileSystem
-     */
-    private $fileSystem;
-
-    /**
      * Drupal8Projects constructor.
      */
     public function __construct(string $siteRootPath)
     {
         $this->siteRootPath = $siteRootPath;
-        $this->fileSystem = new FileSystem();
     }
 
     /**
@@ -39,7 +33,7 @@ class Drupal8Projects
     {
         $infoFiles = [];
         foreach ($this->getContribProjectDirectories() as $projectDir) {
-            $infoFiles = array_merge($infoFiles, $this->fileSystem->getFilesByPattern(
+            $infoFiles = array_merge($infoFiles, FileSystem::getFilesByPattern(
                 $projectDir,
                 '/\.info\.yml$/'
             ));

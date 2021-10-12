@@ -20,7 +20,7 @@ class FileSystem
      *  The list of files where the key is a path relative to the search path and the value is a file name (with an
      *  extension).
      */
-    public function getFilesByPattern(string $path, string $pattern)
+    public static function getFilesByPattern(string $path, string $pattern)
     {
         if (!is_dir($path)) {
             return [];
