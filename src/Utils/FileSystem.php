@@ -2,7 +2,6 @@
 
 namespace Pantheon\TerminusConversionTools\Utils;
 
-use Pantheon\Terminus\Helpers\Traits\CommandExecutorTrait;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -11,8 +10,6 @@ use RecursiveIteratorIterator;
  */
 class FileSystem
 {
-    use CommandExecutorTrait;
-
     /**
      * Returns the list of files in the path matching the pattern.
      *
