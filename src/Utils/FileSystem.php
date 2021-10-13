@@ -13,6 +13,8 @@ class FileSystem
     /**
      * Returns the list of files in the path matching the pattern.
      *
+     * Limits the result to one file per path (directory).
+     *
      * @param string $path
      * @param string $pattern
      *
@@ -30,6 +32,10 @@ class FileSystem
         $fileIterator = new RecursiveIteratorIterator($directoryIterator);
         $files = [];
         foreach (iterator_to_array($fileIterator) as $file) {
+            if (isset($files[$file->getPath()])) {
+                continue;
+            }
+
             /** @var \SplFileInfo $file */
             if (!preg_match($pattern, $file->getRealPath())) {
                 continue;
