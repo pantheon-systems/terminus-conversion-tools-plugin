@@ -7,6 +7,15 @@ use PHPUnit\Framework\TestCase;
 
 final class FileSystemTest extends TestCase
 {
+    public function testBuildPath()
+    {
+        $actual = FileSystem::buildPath('foo', true, false, ['array'], 124, 'bar', null, 0, 1);
+        $this->assertEquals(sprintf('foo%sbar', DIRECTORY_SEPARATOR), $actual);
+
+        $actual = FileSystem::buildPath();
+        $this->assertEquals('', $actual);
+    }
+
     public function testGetFilesByPattern()
     {
         $path = dirname(__DIR__, 2);
