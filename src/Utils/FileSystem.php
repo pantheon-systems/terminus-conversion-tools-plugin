@@ -56,6 +56,9 @@ class FileSystem
      */
     public static function buildPath(...$parts): string
     {
-        return implode(DIRECTORY_SEPARATOR, $parts);
+        return implode(
+            DIRECTORY_SEPARATOR,
+            array_filter($parts, fn($part) => is_string($part))
+        );
     }
 }
