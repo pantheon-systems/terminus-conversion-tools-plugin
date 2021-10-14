@@ -2,7 +2,9 @@
 
 use Pantheon\TerminusConversionTools\Utils\Files;
 
-define('TERMINUS_BIN_FILE', Files::buildPath(getcwd(), 'vendor', 'bin', 'terminus'));
+include_once 'vendor/autoload.php';
+
+define('TERMINUS_BIN_FILE', Files::buildPath(getcwd(), '..', 'terminus'));
 exec(
     sprintf(
         '%s auth:login --machine-token=%s',

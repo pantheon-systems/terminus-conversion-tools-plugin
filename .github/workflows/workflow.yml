@@ -18,20 +18,50 @@ jobs:
         run: composer install
       - name: Validate code
         run: composer cs
-      - name: Run PHP unit tests
+      - name: Run unit tests
         run: composer tests:unit
       - name: Create dir for Terminus
-        run: mkdir ../terminus
+        run: mkdir ../terminus-source
       - name: Install and build Terminus
-        working-directory: ../terminus
+        working-directory: ../terminus-source
         run: |
           composer create-project pantheon-systems/terminus . dev-CMS-232-fix-plugin-local-installation --stability=dev
           composer phar:build
+          rsync -r --copy-links . ..
+          rm -rf ../terminus-source
       - name: Install the plugin
-        working-directory: ../terminus
+        working-directory: ..
         run: |
-          mkdir terminus-conversion-tools-plugin
-          rsync -r ../terminus-conversion-tools-plugin .
           ./terminus self:plugin:install terminus-conversion-tools-plugin
           ./terminus self:plugin:list
           ./terminus conversion:composer -h
+      - name: ls
+        working-directory: ../terminus-conversion-tools-plugin/vendor
+        run: ls
+      - name: Run functional tests
+        working-directory: ../terminus-conversion-tools-plugin
+        run: composer tests:functional
+#
+#
+#
+#      - name: Install the plugin
+#        working-directory: ..
+#   #     working-directory: ../terminus
+#        run: |
+#     #     mkdir terminus-conversion-tools-plugin
+#     #     rsync -r --copy-links ../terminus-conversion-tools-plugin .
+#          ./terminus self:plugin:install terminus-conversion-tools-plugin
+#          ./terminus self:plugin:list
+#          ./terminus conversion:composer -h
+#      - name: ls
+#   #     working-directory: ../terminus/terminus-conversion-tools-plugin/vendor
+#        working-directory: ../terminus-conversion-tools-plugin/vendor
+#        run: ls
+#      - name: Run comoser install again
+#        #working-directory: ../terminus/terminus-conversion-tools-plugin
+#        working-directory: ../terminus-conversion-tools-plugin
+#        run: composer install
+#      - name: Run functional tests
+#      #  working-directory: ../terminus/terminus-conversion-tools-plugin
+#        working-directory: ../terminus-conversion-tools-plugin
+#        run: composer tests:functional

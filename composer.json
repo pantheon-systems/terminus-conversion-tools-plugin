@@ -25,8 +25,8 @@
         "cs": "phpcs --standard=PSR2 -n src tests",
         "cbf": "phpcbf --standard=PSR2 -n src tests",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
-        "tests:unit": "phpunit --testsuit=unit --debug",
-        "tests:functional": "phpunit --testsuit=functional --debug",
+        "tests:unit": "phpunit --testsuit=unit --debug -c ./phpunit.xml",
+        "tests:functional": "phpunit --testsuit=functional --debug -c ./phpunit.xml",
         "tests:all": [
             "@tests:unit",
             "@tests:functional"
