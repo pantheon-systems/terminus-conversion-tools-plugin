@@ -46,6 +46,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private string $localPath;
 
     /**
+     * @var string
+     */
+    private string $branch;
+
+    /**
      * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
      */
     private Drupal8Projects $drupal8ComponentsDetector;
@@ -60,13 +65,16 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @command conversion:composer
      *
+     * @option branch The target branch name for multidev env. Defaults to "composerify".
+     *
      * @param string $site_id
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    public function convert(string $site_id)
+    public function convert(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
         $site = $this->getSite($site_id);
 
@@ -82,6 +90,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 'The site {site_name} is not a "drops-8" upstream based site.',
                 ['site_name' => $site->getName()]
             );
+        }
+
+        $this->branch = $options['branch'];
+        if (strlen($this->branch) > 11) {
+            throw new TerminusException('The target branch name for multidev env must not exceed 11 characters limit');
         }
 
         /** @var \Pantheon\Terminus\Models\Environment $env */
@@ -104,8 +117,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->deleteMultidevIfExists($site);
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $this->git->push(self::TARGET_GIT_BRANCH);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
 
         $mdEnv = $this->createMultidev($site, $env);
         $this->addComposerPackages($contribProjects);
@@ -113,11 +126,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $this->git->push(self::TARGET_GIT_BRANCH);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
 
         $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', self::TARGET_GIT_BRANCH, $mdEnv->dashboardUrl())
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
     }
 
@@ -222,11 +235,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function createLocalGitBranch(): void
     {
         $this->log()->notice(
-            sprintf('Creating "%s" branch based on "drupal-project" upstream...', self::TARGET_GIT_BRANCH)
+            sprintf('Creating "%s" branch based on "drupal-project" upstream...', $this->branch)
         );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
-        $this->git->checkout('--no-track', '-b', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME . '/master');
+        $this->git->checkout('--no-track', '-b', $this->branch, self::IC_GIT_REMOTE_NAME . '/master');
     }
 
     /**
@@ -288,13 +301,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         try {
             /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
+            $multidev = $site->getEnvironments()->get($this->branch);
             if (!$this->input()->getOption('yes')
                 && !$this->io()
                     ->confirm(
                         sprintf(
                             'Multidev "%s" already exists. Are you sure you want to delete it and its source branch?',
-                            self::TARGET_GIT_BRANCH
+                            $this->branch
                         )
                     )
             ) {
@@ -302,24 +315,24 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             }
 
             $this->log()->notice(
-                sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH)
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $this->branch)
             );
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
         } catch (TerminusNotFoundException $e) {
-            if ($this->git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
+            if ($this->git->isRemoteBranchExists($this->branch)) {
                 if (!$this->input()->getOption('yes')
                     && !$this->io()->confirm(
                         sprintf(
                             'The branch "%s" already exists. Are you sure you want to delete it?',
-                            self::TARGET_GIT_BRANCH
+                            $this->branch
                         )
                     )
                 ) {
                     return;
                 }
 
-                $this->git->deleteRemoteBranch(self::TARGET_GIT_BRANCH);
+                $this->git->deleteRemoteBranch($this->branch);
             }
         }
     }
@@ -336,12 +349,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function createMultidev(Site $site, Environment $sourceEnv): TerminusModel
     {
-        $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
-        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $sourceEnv);
+        $this->log()->notice(sprintf('Creating "%s" multidev environment...', $this->branch));
+        $workflow = $site->getEnvironments()->create($this->branch, $sourceEnv);
         $this->processWorkflow($workflow);
         $site->unsetEnvironments();
 
-        return $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
+        return $site->getEnvironments()->get($this->branch);
     }
 
     /**
