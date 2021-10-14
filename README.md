@@ -1,4 +1,4 @@
-# Terminus Plugin Conversion Tools
+# Terminus Conversion Tools Plugin
 
 [![CircleCI](https://circleci.com/gh/pantheon-systems/terminus-conversion-tools-plugin.svg?style=shield)](https://circleci.com/gh/pantheon-systems/terminus-conversion-tools-plugin)
 [![Terminus 3.x Compatible](https://img.shields.io/badge/terminus-3.x-green.svg)](https://github.com/pantheon-systems/terminus-conversion-tools-plugin/tree/main)

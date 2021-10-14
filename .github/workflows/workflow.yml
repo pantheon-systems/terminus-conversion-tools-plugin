@@ -1,0 +1,15 @@
+name: Terminus Conversion Tools Plugin
+on: push
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    name: Code Validation and Tests
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: composer install
+      - name: Validate code
+        run: composer cs
+      - name: Run PHP unit tests
+        run: composer unit
