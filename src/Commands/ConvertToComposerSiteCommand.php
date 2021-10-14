@@ -339,6 +339,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
         $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $sourceEnv);
         $this->processWorkflow($workflow);
+        $site->unsetEnvironments();
 
         return $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
     }
