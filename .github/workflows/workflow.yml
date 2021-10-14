@@ -7,9 +7,28 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        with:
+          coverage: pcov
       - name: Install dependencies
         run: composer install
       - name: Validate code
         run: composer cs
       - name: Run PHP unit tests
         run: composer unit
+      - name: Create dir for Terminus
+        run: mkdir ../terminus
+      - name: Install and build Terminus
+        working-directory: ../terminus
+        run: |
+          composer create-project pantheon-systems/terminus . dev-CMS-232-fix-plugin-local-installation --stability=dev
+          composer phar:build
+      - name: Install the plugin
+        working-directory: ../terminus
+        run: |
+          mkdir terminus-conversion-tools-plugin
+          rsync -r ../terminus-conversion-tools-plugin .
+          ./terminus self:plugin:install terminus-conversion-tools-plugin
+          ./terminus self:plugin:list
+          ./terminus conversion:composer -h
