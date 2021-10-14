@@ -1,6 +1,6 @@
 <?php
 
-namespace Pantheon\TerminusConversionTools\Tests;
+namespace Pantheon\TerminusConversionTools\Tests\Unit;
 
 use Pantheon\TerminusConversionTools\Utils\Files;
 use PHPUnit\Framework\TestCase;
