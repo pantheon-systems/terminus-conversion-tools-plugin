@@ -29,7 +29,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const TARGET_GIT_BRANCH = 'composerify';
     private const IC_GIT_REMOTE_NAME = 'ic';
-    private const IC_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-project.git';
+    private const IC_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
     private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
     private const MODULES_SUBDIR = 'modules';
