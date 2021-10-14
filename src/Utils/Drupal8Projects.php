@@ -108,7 +108,7 @@ class Drupal8Projects
         return array_filter([
             Files::buildPath('modules', 'custom'),
             Files::buildPath('sites', 'all', 'modules', 'custom'),
-        ], fn($directory) => is_dir($directory));
+        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory)));
     }
 
     /**
@@ -121,6 +121,6 @@ class Drupal8Projects
         return array_filter([
             Files::buildPath('themes', 'custom'),
             Files::buildPath('sites', 'all', 'themes', 'custom'),
-        ], fn($directory) => is_dir($directory));
+        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory)));
     }
 }

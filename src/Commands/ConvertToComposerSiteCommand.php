@@ -415,8 +415,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $this->git->checkout('master', $relativePath);
                 $targetPath = Files::buildPath('web', $subDir, 'custom');
 
-                if (!is_dir($targetPath)) {
-                    mkdir($targetPath, 0755, true);
+                if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
+                    mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
                 }
                 $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
 
