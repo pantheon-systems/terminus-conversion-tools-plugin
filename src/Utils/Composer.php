@@ -25,7 +25,7 @@ class Composer
      */
     public function __construct(string $workingDirectory)
     {
-        if (!is_file(FileSystem::buildPath($workingDirectory, 'composer.json'))) {
+        if (!is_file(Files::buildPath($workingDirectory, 'composer.json'))) {
             throw new TerminusException(
                 'composer.json file not found in {working_directory}.',
                 ['working_directory' => $workingDirectory]

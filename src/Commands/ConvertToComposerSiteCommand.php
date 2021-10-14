@@ -14,7 +14,7 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
-use Pantheon\TerminusConversionTools\Utils\FileSystem;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
 
@@ -237,12 +237,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'config'));
-        $sourcePath = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config');
-        $destinationPath = FileSystem::buildPath($this->localPath, 'config');
+        $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
+        $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
+        $destinationPath = Files::buildPath($this->localPath, 'config');
         $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-        $htaccessFile = FileSystem::buildPath('sites', 'default', 'config', '.htaccess');
+        $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
         $this->git->remove('-f', $htaccessFile);
 
         if ($this->git->isAnythingToCommit()) {
@@ -263,7 +263,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->checkout('master', 'pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
-        $path = FileSystem::buildPath($this->localPath, 'pantheon.yml');
+        $path = Files::buildPath($this->localPath, 'pantheon.yml');
         $pantheonYmlContent = Yaml::parseFile($path);
         if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
             return;
@@ -399,7 +399,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
                 $this->git->checkout('master', $relativePath);
-                $targetPath = FileSystem::buildPath('web', $subDir, 'custom');
+                $targetPath = Files::buildPath('web', $subDir, 'custom');
 
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
@@ -422,10 +422,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copySettingsPhp(): void
     {
         $this->log()->notice('Copying settings.php file...');
-        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'settings.php'));
+        $this->git->checkout('master', Files::buildPath('sites', 'default', 'settings.php'));
         $this->git->move(
-            FileSystem::buildPath('sites', 'default', 'settings.php'),
-            FileSystem::buildPath('web', 'sites', 'default', 'settings.php'),
+            Files::buildPath('sites', 'default', 'settings.php'),
+            Files::buildPath('web', 'sites', 'default', 'settings.php'),
             '-f',
         );
         $this->git->commit('Copy settings.php');
@@ -439,7 +439,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function addCommitToTriggerBuild(): void
     {
         $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        $path = FileSystem::buildPath($this->localPath, 'pantheon.upstream.yml');
+        $path = Files::buildPath($this->localPath, 'pantheon.upstream.yml');
         $pantheonUpstreamYml = fopen($path, 'a');
         fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
         fclose($pantheonUpstreamYml);

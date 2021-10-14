@@ -6,9 +6,9 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 /**
- * Class FileSystem.
+ * Class Files.
  */
-class FileSystem
+class Files
 {
     /**
      * Returns the list of files in the path matching the pattern.

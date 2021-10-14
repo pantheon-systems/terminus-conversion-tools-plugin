@@ -33,7 +33,7 @@ class Drupal8Projects
     {
         $infoFiles = [];
         foreach ($this->getContribProjectDirectories() as $projectDir) {
-            $infoFiles = array_merge($infoFiles, FileSystem::getFilesByPattern(
+            $infoFiles = array_merge($infoFiles, Files::getFilesByPattern(
                 $projectDir,
                 '/\.info\.yml$/'
             ));
@@ -55,7 +55,7 @@ class Drupal8Projects
         // Extract "project" and "version" attributes out of info files.
         $projects = [];
         foreach ($topLevelInfoFiles as $infoFilePath => $infoFileName) {
-            $infoFileContent = file_get_contents(FileSystem::buildPath($infoFilePath, $infoFileName));
+            $infoFileContent = file_get_contents(Files::buildPath($infoFilePath, $infoFileName));
             if (!preg_match('/project: \'(.*)\'/', $infoFileContent, $project)) {
                 continue;
             }
@@ -91,10 +91,10 @@ class Drupal8Projects
     private function getContribProjectDirectories(): array
     {
         return [
-            FileSystem::buildPath($this->siteRootPath, 'modules'),
-            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'modules'),
-            FileSystem::buildPath($this->siteRootPath, 'themes'),
-            FileSystem::buildPath($this->siteRootPath, 'sites', 'all', 'themes'),
+            Files::buildPath($this->siteRootPath, 'modules'),
+            Files::buildPath($this->siteRootPath, 'sites', 'all', 'modules'),
+            Files::buildPath($this->siteRootPath, 'themes'),
+            Files::buildPath($this->siteRootPath, 'sites', 'all', 'themes'),
         ];
     }
 
@@ -106,8 +106,8 @@ class Drupal8Projects
     public function getCustomModuleDirectories(): array
     {
         return array_filter([
-            FileSystem::buildPath('modules', 'custom'),
-            FileSystem::buildPath('sites', 'all', 'modules', 'custom'),
+            Files::buildPath('modules', 'custom'),
+            Files::buildPath('sites', 'all', 'modules', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 
@@ -119,8 +119,8 @@ class Drupal8Projects
     public function getCustomThemeDirectories(): array
     {
         return array_filter([
-            FileSystem::buildPath('themes', 'custom'),
-            FileSystem::buildPath('sites', 'all', 'themes', 'custom'),
+            Files::buildPath('themes', 'custom'),
+            Files::buildPath('sites', 'all', 'themes', 'custom'),
         ], fn($directory) => is_dir($directory));
     }
 }
