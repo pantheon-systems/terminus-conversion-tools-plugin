@@ -4,6 +4,9 @@ jobs:
   main:
     runs-on: ubuntu-latest
     name: Code Validation and Tests
+    env:
+      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
