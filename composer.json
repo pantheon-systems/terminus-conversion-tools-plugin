@@ -25,10 +25,10 @@
         "cbf": "phpcbf --standard=PSR2 -n src tests",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
         "tests:unit": "phpunit --testsuit=unit",
-        "test": [
-            "@lint",
-            "@unit",
-            "@cs"
+        "tests:functional": "phpunit --testsuit=functional",
+        "tests:all": [
+            "@tests:unit",
+            "@tests:functional"
         ]
     }
 }

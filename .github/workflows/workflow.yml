@@ -16,7 +16,7 @@ jobs:
       - name: Validate code
         run: composer cs
       - name: Run PHP unit tests
-        run: composer unit
+        run: composer tests:unit
       - name: Create dir for Terminus
         run: mkdir ../terminus
       - name: Install and build Terminus
