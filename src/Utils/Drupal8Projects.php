@@ -52,8 +52,6 @@ class Drupal8Projects
             return true;
         }, ARRAY_FILTER_USE_BOTH);
 
-        // @fixme: $topLevelInfoFiles is empty when running on CI.
-
         // Extract "project" and "version" attributes out of info files.
         $projects = [];
         foreach ($topLevelInfoFiles as $infoFilePath => $infoFileName) {

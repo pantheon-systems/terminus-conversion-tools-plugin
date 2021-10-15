@@ -57,9 +57,6 @@ class ConversionComposerCommandTest extends TestCase
         $this->terminus(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
         );
-
-        // @todo: verify that the site is functional by pinging front page.
-        // @fix: missing contrib modules and themes.
     }
 
     /**
