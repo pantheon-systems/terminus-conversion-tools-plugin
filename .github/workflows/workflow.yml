@@ -1,12 +1,9 @@
 name: Terminus Conversion Tools Plugin
 on: push
 jobs:
-  main:
+  infrastructure_setup:
     runs-on: ubuntu-latest
-    name: Code Validation and Tests
-    env:
-      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
-      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
+    name: Prepare infrastructure
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -22,13 +19,39 @@ jobs:
         run: composer install
       - name: Validate code
         run: composer cs
+      - name: Save repo content as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: full-workspace
+          path: ${{ github.workspace }}
+
+  unit_tests:
+    runs-on: ubuntu-latest
+    name: Unit tests
+    needs: [ infrastructure_setup ]
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: full-workspace
       - name: Run unit tests
         run: composer tests:unit
-      - name: Create dir for Terminus
-        run: mkdir ../terminus-source
+
+  functional_tests:
+    runs-on: ubuntu-latest
+    name: Functional tests
+    needs: [ infrastructure_setup ]
+    env:
+      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: full-workspace
       - name: Install and build Terminus
-        working-directory: ../terminus-source
         run: |
+          mkdir ../terminus-source && cd ../terminus-source
           composer create-project pantheon-systems/terminus . dev-cms-232-debug-t3-auth-issue --stability=dev
           composer phar:build
           rsync -r --copy-links . ..

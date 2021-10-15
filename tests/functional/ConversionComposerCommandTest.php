@@ -50,7 +50,7 @@ class ConversionComposerCommandTest extends TestCase
             $this->assertArrayHasKey('git_port', $gitInfo);
 
             $addGitHostToKnownHostsCommand = sprintf(
-                'ssh-keyscan -p %d %s >> ~/.ssh/known_hosts',
+                'ssh-keyscan -p %d %s 2>/dev/null >> ~/.ssh/known_hosts',
                 $gitInfo['git_port'],
                 $gitInfo['git_host']
             );
