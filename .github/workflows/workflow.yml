@@ -1,9 +1,12 @@
 name: Terminus Conversion Tools Plugin
 on: push
 jobs:
-  infrastructure_setup:
+  main:
     runs-on: ubuntu-latest
-    name: Prepare infrastructure
+    name: Validate code and run tests
+    env:
+      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -19,36 +22,8 @@ jobs:
         run: composer install
       - name: Validate code
         run: composer cs
-      - name: Save repo content as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: full-workspace
-          path: ${{ github.workspace }}
-
-  unit_tests:
-    runs-on: ubuntu-latest
-    name: Unit tests
-    needs: [ infrastructure_setup ]
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: full-workspace
       - name: Run unit tests
         run: composer tests:unit
-
-  functional_tests:
-    runs-on: ubuntu-latest
-    name: Functional tests
-    needs: [ infrastructure_setup ]
-    env:
-      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
-      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: full-workspace
       - name: Install and build Terminus
         run: |
           mkdir ../terminus-source && cd ../terminus-source
@@ -56,12 +31,12 @@ jobs:
           composer phar:build
           rsync -r --copy-links . ..
           rm -rf ../terminus-source
-      - name: Install the plugin
+      - name: Install the plugin from the local path
         working-directory: ..
         run: |
           ./terminus self:plugin:install terminus-conversion-tools-plugin
           ./terminus self:plugin:list
-      - name: Install SSH key
+      - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.TERMINUS_SITE_OWNER_SSH_PRIVATE_KEY }}
