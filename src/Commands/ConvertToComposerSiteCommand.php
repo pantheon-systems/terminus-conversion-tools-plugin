@@ -65,7 +65,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @command conversion:composer
      *
-     * @option branch The target branch name for multidev env. Defaults to "composerify".
+     * @option branch The target branch name for multidev env.
      *
      * @param string $site_id
      * @param array $options
