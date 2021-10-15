@@ -27,7 +27,7 @@ jobs:
       - name: Install and build Terminus
         run: |
           mkdir ../terminus-source && cd ../terminus-source
-          composer create-project pantheon-systems/terminus . dev-cms-232-debug-t3-auth-issue --stability=dev
+          composer create-project pantheon-systems/terminus . dev-cms-232-fix-auth-login-token-issue --stability=dev
           composer phar:build
           rsync -r --copy-links . ..
           rm -rf ../terminus-source

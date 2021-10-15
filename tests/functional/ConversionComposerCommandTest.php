@@ -34,39 +34,6 @@ class ConversionComposerCommandTest extends TestCase
     }
 
     /**
-     * @covers \Pantheon\TerminusConversionTools\Commands\ConvertToComposerSiteCommand
-     *
-     * @group convert_composer
-     */
-    public function testConversionComposerCommand()
-    {
-        if ($this->isCiEnv()) {
-            $gitInfo = $this->terminusJsonResponse(
-                sprintf('connection:info %s.dev --fields=git_host,git_port', $this->siteName)
-            );
-            $this->assertIsArray($gitInfo);
-            $this->assertNotEmpty($gitInfo);
-            $this->assertArrayHasKey('git_host', $gitInfo);
-            $this->assertArrayHasKey('git_port', $gitInfo);
-
-            $addGitHostToKnownHostsCommand = sprintf(
-                'ssh-keyscan -p %d %s 2>/dev/null >> ~/.ssh/known_hosts',
-                $gitInfo['git_port'],
-                $gitInfo['git_host']
-            );
-            exec($addGitHostToKnownHostsCommand);
-        }
-
-        [$output] = $this->terminus(
-            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
-        );
-        fwrite(STDERR, print_r($output, true));
-
-        // @todo: clear caches.
-        // @todo: verify that the site is functional by pinging front page
-    }
-
-    /**
      * @inheritdoc
      */
     protected function tearDown(): void
@@ -74,5 +41,45 @@ class ConversionComposerCommandTest extends TestCase
         $this->terminus(
             sprintf('multidev:delete %s.%s --delete-branch', $this->siteName, $this->branch)
         );
+    }
+
+    /**
+     * @covers \Pantheon\TerminusConversionTools\Commands\ConvertToComposerSiteCommand
+     *
+     * @group convert_composer
+     */
+    public function testConversionComposerCommand():void
+    {
+        if ($this->isCiEnv()) {
+            $this->addGitHostToKnownHosts();
+        }
+
+        $this->terminus(
+            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
+        );
+
+        // @todo: verify that the site is functional by pinging front page.
+        // @fix: missing contrib modules and themes.
+    }
+
+    /**
+     * Adds site's Git host to known_hosts file.
+     */
+    private function addGitHostToKnownHosts(): void
+    {
+        $gitInfo = $this->terminusJsonResponse(
+            sprintf('connection:info %s.dev --fields=git_host,git_port', $this->siteName)
+        );
+        $this->assertIsArray($gitInfo);
+        $this->assertNotEmpty($gitInfo);
+        $this->assertArrayHasKey('git_host', $gitInfo);
+        $this->assertArrayHasKey('git_port', $gitInfo);
+
+        $addGitHostToKnownHostsCommand = sprintf(
+            'ssh-keyscan -p %d %s 2>/dev/null >> ~/.ssh/known_hosts',
+            $gitInfo['git_port'],
+            $gitInfo['git_host']
+        );
+        exec($addGitHostToKnownHostsCommand);
     }
 }
