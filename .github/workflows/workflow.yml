@@ -36,6 +36,7 @@ jobs:
         run: |
           ./terminus self:plugin:install terminus-conversion-tools-plugin
           ./terminus self:plugin:list
+          ./terminus conversion:composer -h
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.5.3
         with:
