@@ -17,9 +17,10 @@
         "symfony/process": "^5.3"
     },
     "require-dev": {
-        "squizlabs/php_codesniffer": "^3.6",
+        "pantheon-systems/terminus": "^3",
         "phpunit/phpunit": "^9",
-        "pantheon-systems/terminus": "^3"
+        "squizlabs/php_codesniffer": "^3.6",
+        "symfony/http-client": "^5.3"
     },
     "scripts": {
         "cs": "phpcs --standard=PSR2 -n src tests",

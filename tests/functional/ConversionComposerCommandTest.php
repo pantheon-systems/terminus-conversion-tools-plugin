@@ -4,6 +4,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
 use Pantheon\Terminus\Tests\Traits\TerminusTestTrait;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\HttpClient;
 
 /**
  * Class ConversionComposerCommandTest.
@@ -25,12 +26,18 @@ class ConversionComposerCommandTest extends TestCase
     private string $branch;
 
     /**
+     * @var \Symfony\Contracts\HttpClient\HttpClientInterface
+     */
+    protected $httpClient;
+
+    /**
      * @inheritdoc
      */
     protected function setUp(): void
     {
         $this->siteName = $this->getSiteName();
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
+        $this->httpClient = HttpClient::create();
     }
 
     /**
@@ -47,6 +54,8 @@ class ConversionComposerCommandTest extends TestCase
      * @covers \Pantheon\TerminusConversionTools\Commands\ConvertToComposerSiteCommand
      *
      * @group convert_composer
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     public function testConversionComposerCommand():void
     {
@@ -57,6 +66,23 @@ class ConversionComposerCommandTest extends TestCase
         $this->terminus(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
         );
+        sleep(120);
+        $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $this->branch));
+
+        $pathsToTest = [
+            'webform' => 'form/contact',
+            'custom1' => 'custom1/page',
+            'custom2' => 'custom2/page',
+            'custom3' => 'custom3/page',
+        ];
+        foreach ($pathsToTest as $module => $path) {
+            $url = sprintf('https://%s-%s.pantheonsite.io/%s', $this->branch, $this->siteName, $path);
+            $this->assertEquals(
+                200,
+                $this->httpClient->request('HEAD', $url)->getStatusCode(),
+                sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
+            );
+        }
     }
 
     /**
