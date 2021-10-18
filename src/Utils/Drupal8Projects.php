@@ -41,9 +41,9 @@ class Drupal8Projects
 
         // Exclude sub-modules and sub-themes.
         ksort($infoFiles);
-        $processedDir = '';
-        $topLevelInfoFiles = array_filter($infoFiles, function ($file, $dir) use (&$processedDir) {
-            if (false !== strpos($dir, $processedDir)) {
+        $topLevelInfoFiles = array_filter($infoFiles, function ($file, $dir) {
+            static $processedDir = null;
+            if (null !== $processedDir && false !== strpos($dir, $processedDir)) {
                 return false;
             }
 
