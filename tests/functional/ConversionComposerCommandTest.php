@@ -67,7 +67,17 @@ class ConversionComposerCommandTest extends TestCase
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
         );
         sleep(120);
-        $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $this->branch));
+        $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $this->branch), [], false);
+
+        $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $this->branch, $this->siteName);
+        $this->assertEqualsInAttempts(
+            fn () => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
+            200,
+            sprintf(
+                'Front page "%s" must return HTTP status code 200',
+                $baseUrl
+            )
+        );
 
         $pathsToTest = [
             'webform' => 'form/contact',
@@ -76,7 +86,7 @@ class ConversionComposerCommandTest extends TestCase
             'custom3' => 'custom3/page',
         ];
         foreach ($pathsToTest as $module => $path) {
-            $url = sprintf('https://%s-%s.pantheonsite.io/%s', $this->branch, $this->siteName, $path);
+            $url = sprintf('%s/%s', $baseUrl, $path);
             $this->assertEquals(
                 200,
                 $this->httpClient->request('HEAD', $url)->getStatusCode(),
@@ -104,5 +114,36 @@ class ConversionComposerCommandTest extends TestCase
             $gitInfo['git_host']
         );
         exec($addGitHostToKnownHostsCommand);
+    }
+
+    /**
+     * Asserts the actual result is equal to the expected one in multiple attempts.
+     *
+     * @param callable $callable
+     *   Callable which provides the actual result.
+     * @param mixed $expected
+     *   Expected result.
+     * @param string $message
+     *   Message.
+     */
+    private function assertEqualsInAttempts(
+        callable $callable,
+        $expected,
+        string $message = ''
+    ): void {
+        $attempts = 18;
+        $intervalSeconds = 10;
+
+        do {
+            $actual = $callable();
+            if ($actual === $expected) {
+                break;
+            }
+
+            sleep($intervalSeconds);
+            $attempts--;
+        } while ($attempts > 0);
+
+        $this->assertEquals($expected, $actual, $message);
     }
 }

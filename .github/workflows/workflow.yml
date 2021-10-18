@@ -29,21 +29,21 @@ jobs:
       - name: Run unit tests
         run: composer tests:unit
       - name: Install and build Terminus
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           mkdir ../terminus-source && cd ../terminus-source
-          composer create-project pantheon-systems/terminus . dev-cms-232-fix-auth-login-token-issue --stability=dev
+          composer create-project pantheon-systems/terminus . ^3 --stability=dev
           composer phar:build
           rsync -r --copy-links . ..
           rm -rf ../terminus-source
       - name: Install the plugin from the local path
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         working-directory: ..
         run: |
           ./terminus self:plugin:install terminus-conversion-tools-plugin
           ./terminus self:plugin:list
           ./terminus conversion:composer -h
       - name: Run functional tests
-        if: ${{ github.ref == 'refs/heads/main' }}
+        #if: ${{ github.ref == 'refs/heads/main' }}
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional
