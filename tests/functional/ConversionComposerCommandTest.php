@@ -66,7 +66,7 @@ class ConversionComposerCommandTest extends TestCase
         $this->terminus(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch)
         );
-        sleep(120);
+        sleep(180);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $this->branch), [], false);
 
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $this->branch, $this->siteName);
