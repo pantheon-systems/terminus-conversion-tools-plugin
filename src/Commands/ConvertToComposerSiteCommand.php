@@ -55,7 +55,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private Git $git;
 
     /**
-     * Convert a standard Drupal8 site into a Drupal8 site managed by Composer.
+     * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
      *
      * @command conversion:composer
      *
