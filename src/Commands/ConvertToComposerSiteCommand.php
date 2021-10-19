@@ -94,7 +94,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->branch = $options['branch'];
         if (strlen($this->branch) > 11) {
-            throw new TerminusException('The target branch name for multidev env must not exceed 11 characters limit');
+            throw new TerminusException(
+                'The target git branch name for multidev env must not exceed 11 characters limit'
+            );
         }
 
         /** @var \Pantheon\Terminus\Models\Environment $env */
@@ -235,7 +237,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function createLocalGitBranch(): void
     {
         $this->log()->notice(
-            sprintf('Creating "%s" branch based on "drupal-project" upstream...', $this->branch)
+            sprintf('Creating "%s" git branch based on "drupal-project" upstream...', $this->branch)
         );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
@@ -302,14 +304,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         try {
             /** @var \Pantheon\Terminus\Models\Environment $multidev */
             $multidev = $site->getEnvironments()->get($this->branch);
-            if (!$this->input()->getOption('yes')
-                && !$this->io()
-                    ->confirm(
-                        sprintf(
-                            'Multidev "%s" already exists. Are you sure you want to delete it and its source branch?',
-                            $this->branch
-                        )
+            if (!$this->input()->getOption('yes') && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                        $this->branch
                     )
+                )
             ) {
                 return;
             }
@@ -324,7 +325,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 if (!$this->input()->getOption('yes')
                     && !$this->io()->confirm(
                         sprintf(
-                            'The branch "%s" already exists. Are you sure you want to delete it?',
+                            'The git branch "%s" already exists. Are you sure you want to delete it?',
                             $this->branch
                         )
                     )
