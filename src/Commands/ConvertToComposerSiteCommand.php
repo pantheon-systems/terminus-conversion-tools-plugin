@@ -261,7 +261,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->remove('-f', $htaccessFile);
 
         if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Pull in configuration from default branch');
+            $this->git->commit('Pull in configuration from default git branch');
         } else {
             $this->log()->notice('No configuration files found');
         }
