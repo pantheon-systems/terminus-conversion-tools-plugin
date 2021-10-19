@@ -165,6 +165,25 @@ class Git
     }
 
     /**
+     * Returns HEAD commit hash value of the specified remote branch.
+     *
+     * @param string $branch
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function getHeadCommitHash(string $branch): string
+    {
+        $hash = $this->execute(['log', '--format=%H', '-n', '1', sprintf('%s/%s', self::DEFAULT_REMOTE, $branch)]);
+        if (preg_match('/^[0-9a-f]{40}$/i', $hash)) {
+            return $hash;
+        };
+
+        throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command
