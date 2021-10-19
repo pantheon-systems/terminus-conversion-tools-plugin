@@ -453,11 +453,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function addCommitToTriggerBuild(): void
     {
-        $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        $path = Files::buildPath($this->localPath, 'pantheon.upstream.yml');
-        $pantheonUpstreamYml = fopen($path, 'a');
-        fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
-        fclose($pantheonUpstreamYml);
+        $this->log()->notice('Adding comment to pantheon.yml to trigger a build...');
+        $path = Files::buildPath($this->localPath, 'pantheon.yml');
+        $pantheonYml = fopen($path, 'a');
+        fwrite($pantheonYml, PHP_EOL . '# add a comment to trigger a change and build');
+        fclose($pantheonYml);
         $this->git->commit('Trigger Pantheon build');
     }
 }
