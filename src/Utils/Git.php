@@ -188,7 +188,9 @@ class Git
      */
     public function getHeadCommitHash(string $branch): string
     {
-        $hash = $this->execute(['log', '--format=%H', '-n', '1', sprintf('%s/%s', self::DEFAULT_REMOTE, $branch)]);
+        $hash = trim(
+            $this->execute(['log', '--format=%H', '-n', '1', sprintf('%s/%s', self::DEFAULT_REMOTE, $branch)])
+        );
         if (preg_match('/^[0-9a-f]{40}$/i', $hash)) {
             return $hash;
         };
