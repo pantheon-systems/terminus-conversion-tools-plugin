@@ -68,12 +68,13 @@ class Git
      *
      * @param string $branchName
      *   The branch name.
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function push(string $branchName): void
+    public function push(string $branchName, ...$options): void
     {
-        $this->execute(['push', self::DEFAULT_REMOTE, $branchName]);
+        $this->execute(['push', self::DEFAULT_REMOTE, $branchName, ...$options]);
     }
 
     /**
