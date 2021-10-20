@@ -153,6 +153,18 @@ class Git
     }
 
     /**
+     * Performs reset operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function reset(...$options)
+    {
+        $this->execute(['reset', ...$options]);
+    }
+
+    /**
      * Deletes remote branch.
      *
      * @param string $branch
@@ -198,7 +210,7 @@ class Git
             if (is_string($command)) {
                 $process = Process::fromShellCommandline($command, $this->workingDirectory);
             } else {
-                $process = new Process(['git', ...$command], $this->workingDirectory);
+                $process = new Process(['git', ...$command], $this->workingDirectory, null, null, 180);
             }
             $process->mustRun();
         } catch (Throwable $t) {
