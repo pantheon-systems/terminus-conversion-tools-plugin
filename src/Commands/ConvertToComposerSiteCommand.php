@@ -6,12 +6,10 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
-use Pantheon\Terminus\Helpers\LocalMachineHelper;
-use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
-use Pantheon\Terminus\Models\TerminusModel;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -25,6 +23,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 {
     use SiteAwareTrait;
     use WorkflowProcessingTrait;
+    use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const TARGET_GIT_BRANCH = 'composerify';
@@ -34,11 +33,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
-
-    /**
-     * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
-     */
-    private $localMachineHelper;
 
     /**
      * @var string
@@ -99,12 +93,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        /** @var \Pantheon\Terminus\Models\Environment $env */
-        $env = $site->getEnvironments()->get('dev');
-
         $this->localPath = $this->cloneSiteGitRepository(
             $site,
-            $env,
             sprintf('%s_composer_conversion', $site->getName())
         );
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
@@ -122,7 +112,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
         $this->git->push($this->branch);
 
-        $mdEnv = $this->createMultidev($site, $env);
+        $mdEnv = $this->createMultidev($site, $this->branch);
         $this->addComposerPackages($contribProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
@@ -134,46 +124,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
-    }
-
-    /**
-     * Clones the site repository to local machine and return the absolute path to the local copy.
-     *
-     * @param \Pantheon\Terminus\Models\Site $site
-     * @param \Pantheon\Terminus\Models\Environment $env
-     * @param $siteDirName
-     *
-     * @return string
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function cloneSiteGitRepository(Site $site, Environment $env, $siteDirName): string
-    {
-        $path = $site->getLocalCopyDir($siteDirName);
-        $this->log()->notice(
-            sprintf('Cloning %s site repository into "%s"...', $site->getName(), $path)
-        );
-        $gitUrl = $env->connectionInfo()['git_url'] ?? null;
-        $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
-
-        return $path;
-    }
-
-    /**
-     * Returns the LocalMachineHelper.
-     *
-     * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
-     */
-    private function getLocalMachineHelper(): LocalMachineHelper
-    {
-        if (isset($this->localMachineHelper)) {
-            return $this->localMachineHelper;
-        }
-
-        $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
-
-        return $this->localMachineHelper;
     }
 
     /**
@@ -336,26 +286,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $this->git->deleteRemoteBranch($this->branch);
             }
         }
-    }
-
-    /**
-     * Creates the target multidev environment.
-     *
-     * @param \Pantheon\Terminus\Models\Site $site
-     * @param \Pantheon\Terminus\Models\Environment $sourceEnv
-     *
-     * @return \Pantheon\Terminus\Models\Environment
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function createMultidev(Site $site, Environment $sourceEnv): TerminusModel
-    {
-        $this->log()->notice(sprintf('Creating "%s" multidev environment...', $this->branch));
-        $workflow = $site->getEnvironments()->create($this->branch, $sourceEnv);
-        $this->processWorkflow($workflow);
-        $site->unsetEnvironments();
-
-        return $site->getEnvironments()->get($this->branch);
     }
 
     /**
