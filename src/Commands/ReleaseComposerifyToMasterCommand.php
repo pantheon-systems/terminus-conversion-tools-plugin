@@ -87,6 +87,10 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
         $git->reset('--hard', $git->getHeadCommitHash($sourceBranch));
         $git->push(self::MASTER_GIT_BRANCH, '--force');
 
+        $this->log()->notice(sprintf('Changing the upstream to "%s"...', self::DRUPAL9_UPSTREAM));
+        $upstream = $this->session()->getUser()->getUpstreams()->get(self::DRUPAL9_UPSTREAM);
+        $this->processWorkflow($site->setUpstream($upstream->id));
+
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
     }
 
