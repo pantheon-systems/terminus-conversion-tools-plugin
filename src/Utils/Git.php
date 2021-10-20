@@ -193,7 +193,7 @@ class Git
         );
         if (preg_match('/^[0-9a-f]{40}$/i', $hash)) {
             return $hash;
-        };
+        }
 
         throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
     }
