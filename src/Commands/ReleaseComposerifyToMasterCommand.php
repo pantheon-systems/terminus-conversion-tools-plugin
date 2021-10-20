@@ -22,7 +22,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
     private const COMPOSERIFY_GIT_BRANCH = 'composerify';
     private const BACKUP_GIT_BRANCH = 'master-bckp';
     private const MASTER_GIT_BRANCH = 'master';
-    private const DRUPAL9_UPSTREAM = 'drupal9';
+    private const DRUPAL9_UPSTREAM_ID = 'drupal9';
 
     /**
      * Releases a converted Drupal8 site managed by Composer to the master git branch:
@@ -97,8 +97,8 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
         $git->reset('--hard', $git->getHeadCommitHash($sourceBranch));
         $git->push(self::MASTER_GIT_BRANCH, '--force');
 
-        $this->log()->notice(sprintf('Changing the upstream to "%s"...', self::DRUPAL9_UPSTREAM));
-        $upstream = $this->session()->getUser()->getUpstreams()->get(self::DRUPAL9_UPSTREAM);
+        $this->log()->notice(sprintf('Changing the upstream to "%s"...', self::DRUPAL9_UPSTREAM_ID));
+        $upstream = $this->session()->getUser()->getUpstreams()->get(self::DRUPAL9_UPSTREAM_ID);
         $this->processWorkflow($site->setUpstream($upstream->id));
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
