@@ -8,10 +8,6 @@ use Pantheon\Terminus\Models\TerminusModel;
 
 /**
  * Trait ConversionCommandsTrait.
- *
- * @method log()
- * @method getContainer()
- * @method processWorkflow(\Pantheon\Terminus\Models\Workflow $workflow)
  */
 trait ConversionCommandsTrait
 {
