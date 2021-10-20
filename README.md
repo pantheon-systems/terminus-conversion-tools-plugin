@@ -6,7 +6,8 @@
 The main purposes of the Conversion Tools project are to ease the conversion of a Drupal8 based site into a composer manged Drupal8 site.
 
 Adds the following Terminus commands:
-* `convert:composer`
+* `conversion:composer`
+* `conversion:release-to-master`
 
 Learn more about Terminus Plugins in the [Terminus Plugins documentation](https://pantheon.io/docs/terminus/plugins)
 
@@ -15,7 +16,8 @@ Learn more about Terminus Plugins in the [Terminus Plugins documentation](https:
 In active development
 
 ## Usage
-* `terminus convert:composer`
+* Run `terminus conversion:composer` to convert a standard Drupal8 site into a Drupal8 site managed by Composer
+* Run `terminus conversion:release-to-master` to release a converted Drupal8 site managed by Composer to the master git branch
 
 ## Installation
 
@@ -25,4 +27,5 @@ terminus self:plugin:install terminus-conversion-tools-plugin
 ```
 
 ## Help
-Run `terminus help convert:composer` for help.
+Run `terminus help conversion:composer` for help.
+Run `terminus help conversion:release-to-master` for help.
