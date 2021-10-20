@@ -79,6 +79,19 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
             );
         }
 
+        if (!$this->input()->getOption('yes') && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'Are you sure you want to replace "%s" with "%s" git branch?',
+                        self::MASTER_GIT_BRANCH,
+                        $sourceBranch
+                    ),
+                    false
+                )
+        ) {
+            return;
+        }
+
         $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', self::MASTER_GIT_BRANCH, $sourceBranch));
         $git->checkout(self::MASTER_GIT_BRANCH);
         $git->reset('--hard', $git->getHeadCommitHash($sourceBranch));
