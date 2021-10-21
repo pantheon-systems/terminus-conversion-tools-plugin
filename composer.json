@@ -17,17 +17,20 @@
         "symfony/process": "^5.3"
     },
     "require-dev": {
-        "squizlabs/php_codesniffer": "^3.6"
+        "pantheon-systems/terminus": "^3",
+        "phpunit/phpunit": "^9",
+        "squizlabs/php_codesniffer": "^3.6",
+        "symfony/http-client": "^5.3"
     },
     "scripts": {
         "cs": "phpcs --standard=PSR2 -n src tests",
         "cbf": "phpcbf --standard=PSR2 -n src tests",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
-        "unit": "phpunit --colors=always tests",
-        "test": [
-            "@lint",
-            "@unit",
-            "@cs"
+        "tests:unit": "phpunit --testsuit=unit --debug -c ./phpunit.xml",
+        "tests:functional": "phpunit --testsuit=functional --debug -c ./phpunit.xml",
+        "tests:all": [
+            "@tests:unit",
+            "@tests:functional"
         ]
     }
 }

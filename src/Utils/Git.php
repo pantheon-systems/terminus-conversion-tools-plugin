@@ -68,12 +68,13 @@ class Git
      *
      * @param string $branchName
      *   The branch name.
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function push(string $branchName): void
+    public function push(string $branchName, ...$options): void
     {
-        $this->execute(['push', self::DEFAULT_REMOTE, $branchName]);
+        $this->execute(['push', self::DEFAULT_REMOTE, $branchName, ...$options]);
     }
 
     /**
@@ -153,6 +154,18 @@ class Git
     }
 
     /**
+     * Performs reset operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function reset(...$options)
+    {
+        $this->execute(['reset', ...$options]);
+    }
+
+    /**
      * Deletes remote branch.
      *
      * @param string $branch
@@ -162,6 +175,27 @@ class Git
     public function deleteRemoteBranch(string $branch)
     {
         $this->execute(['push', self::DEFAULT_REMOTE, '--delete', $branch]);
+    }
+
+    /**
+     * Returns HEAD commit hash value of the specified remote branch.
+     *
+     * @param string $branch
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function getHeadCommitHash(string $branch): string
+    {
+        $hash = trim(
+            $this->execute(['log', '--format=%H', '-n', '1', sprintf('%s/%s', self::DEFAULT_REMOTE, $branch)])
+        );
+        if (preg_match('/^[0-9a-f]{40}$/i', $hash)) {
+            return $hash;
+        }
+
+        throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
     }
 
     /**
@@ -179,7 +213,7 @@ class Git
             if (is_string($command)) {
                 $process = Process::fromShellCommandline($command, $this->workingDirectory);
             } else {
-                $process = new Process(['git', ...$command], $this->workingDirectory);
+                $process = new Process(['git', ...$command], $this->workingDirectory, null, null, 180);
             }
             $process->mustRun();
         } catch (Throwable $t) {

@@ -3,13 +3,47 @@ on: push
 jobs:
   main:
     runs-on: ubuntu-latest
-    name: Code Validation and Tests
+    name: Validate code and run tests
+    env:
+      TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        with:
+          coverage: pcov
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.TERMINUS_SITE_OWNER_SSH_PRIVATE_KEY }}
+      - name: Setup Git username and email
+        run: |
+          git config --global user.email "${{ secrets.TERMINUS_USER_EMAIL }}"
+          git config --global user.name "${{ secrets.TERMINUS_USER_NAME }}"
       - name: Install dependencies
         run: composer install
       - name: Validate code
         run: composer cs
-      - name: Run PHP unit tests
-        run: composer unit
+      - name: Run unit tests
+        run: composer tests:unit
+      - name: Install and build Terminus
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          mkdir ../terminus-source && cd ../terminus-source
+          composer create-project pantheon-systems/terminus . ^3 --stability=dev
+          composer phar:build
+          rsync -r --copy-links . ..
+          rm -rf ../terminus-source
+      - name: Install the plugin from the local path
+        if: ${{ github.ref == 'refs/heads/main' }}
+        working-directory: ..
+        run: |
+          ./terminus self:plugin:install terminus-conversion-tools-plugin
+          ./terminus self:plugin:list
+          ./terminus conversion:composer -h
+      - name: Run functional tests
+        if: ${{ github.ref == 'refs/heads/main' }}
+        working-directory: ../terminus-conversion-tools-plugin
+        run: composer tests:functional

@@ -6,15 +6,13 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
-use Pantheon\Terminus\Helpers\LocalMachineHelper;
-use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Models\Site;
-use Pantheon\Terminus\Models\TerminusModel;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
-use Pantheon\TerminusConversionTools\Utils\FileSystem;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
 
@@ -25,25 +23,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 {
     use SiteAwareTrait;
     use WorkflowProcessingTrait;
+    use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const TARGET_GIT_BRANCH = 'composerify';
     private const IC_GIT_REMOTE_NAME = 'ic';
-    private const IC_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-project.git';
+    private const IC_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
     private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
 
     /**
-     * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
+     * @var string
      */
-    private $localMachineHelper;
+    private string $localPath;
 
     /**
      * @var string
      */
-    private string $localPath;
+    private string $branch;
 
     /**
      * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
@@ -56,17 +55,20 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private Git $git;
 
     /**
-     * Convert a standard Drupal8 site into a Drupal8 site managed by Composer.
+     * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
      *
      * @command conversion:composer
      *
+     * @option branch The target branch name for multidev env.
+     *
      * @param string $site_id
+     * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    public function convert(string $site_id)
+    public function convert(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
         $site = $this->getSite($site_id);
 
@@ -84,12 +86,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        /** @var \Pantheon\Terminus\Models\Environment $env */
-        $env = $site->getEnvironments()->get('dev');
+        $this->branch = $options['branch'];
+        if (strlen($this->branch) > 11) {
+            throw new TerminusException(
+                'The target git branch name for multidev env must not exceed 11 characters limit'
+            );
+        }
 
         $this->localPath = $this->cloneSiteGitRepository(
             $site,
-            $env,
             sprintf('%s_composer_conversion', $site->getName())
         );
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
@@ -104,61 +109,21 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->deleteMultidevIfExists($site);
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $this->git->push(self::TARGET_GIT_BRANCH);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
 
-        $mdEnv = $this->createMultidev($site, $env);
+        $mdEnv = $this->createMultidev($site, $this->branch);
         $this->addComposerPackages($contribProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', self::TARGET_GIT_BRANCH));
-        $this->git->push(self::TARGET_GIT_BRANCH);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
 
         $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', self::TARGET_GIT_BRANCH, $mdEnv->dashboardUrl())
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
-    }
-
-    /**
-     * Clones the site repository to local machine and return the absolute path to the local copy.
-     *
-     * @param \Pantheon\Terminus\Models\Site $site
-     * @param \Pantheon\Terminus\Models\Environment $env
-     * @param $siteDirName
-     *
-     * @return string
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function cloneSiteGitRepository(Site $site, Environment $env, $siteDirName): string
-    {
-        $path = $site->getLocalCopyDir($siteDirName);
-        $this->log()->notice(
-            sprintf('Cloning %s site repository into "%s"...', $site->getName(), $path)
-        );
-        $gitUrl = $env->connectionInfo()['git_url'] ?? null;
-        $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
-
-        return $path;
-    }
-
-    /**
-     * Returns the LocalMachineHelper.
-     *
-     * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
-     */
-    private function getLocalMachineHelper(): LocalMachineHelper
-    {
-        if (isset($this->localMachineHelper)) {
-            return $this->localMachineHelper;
-        }
-
-        $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
-
-        return $this->localMachineHelper;
     }
 
     /**
@@ -222,11 +187,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function createLocalGitBranch(): void
     {
         $this->log()->notice(
-            sprintf('Creating "%s" branch based on "drupal-project" upstream...', self::TARGET_GIT_BRANCH)
+            sprintf('Creating "%s" git branch based on "drupal-project" upstream...', $this->branch)
         );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
-        $this->git->checkout('--no-track', '-b', self::TARGET_GIT_BRANCH, self::IC_GIT_REMOTE_NAME . '/master');
+        $this->git->checkout('--no-track', '-b', $this->branch, self::IC_GIT_REMOTE_NAME . '/master');
     }
 
     /**
@@ -237,16 +202,16 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'config'));
-        $sourcePath = FileSystem::buildPath($this->localPath, 'sites', 'default', 'config');
-        $destinationPath = FileSystem::buildPath($this->localPath, 'config');
+        $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
+        $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
+        $destinationPath = Files::buildPath($this->localPath, 'config');
         $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-        $htaccessFile = FileSystem::buildPath('sites', 'default', 'config', '.htaccess');
+        $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
         $this->git->remove('-f', $htaccessFile);
 
         if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Pull in configuration from default branch');
+            $this->git->commit('Pull in configuration from default git branch');
         } else {
             $this->log()->notice('No configuration files found');
         }
@@ -263,7 +228,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->checkout('master', 'pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
-        $path = FileSystem::buildPath($this->localPath, 'pantheon.yml');
+        $path = Files::buildPath($this->localPath, 'pantheon.yml');
         $pantheonYmlContent = Yaml::parseFile($path);
         if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
             return;
@@ -288,59 +253,39 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         try {
             /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
-            if (!$this->input()->getOption('yes')
-                && !$this->io()
-                    ->confirm(
-                        sprintf(
-                            'Multidev "%s" already exists. Are you sure you want to delete it and its source branch?',
-                            self::TARGET_GIT_BRANCH
-                        )
+            $multidev = $site->getEnvironments()->get($this->branch);
+            if (!$this->input()->getOption('yes') && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                        $this->branch
                     )
+                )
             ) {
                 return;
             }
 
             $this->log()->notice(
-                sprintf('Deleting "%s" multidev environment and associated git branch...', self::TARGET_GIT_BRANCH)
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $this->branch)
             );
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
         } catch (TerminusNotFoundException $e) {
-            if ($this->git->isRemoteBranchExists(self::TARGET_GIT_BRANCH)) {
+            if ($this->git->isRemoteBranchExists($this->branch)) {
                 if (!$this->input()->getOption('yes')
                     && !$this->io()->confirm(
                         sprintf(
-                            'The branch "%s" already exists. Are you sure you want to delete it?',
-                            self::TARGET_GIT_BRANCH
+                            'The git branch "%s" already exists. Are you sure you want to delete it?',
+                            $this->branch
                         )
                     )
                 ) {
                     return;
                 }
 
-                $this->git->deleteRemoteBranch(self::TARGET_GIT_BRANCH);
+                $this->git->deleteRemoteBranch($this->branch);
             }
         }
-    }
-
-    /**
-     * Creates the target multidev environment.
-     *
-     * @param \Pantheon\Terminus\Models\Site $site
-     * @param \Pantheon\Terminus\Models\Environment $sourceEnv
-     *
-     * @return \Pantheon\Terminus\Models\Environment
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function createMultidev(Site $site, Environment $sourceEnv): TerminusModel
-    {
-        $this->log()->notice(sprintf('Creating "%s" multidev environment...', self::TARGET_GIT_BRANCH));
-        $workflow = $site->getEnvironments()->create(self::TARGET_GIT_BRANCH, $sourceEnv);
-        $this->processWorkflow($workflow);
-
-        return $site->getEnvironments()->get(self::TARGET_GIT_BRANCH);
     }
 
     /**
@@ -399,10 +344,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
                 $this->git->checkout('master', $relativePath);
-                $targetPath = FileSystem::buildPath('web', $subDir, 'custom');
+                $targetPath = Files::buildPath('web', $subDir, 'custom');
 
-                if (!is_dir($targetPath)) {
-                    mkdir($targetPath, 0755, true);
+                if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
+                    mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
                 }
                 $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
 
@@ -422,10 +367,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copySettingsPhp(): void
     {
         $this->log()->notice('Copying settings.php file...');
-        $this->git->checkout('master', FileSystem::buildPath('sites', 'default', 'settings.php'));
+        $this->git->checkout('master', Files::buildPath('sites', 'default', 'settings.php'));
         $this->git->move(
-            FileSystem::buildPath('sites', 'default', 'settings.php'),
-            FileSystem::buildPath('web', 'sites', 'default', 'settings.php'),
+            Files::buildPath('sites', 'default', 'settings.php'),
+            Files::buildPath('web', 'sites', 'default', 'settings.php'),
             '-f',
         );
         $this->git->commit('Copy settings.php');
@@ -438,11 +383,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function addCommitToTriggerBuild(): void
     {
-        $this->log()->notice('Adding comment to pantheon.upstream.yml to trigger a build...');
-        $path = FileSystem::buildPath($this->localPath, 'pantheon.upstream.yml');
-        $pantheonUpstreamYml = fopen($path, 'a');
-        fwrite($pantheonUpstreamYml, PHP_EOL . '# add a comment to trigger a change and build');
-        fclose($pantheonUpstreamYml);
+        $this->log()->notice('Adding comment to pantheon.yml to trigger a build...');
+        $path = Files::buildPath($this->localPath, 'pantheon.yml');
+        $pantheonYml = fopen($path, 'a');
+        fwrite($pantheonYml, PHP_EOL . '# add a comment to trigger a change and build');
+        fclose($pantheonYml);
         $this->git->commit('Trigger Pantheon build');
     }
 }
