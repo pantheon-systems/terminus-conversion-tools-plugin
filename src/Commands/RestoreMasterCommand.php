@@ -24,7 +24,8 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
 
     /**
-     * Restore master branch.
+     * Restore the master branch to the state before converting a standard Drupal8 site into a Drupal8 site managed by
+     * Composer.
      *
      * @command conversion:restore-master
      *
@@ -36,9 +37,6 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
     {
         $site = $this->getSite($site_id);
 
-        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $site->getEnvironments()->get('dev');
-
         $localPath = $this->cloneSiteGitRepository(
             $site,
             sprintf('%s_composer_conversion', $site->getName())
@@ -46,30 +44,47 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 
         $git = new Git($localPath);
         if (!$git->isRemoteBranchExists(self::BACKUP_GIT_BRANCH)) {
-            throw new TerminusException(sprintf('The backup branch "%s" does not exist', self::BACKUP_GIT_BRANCH));
+            throw new TerminusException(sprintf('The backup git branch "%s" does not exist', self::BACKUP_GIT_BRANCH));
         }
 
         $backupMasterCommitHash = $git->getHeadCommitHash(self::BACKUP_GIT_BRANCH);
-        if (!$this->input()->getOption('yes') && !$this->io()
-                ->confirm(
-                    sprintf(
-                        'Are you sure you want to restore "%s" git branch to "%s"?',
-                        self::MASTER_GIT_BRANCH,
-                        $backupMasterCommitHash
-                    ),
+        $masterCommitHash = $git->getHeadCommitHash(self::MASTER_GIT_BRANCH);
+        if ($backupMasterCommitHash === $masterCommitHash) {
+            $this->log()->warning(
+                sprintf(
+                    'Abort: the backup git branch "%s" matches "%s"',
+                    self::BACKUP_GIT_BRANCH,
+                    self::MASTER_GIT_BRANCH
                 )
+            );
+
+            return;
+        }
+
+        if (!$this->input()->getOption('yes')
+            && !$this->io()->confirm(
+                sprintf(
+                    'Are you sure you want to restore "%s" git branch to "%s" (the head commit of "%s" git branch)?',
+                    self::MASTER_GIT_BRANCH,
+                    $backupMasterCommitHash,
+                    self::BACKUP_GIT_BRANCH
+                )
+            )
         ) {
             return;
         }
 
+        $this->log()->notice(
+            sprintf('Restoring "%s" git branch to "%s"...', self::MASTER_GIT_BRANCH, $backupMasterCommitHash)
+        );
         $git->checkout(self::MASTER_GIT_BRANCH);
         $git->reset('--hard', $backupMasterCommitHash);
         $git->push(self::MASTER_GIT_BRANCH, '--force');
 
-        $this->log()->notice(sprintf('Changing the upstream to "%s"...', self::DROPS_8_UPSTREAM_ID));
-        $upstream = $this->session()->getUser()->getUpstreams()->get(self::DROPS_8_UPSTREAM_ID);
-        $this->processWorkflow($site->setUpstream($upstream->id));
+        $this->switchUpstream($site, self::DROPS_8_UPSTREAM_ID);
 
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
+        $devEnv = $site->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
     }
 }
