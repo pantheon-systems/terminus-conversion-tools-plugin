@@ -60,7 +60,7 @@ class Composer
     private function execute(array $command): void
     {
         try {
-            $process = new Process($command, $this->workingDirectory);
+            $process = new Process($command, $this->workingDirectory, null, null, 180);
             $process->mustRun();
         } catch (Throwable $t) {
             throw new TerminusException(
