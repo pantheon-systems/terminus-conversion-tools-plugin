@@ -5,8 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate code and run tests
     env:
+      TERMINUS_UPSTREAM_ID: ${{ secrets.TERMINUS_UPSTREAM_ID }}
+      TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
-      TERMINUS_SITE: ${{ secrets.TERMINUS_SITE }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
