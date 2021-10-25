@@ -103,6 +103,8 @@ class ConversionCommandsTest extends TestCase
             ['--quiet'],
             false
         );
+
+        // @fixme: delete local site copy (site-drops8-non-composer-6172617232ba7_composer_conversion)
     }
 
     /**

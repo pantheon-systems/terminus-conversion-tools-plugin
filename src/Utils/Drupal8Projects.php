@@ -84,6 +84,38 @@ class Drupal8Projects
     }
 
     /**
+     * Detects and returns the list of Drupal8 libraries.
+     *
+     * @return array
+     */
+    public function getLibraries(): array
+    {
+        $composerJsonFiles = [];
+        foreach ($this->getLibrariesDirectories() as $librariesDir) {
+            $composerJsonFiles = array_merge($composerJsonFiles, Files::getFilesByPattern(
+                $librariesDir,
+                '/^\/([^\/]+)\/composer\.json$/'
+            ));
+        }
+
+        $packages = [];
+        foreach ($composerJsonFiles as $filePath => $fileName) {
+            $composerJsonFileContent = json_decode(
+                file_get_contents(Files::buildPath($filePath, $fileName)),
+                true
+            );
+
+            if (null === $composerJsonFileContent || !isset($composerJsonFileContent['name'])) {
+                continue;
+            }
+
+            $packages[] = $composerJsonFileContent['name'];
+        }
+
+        return $packages;
+    }
+
+    /**
      * Returns contrib projects' absolute directories.
      *
      * @return array
@@ -109,6 +141,18 @@ class Drupal8Projects
             Files::buildPath('modules', 'custom'),
             Files::buildPath('sites', 'all', 'modules', 'custom'),
         ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory)));
+    }
+
+    /**
+     * Returns libraries absolute directories.
+     *
+     * @return array
+     */
+    public function getLibrariesDirectories(): array
+    {
+        return array_filter([
+            Files::buildPath($this->siteRootPath, 'libraries'),
+        ], fn($directory) => is_dir($directory));
     }
 
     /**

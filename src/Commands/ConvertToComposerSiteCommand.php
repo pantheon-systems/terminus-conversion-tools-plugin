@@ -101,6 +101,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git = new Git($this->localPath);
 
         $contribProjects = $this->getContribDrupal8Projects();
+        $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
 
         $this->createLocalGitBranch();
@@ -113,7 +114,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->push($this->branch);
 
         $mdEnv = $this->createMultidev($site, $this->branch);
-        $this->addComposerPackages($contribProjects);
+        $this->addDrupalComposerPackages($contribProjects);
+        $this->addComposerPackages($libraryProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
@@ -127,9 +129,44 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
+     * Detects and returns the list of Drupal8 libraries.
+     *
+     * @return array
+     *   The list of Composer package names.
+     */
+    private function getLibraries(): array
+    {
+        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->localPath));
+        $projects = $this->drupal8ComponentsDetector->getLibraries();
+
+        if (0 === count($projects)) {
+            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->localPath));
+
+            return [];
+        }
+
+        $projectsInline = array_map(
+            fn($project) => $project,
+            $projects
+        );
+        $this->log()->notice(
+            sprintf(
+                '%d libraries are detected: %s',
+                count($projects),
+                implode(', ', $projectsInline)
+            )
+        );
+
+        return $projects;
+    }
+
+    /**
      * Detects and returns the list of contrib Drupal8 projects (modules and themes).
      *
      * @return array
+     *   The list of contrib modules and themes where:
+     *     "name" is a module/theme name;
+     *     "version" is a module/theme version.
      */
     private function getContribDrupal8Projects(): array
     {
@@ -289,13 +326,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Adds dependencies to composer.json.
+     * Adds Drupal contrib project dependencies to composer.json.
      *
-     * @param array $contribProjects
+     * @param array $contribPackages
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function addComposerPackages(array $contribProjects): void
+    private function addDrupalComposerPackages(array $contribPackages): void
     {
         $this->log()->notice('Adding packages to Composer...');
         $composer = new Composer($this->localPath);
@@ -316,12 +353,31 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             )
         );
 
-        foreach ($contribProjects as $project) {
+        foreach ($contribPackages as $project) {
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
             $composer->require($packageName, $packageVersion);
             $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
             $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+        }
+    }
+
+    /**
+     * Adds dependencies to composer.json.
+     *
+     * @param array $packages
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function addComposerPackages(array $packages): void
+    {
+        $this->log()->notice('Adding packages to Composer...');
+        $composer = new Composer($this->localPath);
+
+        foreach ($packages as $project) {
+            $composer->require($project);
+            $this->git->commit(sprintf('Add %s project to Composer', $project));
+            $this->log()->notice(sprintf('%s is added', $project));
         }
     }
 
