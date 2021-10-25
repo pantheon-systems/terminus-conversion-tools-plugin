@@ -37,7 +37,8 @@ class Files
             }
 
             /** @var \SplFileInfo $file */
-            if (!preg_match($pattern, $file->getRealPath())) {
+            $relativePath = str_replace($path, '', $file->getRealPath());
+            if (!preg_match($pattern, $relativePath)) {
                 continue;
             }
 
