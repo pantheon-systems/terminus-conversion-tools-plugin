@@ -15,6 +15,7 @@ use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
+use Throwable;
 
 /**
  * Class ConvertToComposerSiteCommand.
@@ -53,6 +54,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @var \Pantheon\TerminusConversionTools\Utils\Git
      */
     private Git $git;
+
+    /**
+     * @var \Pantheon\TerminusConversionTools\Utils\Composer
+     */
+    private Composer $composer;
 
     /**
      * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -99,6 +105,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
         $this->git = new Git($this->localPath);
+        $this->composer = new Composer($this->localPath);
 
         $contribProjects = $this->getContribDrupal8Projects();
         $libraryProjects = $this->getLibraries();
@@ -329,36 +336,54 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Adds Drupal contrib project dependencies to composer.json.
      *
      * @param array $contribPackages
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function addDrupalComposerPackages(array $contribPackages): void
     {
         $this->log()->notice('Adding packages to Composer...');
-        $composer = new Composer($this->localPath);
-
-        $composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
-        $this->git->commit(
-            sprintf(
-                'Add %s (%s) project to Composer',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
-        $this->log()->notice(
-            sprintf(
-                '%s (%s) is added',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
+        try {
+            $this->composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
+            $this->git->commit(
+                sprintf(
+                    'Add %s (%s) project to Composer',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
+                )
+            );
+            $this->log()->notice(
+                sprintf(
+                    '%s (%s) is added',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
+                )
+            );
+        } catch (Throwable $t) {
+            $this->log()->warning(
+                sprintf(
+                    'Failed adding %s (%s) composer package: %s',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION,
+                    $t->getMessage()
+                )
+            );
+        }
 
         foreach ($contribPackages as $project) {
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
-            $composer->require($packageName, $packageVersion);
-            $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
-            $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+            try {
+                $this->composer->require($packageName, $packageVersion);
+                $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
+                $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+            } catch (Throwable $t) {
+                $this->log()->warning(
+                    sprintf(
+                        'Failed adding %s (%s) composer package: %s',
+                        $packageName,
+                        $packageVersion,
+                        $t->getMessage()
+                    )
+                );
+            }
         }
     }
 
@@ -366,18 +391,20 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Adds dependencies to composer.json.
      *
      * @param array $packages
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function addComposerPackages(array $packages): void
     {
         $this->log()->notice('Adding packages to Composer...');
-        $composer = new Composer($this->localPath);
-
         foreach ($packages as $project) {
-            $composer->require($project);
-            $this->git->commit(sprintf('Add %s project to Composer', $project));
-            $this->log()->notice(sprintf('%s is added', $project));
+            try {
+                $this->composer->require($project);
+                $this->git->commit(sprintf('Add %s project to Composer', $project));
+                $this->log()->notice(sprintf('%s is added', $project));
+            } catch (Throwable $t) {
+                $this->log()->warning(
+                    sprintf('Failed adding %s composer package: %s', $project, $t->getMessage())
+                );
+            }
         }
     }
 
