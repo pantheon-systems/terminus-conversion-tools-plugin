@@ -3,7 +3,6 @@
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
 use Pantheon\Terminus\Exceptions\TerminusException;
-use Pantheon\Terminus\Friends\LocalCopiesTrait;
 use Pantheon\Terminus\Tests\Traits\TerminusTestTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
@@ -16,7 +15,6 @@ use Symfony\Component\HttpClient\HttpClient;
 class ConversionCommandsTest extends TestCase
 {
     use TerminusTestTrait;
-    use LocalCopiesTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const DEV_ENV = 'dev';
@@ -97,8 +95,6 @@ class ConversionCommandsTest extends TestCase
 
     /**
      * @inheritdoc
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     protected function tearDown(): void
     {
@@ -107,11 +103,6 @@ class ConversionCommandsTest extends TestCase
             ['--quiet'],
             false
         );
-
-        $localTestSiteDir = trim($this->getLocalCopiesSiteDir($this->siteName));
-        if ($localTestSiteDir) {
-            exec(sprintf('rm -rf %s', escapeshellarg($localTestSiteDir)));
-        }
     }
 
     /**
