@@ -414,8 +414,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Copies custom projects (modules and themes).
      *
      * @param array $customProjectsDirs
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function copyCustomProjects(array $customProjectsDirs): void
     {
@@ -428,17 +426,23 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying custom modules and themes...');
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
-                $this->git->checkout('master', $relativePath);
-                $targetPath = Files::buildPath('web', $subDir, 'custom');
+                try {
+                    $this->git->checkout('master', $relativePath);
+                    $targetPath = Files::buildPath('web', $subDir, 'custom');
 
-                if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
-                    mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
-                }
-                $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
+                    if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
+                        mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
+                    }
+                    $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
 
-                if ($this->git->isAnythingToCommit()) {
-                    $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
-                    $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
+                    if ($this->git->isAnythingToCommit()) {
+                        $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
+                        $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
+                    }
+                } catch (Throwable $t) {
+                    $this->log()->warning(
+                        sprintf('Failed copying custom %s from %s: %s', $subDir, $relativePath, $t->getMessage())
+                    );
                 }
             }
         }
