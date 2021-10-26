@@ -1,6 +1,6 @@
 # Terminus Conversion Tools Plugin
 
-[![CircleCI](https://circleci.com/gh/pantheon-systems/terminus-conversion-tools-plugin.svg?style=shield)](https://circleci.com/gh/pantheon-systems/terminus-conversion-tools-plugin)
+![GitHub Actions](https://github.com/pantheon-systems/terminus-conversion-tools-plugin/actions/workflows/workflow.yml/badge.svg)
 [![Terminus 3.x Compatible](https://img.shields.io/badge/terminus-3.x-green.svg)](https://github.com/pantheon-systems/terminus-conversion-tools-plugin/tree/main)
 
 The main purposes of the Conversion Tools project are to ease the conversion of a Drupal8 based site into a composer manged Drupal8 site.
