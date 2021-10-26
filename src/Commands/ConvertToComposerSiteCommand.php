@@ -240,24 +240,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
     /**
      * Copies configuration files.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
-        $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
-        $destinationPath = Files::buildPath($this->localPath, 'config');
-        $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
+        try {
+            $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
+            $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
+            $destinationPath = Files::buildPath($this->localPath, 'config');
+            $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-        $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
-        $this->git->remove('-f', $htaccessFile);
+            $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
+            $this->git->remove('-f', $htaccessFile);
 
-        if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Pull in configuration from default git branch');
-        } else {
-            $this->log()->notice('No configuration files found');
+            if ($this->git->isAnythingToCommit()) {
+                $this->git->commit('Pull in configuration from default git branch');
+            } else {
+                $this->log()->notice('No configuration files found');
+            }
+        } catch (Throwable $t) {
+            $this->log()->warning(sprintf('Failed copying configuration files: %s', $t->getMessage()));
         }
     }
 
