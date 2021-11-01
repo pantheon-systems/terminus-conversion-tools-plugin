@@ -15,6 +15,7 @@ use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
+use Throwable;
 
 /**
  * Class ConvertToComposerSiteCommand.
@@ -53,6 +54,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @var \Pantheon\TerminusConversionTools\Utils\Git
      */
     private Git $git;
+
+    /**
+     * @var \Pantheon\TerminusConversionTools\Utils\Composer
+     */
+    private Composer $composer;
 
     /**
      * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -99,8 +105,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
         $this->git = new Git($this->localPath);
+        $this->composer = new Composer($this->localPath);
 
         $contribProjects = $this->getContribDrupal8Projects();
+        $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
 
         $this->createLocalGitBranch();
@@ -113,7 +121,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->push($this->branch);
 
         $mdEnv = $this->createMultidev($site, $this->branch);
-        $this->addComposerPackages($contribProjects);
+        $this->addDrupalComposerPackages($contribProjects);
+        $this->addComposerPackages($libraryProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
@@ -127,9 +136,44 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
+     * Detects and returns the list of Drupal8 libraries.
+     *
+     * @return array
+     *   The list of Composer package names.
+     */
+    private function getLibraries(): array
+    {
+        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->localPath));
+        $projects = $this->drupal8ComponentsDetector->getLibraries();
+
+        if (0 === count($projects)) {
+            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->localPath));
+
+            return [];
+        }
+
+        $projectsInline = array_map(
+            fn($project) => $project,
+            $projects
+        );
+        $this->log()->notice(
+            sprintf(
+                '%d libraries are detected: %s',
+                count($projects),
+                implode(', ', $projectsInline)
+            )
+        );
+
+        return $projects;
+    }
+
+    /**
      * Detects and returns the list of contrib Drupal8 projects (modules and themes).
      *
      * @return array
+     *   The list of contrib modules and themes where:
+     *     "name" is a module/theme name;
+     *     "version" is a module/theme version.
      */
     private function getContribDrupal8Projects(): array
     {
@@ -196,24 +240,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
     /**
      * Copies configuration files.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function copyConfigurationFiles(): void
     {
         $this->log()->notice('Copying configuration files...');
-        $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
-        $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
-        $destinationPath = Files::buildPath($this->localPath, 'config');
-        $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
+        try {
+            $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
+            $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
+            $destinationPath = Files::buildPath($this->localPath, 'config');
+            $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-        $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
-        $this->git->remove('-f', $htaccessFile);
+            $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
+            $this->git->remove('-f', $htaccessFile);
 
-        if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Pull in configuration from default git branch');
-        } else {
-            $this->log()->notice('No configuration files found');
+            if ($this->git->isAnythingToCommit()) {
+                $this->git->commit('Pull in configuration from default git branch');
+            } else {
+                $this->log()->notice('No configuration files found');
+            }
+        } catch (Throwable $t) {
+            $this->log()->warning(sprintf('Failed copying configuration files: %s', $t->getMessage()));
         }
     }
 
@@ -289,39 +335,78 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Adds dependencies to composer.json.
+     * Adds Drupal contrib project dependencies to composer.json.
      *
-     * @param array $contribProjects
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @param array $contribPackages
      */
-    private function addComposerPackages(array $contribProjects): void
+    private function addDrupalComposerPackages(array $contribPackages): void
     {
         $this->log()->notice('Adding packages to Composer...');
-        $composer = new Composer($this->localPath);
+        try {
+            $this->composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
+            $this->git->commit(
+                sprintf(
+                    'Add %s (%s) project to Composer',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
+                )
+            );
+            $this->log()->notice(
+                sprintf(
+                    '%s (%s) is added',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
+                )
+            );
+        } catch (Throwable $t) {
+            $this->log()->warning(
+                sprintf(
+                    'Failed adding %s (%s) composer package: %s',
+                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
+                    self::COMPOSER_DRUPAL_PACKAGE_VERSION,
+                    $t->getMessage()
+                )
+            );
+        }
 
-        $composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
-        $this->git->commit(
-            sprintf(
-                'Add %s (%s) project to Composer',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
-        $this->log()->notice(
-            sprintf(
-                '%s (%s) is added',
-                self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                self::COMPOSER_DRUPAL_PACKAGE_VERSION
-            )
-        );
-
-        foreach ($contribProjects as $project) {
+        foreach ($contribPackages as $project) {
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
-            $composer->require($packageName, $packageVersion);
-            $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
-            $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+            try {
+                $this->composer->require($packageName, $packageVersion);
+                $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
+                $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
+            } catch (Throwable $t) {
+                $this->log()->warning(
+                    sprintf(
+                        'Failed adding %s (%s) composer package: %s',
+                        $packageName,
+                        $packageVersion,
+                        $t->getMessage()
+                    )
+                );
+            }
+        }
+    }
+
+    /**
+     * Adds dependencies to composer.json.
+     *
+     * @param array $packages
+     */
+    private function addComposerPackages(array $packages): void
+    {
+        $this->log()->notice('Adding packages to Composer...');
+        foreach ($packages as $project) {
+            try {
+                $this->composer->require($project);
+                $this->git->commit(sprintf('Add %s project to Composer', $project));
+                $this->log()->notice(sprintf('%s is added', $project));
+            } catch (Throwable $t) {
+                $this->log()->warning(
+                    sprintf('Failed adding %s composer package: %s', $project, $t->getMessage())
+                );
+            }
         }
     }
 
@@ -329,8 +414,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Copies custom projects (modules and themes).
      *
      * @param array $customProjectsDirs
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function copyCustomProjects(array $customProjectsDirs): void
     {
@@ -343,17 +426,23 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying custom modules and themes...');
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
-                $this->git->checkout('master', $relativePath);
-                $targetPath = Files::buildPath('web', $subDir, 'custom');
+                try {
+                    $this->git->checkout('master', $relativePath);
+                    $targetPath = Files::buildPath('web', $subDir, 'custom');
 
-                if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
-                    mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
-                }
-                $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
+                    if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
+                        mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
+                    }
+                    $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
 
-                if ($this->git->isAnythingToCommit()) {
-                    $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
-                    $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
+                    if ($this->git->isAnythingToCommit()) {
+                        $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
+                        $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
+                    }
+                } catch (Throwable $t) {
+                    $this->log()->warning(
+                        sprintf('Failed copying custom %s from %s: %s', $subDir, $relativePath, $t->getMessage())
+                    );
                 }
             }
         }

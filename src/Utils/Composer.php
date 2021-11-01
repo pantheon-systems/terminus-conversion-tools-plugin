@@ -40,14 +40,18 @@ class Composer
      *
      * @param string $package
      *   The package name.
-     * @param string $version
+     * @param string|null $version
      *   The package version constraint.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function require(string $package, string $version): void
+    public function require(string $package, ?string $version = null): void
     {
-        $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version)]);
+        if (null !== $version) {
+            $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version)]);
+        } else {
+            $this->execute(['composer', 'require', $package]);
+        }
     }
 
     /**
@@ -60,7 +64,7 @@ class Composer
     private function execute(array $command): void
     {
         try {
-            $process = new Process($command, $this->workingDirectory);
+            $process = new Process($command, $this->workingDirectory, null, null, 180);
             $process->mustRun();
         } catch (Throwable $t) {
             throw new TerminusException(

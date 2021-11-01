@@ -22,7 +22,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
     private const COMPOSERIFY_GIT_BRANCH = 'composerify';
     private const BACKUP_GIT_BRANCH = 'master-bckp';
     private const MASTER_GIT_BRANCH = 'master';
-    private const DRUPAL9_UPSTREAM = 'drupal9';
+    private const DRUPAL9_UPSTREAM_ID = 'drupal9';
 
     /**
      * Releases a converted Drupal8 site managed by Composer to the master git branch:
@@ -45,9 +45,6 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
 
         $sourceBranch = $options['branch'];
 
-        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $site->getEnvironments()->get('dev');
-
         $localPath = $this->cloneSiteGitRepository(
             $site,
             sprintf('%s_composer_conversion', $site->getName())
@@ -56,6 +53,21 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
         $git = new Git($localPath);
         if (!$git->isRemoteBranchExists($sourceBranch)) {
             throw new TerminusException(sprintf('The source branch "%s" does not exist', $sourceBranch));
+        }
+
+        $composerifyCommitHash = $git->getHeadCommitHash($sourceBranch);
+        $masterCommitHash = $git->getHeadCommitHash(self::MASTER_GIT_BRANCH);
+        if ($composerifyCommitHash === $masterCommitHash) {
+            $this->log()->warning(
+                sprintf(
+                    'Abort: already released to "%s" (the "%s" git branch matches "%s")',
+                    self::MASTER_GIT_BRANCH,
+                    self::MASTER_GIT_BRANCH,
+                    $sourceBranch
+                )
+            );
+
+            return;
         }
 
         if (!$git->isRemoteBranchExists(self::BACKUP_GIT_BRANCH)) {
@@ -94,13 +106,13 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
 
         $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', self::MASTER_GIT_BRANCH, $sourceBranch));
         $git->checkout(self::MASTER_GIT_BRANCH);
-        $git->reset('--hard', $git->getHeadCommitHash($sourceBranch));
+        $git->reset('--hard', $composerifyCommitHash);
         $git->push(self::MASTER_GIT_BRANCH, '--force');
 
-        $this->log()->notice(sprintf('Changing the upstream to "%s"...', self::DRUPAL9_UPSTREAM));
-        $upstream = $this->session()->getUser()->getUpstreams()->get(self::DRUPAL9_UPSTREAM);
-        $this->processWorkflow($site->setUpstream($upstream->id));
+        $this->switchUpstream($site, self::DRUPAL9_UPSTREAM_ID);
 
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
+        $devEnv = $site->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
     }
 }

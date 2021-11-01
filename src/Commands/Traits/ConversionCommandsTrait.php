@@ -84,4 +84,20 @@ trait ConversionCommandsTrait
 
         return $site->getEnvironments()->get($branch);
     }
+
+    /**
+     * Switches the site upstream.
+     *
+     * @param \Pantheon\Terminus\Models\Site $site
+     * @param string $upstreamId
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    private function switchUpstream(Site $site, string $upstreamId): void
+    {
+        $this->log()->notice(sprintf('Changing the upstream to "%s"...', $upstreamId));
+        $upstream = $this->session()->getUser()->getUpstreams()->get($upstreamId);
+        $this->processWorkflow($site->setUpstream($upstream->id));
+    }
 }
