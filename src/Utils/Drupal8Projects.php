@@ -105,10 +105,15 @@ class Drupal8Projects
     {
         $composerJsonFiles = [];
         foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $composerJsonFiles = array_merge($composerJsonFiles, Files::getFilesByPattern(
-                $librariesDir,
-                '/^\/([^\/]+)\/composer\.json$/'
-            ));
+            $this->finder->files()->in([$librariesDir, '*']);
+            $this->finder->files()->name('*.composer.json');
+            if (!$this->finder->hasResults()) {
+                continue;
+            }
+
+            foreach ($this->finder as $file) {
+                $composerJsonFiles[$file->getPath()] = $file->getFilename();
+            }
         }
 
         $packages = [];
