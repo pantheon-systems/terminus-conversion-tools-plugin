@@ -106,7 +106,7 @@ class Drupal8Projects
         $composerJsonFiles = [];
         foreach ($this->getLibrariesDirectories() as $librariesDir) {
             $this->finder->files()->in([$librariesDir, '*']);
-            $this->finder->files()->name('*.composer.json');
+            $this->finder->files()->name('composer.json');
             if (!$this->finder->hasResults()) {
                 continue;
             }
