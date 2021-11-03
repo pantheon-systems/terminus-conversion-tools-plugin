@@ -15,17 +15,11 @@ class Drupal8Projects
     private string $siteRootPath;
 
     /**
-     * @var \Symfony\Component\Finder\Finder
-     */
-    private Finder $finder;
-
-    /**
      * Drupal8Projects constructor.
      */
     public function __construct(string $siteRootPath)
     {
         $this->siteRootPath = $siteRootPath;
-        $this->finder = new Finder();
     }
 
     /**
@@ -40,14 +34,15 @@ class Drupal8Projects
     public function getContribProjects()
     {
         $infoFiles = [];
+        $finder = new Finder();
         foreach ($this->getContribProjectDirectories() as $projectDir) {
-            $this->finder->files()->in($projectDir);
-            $this->finder->files()->name('*.info.yml');
-            if (!$this->finder->hasResults()) {
+            $finder->files()->in($projectDir);
+            $finder->files()->name('*.info.yml');
+            if (!$finder->hasResults()) {
                 continue;
             }
 
-            foreach ($this->finder as $file) {
+            foreach ($finder as $file) {
                 $infoFiles[$file->getPath()] = $file->getFilename();
             }
         }
@@ -104,14 +99,15 @@ class Drupal8Projects
     public function getLibraries(): array
     {
         $composerJsonFiles = [];
+        $finder = new Finder();
         foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $this->finder->files()->in([$librariesDir, '*']);
-            $this->finder->files()->name('composer.json');
-            if (!$this->finder->hasResults()) {
+            $finder->files()->in($librariesDir . DIRECTORY_SEPARATOR . '*');
+            $finder->files()->name('composer.json');
+            if (!$finder->hasResults()) {
                 continue;
             }
 
-            foreach ($this->finder as $file) {
+            foreach ($finder as $file) {
                 $composerJsonFiles[$file->getPath()] = $file->getFilename();
             }
         }
