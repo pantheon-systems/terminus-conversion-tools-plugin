@@ -23,28 +23,4 @@ final class FilesTest extends TestCase
         $actual = Files::buildPath();
         $this->assertEquals('', $actual);
     }
-
-    /**
-     * @covers \Pantheon\TerminusConversionTools\Utils\Files::getFilesByPattern
-     */
-    public function testGetFilesByPattern()
-    {
-        $path = dirname(__DIR__, 2);
-
-        $actual = Files::getFilesByPattern($path, '/(src|tests)(.*)(Files.php|FilesTest.php)$/');
-        $expected = [
-            Files::buildPath($path, 'src', 'Utils') => 'Files.php',
-            Files::buildPath($path, 'tests', 'unit') => 'FilesTest.php',
-        ];
-        $this->assertEquals($expected, $actual);
-
-        $actual = Files::getFilesByPattern($path, '/FileDoesNotExist(.*)\.php$/');
-        $this->assertEquals([], $actual);
-
-        $actual = Files::getFilesByPattern(
-            Files::buildPath($path, 'directory', 'does', 'not', 'exist'),
-            '/(.*)/'
-        );
-        $this->assertEquals([], $actual);
-    }
 }

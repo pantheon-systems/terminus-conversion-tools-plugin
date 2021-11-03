@@ -2,6 +2,8 @@
 
 namespace Pantheon\TerminusConversionTools\Utils;
 
+use Symfony\Component\Finder\Finder;
+
 /**
  * Class Drupal8Projects.
  */
@@ -13,11 +15,17 @@ class Drupal8Projects
     private string $siteRootPath;
 
     /**
+     * @var \Symfony\Component\Finder\Finder
+     */
+    private Finder $finder;
+
+    /**
      * Drupal8Projects constructor.
      */
     public function __construct(string $siteRootPath)
     {
         $this->siteRootPath = $siteRootPath;
+        $this->finder = new Finder();
     }
 
     /**
@@ -33,10 +41,15 @@ class Drupal8Projects
     {
         $infoFiles = [];
         foreach ($this->getContribProjectDirectories() as $projectDir) {
-            $infoFiles = array_merge($infoFiles, Files::getFilesByPattern(
-                $projectDir,
-                '/\.info\.yml$/'
-            ));
+            $this->finder->files()->in($projectDir);
+            $this->finder->files()->name('*.info.yml');
+            if (!$this->finder->hasResults()) {
+                continue;
+            }
+
+            foreach ($this->finder as $file) {
+                $infoFiles[$file->getPath()] = $file->getFilename();
+            }
         }
 
         // Exclude sub-modules and sub-themes.
@@ -92,10 +105,15 @@ class Drupal8Projects
     {
         $composerJsonFiles = [];
         foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $composerJsonFiles = array_merge($composerJsonFiles, Files::getFilesByPattern(
-                $librariesDir,
-                '/^\/([^\/]+)\/composer\.json$/'
-            ));
+            $this->finder->files()->in([$librariesDir, '*']);
+            $this->finder->files()->name('composer.json');
+            if (!$this->finder->hasResults()) {
+                continue;
+            }
+
+            foreach ($this->finder as $file) {
+                $composerJsonFiles[$file->getPath()] = $file->getFilename();
+            }
         }
 
         $packages = [];

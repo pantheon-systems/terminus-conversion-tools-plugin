@@ -14,7 +14,8 @@
     },
     "require": {
         "symfony/yaml": "^5.3",
-        "symfony/process": "^5.3"
+        "symfony/process": "^5.3",
+        "symfony/finder": "^5.3"
     },
     "require-dev": {
         "pantheon-systems/terminus": "^3",
