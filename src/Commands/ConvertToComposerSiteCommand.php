@@ -66,6 +66,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @command conversion:composer
      *
      * @option branch The target branch name for multidev env.
+     * @option dry-run Skip creating multidev and pushing composerify branch.
      *
      * @param string $site_id
      * @param array $options
@@ -74,8 +75,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    public function convert(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
-    {
+    public function convert(
+        string $site_id,
+        array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
+    ): void {
         $site = $this->getSite($site_id);
 
         if (!$site->getFramework()->isDrupal8Framework()) {
@@ -115,24 +118,28 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->copyConfigurationFiles();
         $this->copyPantheonYml();
 
-        $this->deleteMultidevIfExists($site);
+        if (!$options['dry-run']) {
+            $this->deleteMultidevIfExists($site);
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-        $this->git->push($this->branch);
+            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+            $this->git->push($this->branch);
+            $mdEnv = $this->createMultidev($site, $this->branch);
+        }
 
-        $mdEnv = $this->createMultidev($site, $this->branch);
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
         $this->addCommitToTriggerBuild();
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-        $this->git->push($this->branch);
+        if (!$options['dry-run']) {
+            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+            $this->git->push($this->branch);
 
-        $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
-        );
+            $this->log()->notice(
+                sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
+            );
+        }
     }
 
     /**
