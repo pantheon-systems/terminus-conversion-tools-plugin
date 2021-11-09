@@ -150,6 +150,7 @@ class ConversionCommandsTest extends TestCase
         sleep(60);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
         $this->assertPagesExists($env);
+        $this->assertLibrariesExists($env);
     }
 
     /**
@@ -183,6 +184,33 @@ class ConversionCommandsTest extends TestCase
                 200,
                 $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
+            );
+        }
+    }
+
+    /**
+     * Asserts test JavaScript libraries' scripts exist.
+     *
+     * @param string $env
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    private function assertLibrariesExists(string $env): void
+    {
+        $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
+        $libraries = [
+            'blazy' => 'blazy.js',
+            'font' => 'plugin.js',
+            'rtseo.js' => 'dist/rtseo.js',
+            'superfish' => 'superfish.js',
+        ];
+
+        foreach ($libraries as $directory => $file) {
+            $url = sprintf('%s/libraries/%s/%s', $baseUrl, $directory, $file);
+            $this->assertEquals(
+                200,
+                $this->httpClient->request('HEAD', $url)->getStatusCode(),
+                sprintf('Library "%s" must have script file "%s"', $directory, $url)
             );
         }
     }
