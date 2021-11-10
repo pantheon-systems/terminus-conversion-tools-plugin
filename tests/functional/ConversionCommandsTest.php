@@ -10,6 +10,8 @@ use Symfony\Component\HttpClient\HttpClient;
 /**
  * Class ConversionCommandsTest.
  *
+ * Uses a site fixture based on https://github.com/pantheon-fixtures/site-drupal8-non-composer.
+ *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
 class ConversionCommandsTest extends TestCase

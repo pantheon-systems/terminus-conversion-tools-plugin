@@ -107,10 +107,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
 
         $this->isWebRootSite = is_dir(Files::buildPath($this->localPath, self::WEB_ROOT));
-        $defaultConfigFilesDir = Files::buildPath($this->getDrupalPath(), 'sites', 'default', 'config');
+        $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
-        $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalPath());
+        $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalAbsolutePath());
         $this->git = new Git($this->localPath);
         $this->composer = new Composer($this->localPath);
 
@@ -158,11 +158,25 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @return string
      */
-    private function getDrupalPath(): string
+    private function getDrupalAbsolutePath(): string
     {
         return $this->isWebRootSite
             ? Files::buildPath($this->localPath, self::WEB_ROOT)
             : $this->localPath;
+    }
+
+    /**
+     * Returns webroot-aware relative path.
+     *
+     * @param string ...$parts
+     *
+     * @return string
+     */
+    private function getWebRootAwareRelativePath(string ...$parts): string
+    {
+        return $this->isWebRootSite
+            ? Files::buildPath(self::WEB_ROOT, ...$parts)
+            : Files::buildPath(...$parts);
     }
 
     /**
@@ -173,11 +187,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getLibraries(): array
     {
-        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalPath()));
+        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
         $projects = $this->drupal8ComponentsDetector->getLibraries();
 
         if (0 === count($projects)) {
-            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalPath()));
+            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
 
             return [];
         }
@@ -207,11 +221,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getContribDrupal8Projects(): array
     {
-        $this->log()->notice(sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalPath()));
+        $this->log()->notice(
+            sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
+        );
         $projects = $this->drupal8ComponentsDetector->getContribProjects();
         if (0 === count($projects)) {
             $this->log()->notice(
-                sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalPath())
+                sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
             );
 
             return [];
@@ -240,7 +256,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getCustomProjectsDirectories(): array
     {
         $this->log()->notice(
-            sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalPath())
+            sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
         );
         $customModuleDirs = $this->drupal8ComponentsDetector->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
@@ -280,17 +296,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Copying configuration files...');
         try {
-            $sourceRelativePath = $this->isWebRootSite
-                ? Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'config')
-                : Files::buildPath('sites', 'default', 'config');
+            $sourceRelativePath = $this->getWebRootAwareRelativePath('sites', 'default', 'config');
             $this->git->checkout('master', $sourceRelativePath);
-            $sourceAbsolutePath = Files::buildPath($this->getDrupalPath(), 'sites', 'default', 'config');
-            $destinationPath = Files::buildPath($this->getDrupalPath(), 'config');
+            $sourceAbsolutePath = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
+            $destinationPath = Files::buildPath($this->getDrupalAbsolutePath(), 'config');
             $this->git->move(sprintf('%s%s*', $sourceAbsolutePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-            $htaccessFile = $this->isWebRootSite
-                ? Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'config', '.htaccess')
-                : Files::buildPath('sites', 'default', 'config', '.htaccess');
+            $htaccessFile = $this->getWebRootAwareRelativePath('sites', 'default', 'config', '.htaccess');
             $this->git->remove('-f', $htaccessFile);
 
             if ($this->git->isAnythingToCommit()) {
@@ -466,9 +478,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying custom modules and themes...');
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
-                $relativePath = $this->isWebRootSite
-                    ? Files::buildPath(self::WEB_ROOT, $relativePath)
-                    : $relativePath;
+                $relativePath = $this->getWebRootAwareRelativePath($relativePath);
                 try {
                     $this->git->checkout('master', $relativePath);
                     $targetPath = Files::buildPath(self::WEB_ROOT, $subDir, 'custom');
@@ -502,9 +512,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copySettingsPhp(): void
     {
         $this->log()->notice('Copying settings.php file...');
-        $settingsPhpFilePath = $this->isWebRootSite
-            ? Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'settings.php')
-            : Files::buildPath('sites', 'default', 'settings.php');
+        $settingsPhpFilePath = $this->getWebRootAwareRelativePath('sites', 'default', 'settings.php');
         $this->git->checkout('master', $settingsPhpFilePath);
 
         if (!$this->isWebRootSite) {
