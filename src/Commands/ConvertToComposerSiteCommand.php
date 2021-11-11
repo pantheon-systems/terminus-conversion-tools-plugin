@@ -262,7 +262,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
-        // @todo: add custom themes to https://github.com/pantheon-fixtures/site-drupal8-non-composer
+
         $customThemeDirs = $this->drupal8ComponentsDetector->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
