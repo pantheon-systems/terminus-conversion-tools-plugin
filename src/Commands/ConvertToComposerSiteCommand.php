@@ -27,6 +27,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
+    private const EMPTY_UPSTREAM_ID = 'empty';
     private const TARGET_GIT_BRANCH = 'composerify';
     private const IC_GIT_REMOTE_NAME = 'ic';
     private const IC_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
@@ -90,6 +91,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$site->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
                 'The site {site_name} is not a Drupal 8 based site.',
+                ['site_name' => $site->getName()]
+            );
+        }
+
+        if (self::DROPS_8_UPSTREAM_ID !== $site->getUpstream()->get('machine_name')
+            && self::EMPTY_UPSTREAM_ID !== $site->getUpstream()->get('machine_name')) {
+            throw new TerminusException(
+                'The site {site_name} is not a "drops-8" or "empty" upstream based site.',
                 ['site_name' => $site->getName()]
             );
         }
