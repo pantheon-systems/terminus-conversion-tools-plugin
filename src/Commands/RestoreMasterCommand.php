@@ -3,7 +3,6 @@
 namespace Pantheon\TerminusConversionTools\Commands;
 
 use Pantheon\Terminus\Commands\TerminusCommand;
-use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
@@ -16,7 +15,6 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
-    use WorkflowProcessingTrait;
     use ConversionCommandsTrait;
 
     /**

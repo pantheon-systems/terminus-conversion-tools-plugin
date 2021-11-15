@@ -2,6 +2,7 @@
 
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
+use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\TerminusModel;
@@ -12,6 +13,8 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 trait ConversionCommandsTrait
 {
+    use WorkflowProcessingTrait;
+
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
      */
