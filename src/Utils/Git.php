@@ -16,7 +16,8 @@ class Git
      */
     private string $workingDirectory;
 
-    private const DEFAULT_REMOTE = 'origin';
+    public const DEFAULT_REMOTE = 'origin';
+    public const DEFAULT_BRANCH = 'master';
 
     /**
      * Git constructor.
