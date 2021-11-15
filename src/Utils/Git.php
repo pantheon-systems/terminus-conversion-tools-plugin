@@ -109,13 +109,13 @@ class Git
     /**
      * Fetches from the remote.
      *
-     * @param string $remote
+     * @param string $remoteName
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function fetch(string $remote)
+    public function fetch(string $remoteName)
     {
-        $this->execute(['fetch', $remote]);
+        $this->execute(['fetch', $remoteName]);
     }
 
     /**
@@ -164,6 +164,18 @@ class Git
     public function reset(...$options)
     {
         $this->execute(['reset', ...$options]);
+    }
+
+    /**
+     * Performs diff operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function diff(...$options)
+    {
+        return $this->execute(['diff', ...$options]);
     }
 
     /**
