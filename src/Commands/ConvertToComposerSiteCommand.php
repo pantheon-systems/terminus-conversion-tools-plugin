@@ -115,7 +115,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             sprintf('%s_composer_conversion', $site->getName())
         );
 
-        $this->isWebRootSite = is_dir(Files::buildPath($this->localPath, self::WEB_ROOT));
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
@@ -163,13 +162,30 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
+     * Returns TRUE if the site is a webroot-based site.
+     *
+     * @return bool
+     */
+    private function isWebRootSite(): bool
+    {
+        if (isset($this->isWebRootSite)) {
+            return $this->isWebRootSite;
+        }
+
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->localPath, 'pantheon.yml'));
+        $this->isWebRootSite = $pantheonYmlContent['web_docroot'] ?? false;
+
+        return $this->isWebRootSite;
+    }
+
+    /**
      * Returns the absolute site's Drupal core installation directory.
      *
      * @return string
      */
     private function getDrupalAbsolutePath(): string
     {
-        return $this->isWebRootSite
+        return $this->isWebRootSite()
             ? Files::buildPath($this->localPath, self::WEB_ROOT)
             : $this->localPath;
     }
@@ -183,7 +199,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getWebRootAwareRelativePath(string ...$parts): string
     {
-        return $this->isWebRootSite
+        return $this->isWebRootSite()
             ? Files::buildPath(self::WEB_ROOT, ...$parts)
             : Files::buildPath(...$parts);
     }
@@ -496,7 +512,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                         mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
                     }
 
-                    if (!$this->isWebRootSite) {
+                    if (!$this->isWebRootSite()) {
                         $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
                     }
 
@@ -524,7 +540,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $settingsPhpFilePath = $this->getWebRootAwareRelativePath('sites', 'default', 'settings.php');
         $this->git->checkout('master', $settingsPhpFilePath);
 
-        if (!$this->isWebRootSite) {
+        if (!$this->isWebRootSite()) {
             $this->git->move(
                 $settingsPhpFilePath,
                 Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'settings.php'),
