@@ -150,6 +150,9 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             $this->addGitHostToKnownHosts();
         }
 
+        // @todo: add complex scenarios/assertions for conversion:advise command.
+        $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+
         $this->assertCommand(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
