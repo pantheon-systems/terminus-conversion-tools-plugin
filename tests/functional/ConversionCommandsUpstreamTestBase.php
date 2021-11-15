@@ -6,6 +6,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Tests\Traits\TerminusTestTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Class ConversionCommandsUpstreamTestBase.
@@ -31,7 +32,12 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var \Symfony\Contracts\HttpClient\HttpClientInterface
      */
-    protected $httpClient;
+    private HttpClientInterface $httpClient;
+
+    /**
+     * @var string
+     */
+    private string $expectedSiteInfoUpstream;
 
     /**
      * @var string
