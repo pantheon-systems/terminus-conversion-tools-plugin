@@ -17,6 +17,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
+    private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
     private const DROPS_8_GIT_REMOTE_URL = 'https://github.com/pantheon-systems/drops-8.git';
 
     /**
@@ -36,11 +37,19 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
+            return;
         }
+
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnDrupalProject();
+            return;
+        }
+
+        $this->log()->warning('Sorry, no advice is available.');
     }
 
     /**
-     * Prints advice related to Drops-8 upstream.
+     * Prints advice related to "drops-8" upstream.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
@@ -75,5 +84,18 @@ EOD
             );
             $this->log()->warning('Composer used incorrectly');
         }
+    }
+
+    /**
+     * Prints advice related to "drupal-project" upstream.
+     */
+    private function adviseOnDrupalProject(): void
+    {
+        $this->log()->notice(
+            <<<EOD
+Advise: convert the site to use "drupal-recommended" Pantheon Upstream
+(https://github.com/pantheon-systems/drupal-recommended).
+EOD
+        );
     }
 }
