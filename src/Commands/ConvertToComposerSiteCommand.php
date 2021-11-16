@@ -9,6 +9,7 @@ use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -138,7 +139,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->addComposerPackages($libraryProjects);
 
         if (!$options['dry-run']) {
-            $this->deleteMultidevIfExists();
+            try {
+                $this->deleteMultidevIfExists();
+            } catch (TerminusCancelOperationException $e) {
+                return;
+            }
 
             $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
             $this->git->push($this->branch);
@@ -366,6 +371,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Deletes the target multidev environment and associated git branch if exists.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function deleteMultidevIfExists()
@@ -381,11 +387,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     )
                 )
             ) {
-                return;
+                throw new TerminusCancelOperationException('Canceled deleting multidev and its source git branch.');
             }
 
             $this->log()->notice(
-                sprintf('Deleting "%s" multidev environment and associated git branch...', $this->branch)
+                sprintf('Delete multidev "%s" operation has not been confirmed.', $this->branch)
             );
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
@@ -399,7 +405,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                         )
                     )
                 ) {
-                    return;
+                    throw new TerminusCancelOperationException(
+                        sprintf('Delete git branch "%s" operation has not been confirmed.', $this->branch)
+                    );
                 }
 
                 $this->git->deleteRemoteBranch($this->branch);
