@@ -42,16 +42,30 @@ class Composer
      *   The package name.
      * @param string|null $version
      *   The package version constraint.
+     * @param array $options
+     *   Additional options.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function require(string $package, ?string $version = null): void
+    public function require(string $package, ?string $version = null, ...$options): void
     {
         if (null !== $version) {
-            $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version)]);
+            $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version), ...$options]);
         } else {
             $this->execute(['composer', 'require', $package]);
         }
+    }
+
+    /**
+     * Executes `composer install` command.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function install(...$options): void
+    {
+        $this->execute(['composer', 'install', ...$options]);
     }
 
     /**
