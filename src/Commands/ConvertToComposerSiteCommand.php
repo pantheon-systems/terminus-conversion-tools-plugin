@@ -387,11 +387,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     )
                 )
             ) {
-                throw new TerminusCancelOperationException('Canceled deleting multidev and its source git branch.');
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete multidev "%s" operation has not been confirmed.', $this->branch)
+                );
             }
 
             $this->log()->notice(
-                sprintf('Delete multidev "%s" operation has not been confirmed.', $this->branch)
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $this->branch)
             );
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
