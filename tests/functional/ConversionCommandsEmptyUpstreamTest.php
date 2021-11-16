@@ -26,4 +26,24 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
     {
         return 'empty';
     }
+
+    /**
+     * Returns the part of the advice copy before the conversion is executed.
+     *
+     * @return string
+     */
+    protected function getExpectedAdviceBeforeConversion(): string
+    {
+        return 'Sorry, no advice is available.';
+    }
+
+    /**
+     * Returns the part of the advice copy after the conversion is executed.
+     *
+     * @return string
+     */
+    protected function getExpectedAdviceAfterConversion(): string
+    {
+        return 'Sorry, no advice is available.';
+    }
 }

@@ -26,4 +26,24 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
     {
         return 'drupal8';
     }
+
+    /**
+     * Returns the part of the advice copy before the conversion is executed.
+     *
+     * @return string
+     */
+    protected function getExpectedAdviceBeforeConversion(): string
+    {
+        return 'convert the site to support Pantheon Integrated Composer';
+    }
+
+    /**
+     * Returns the part of the advice copy after the conversion is executed.
+     *
+     * @return string
+     */
+    protected function getExpectedAdviceAfterConversion(): string
+    {
+        return 'Sorry, no advice is available.';
+    }
 }

@@ -150,8 +150,16 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             $this->addGitHostToKnownHosts();
         }
 
-        // @todo: add complex scenarios/assertions for conversion:advise command.
-        $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $this->assertTrue(
+            false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),
+            sprintf(
+                'Advice for %s upstream-based site must contain "%s" copy. Actual advice is: "%s"',
+                $this->getRealUpstreamId(),
+                $this->getExpectedAdviceBeforeConversion(),
+                $adviceBefore
+            )
+        );
 
         $this->assertCommand(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
@@ -166,6 +174,16 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         $this->assertEquals(
             '897fdf15-992e-4fa1-beab-89e2b5027e03: https://github.com/pantheon-upstreams/drupal-recommended',
             $siteInfoUpstream
+        );
+
+        $adviceAfter = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $this->assertTrue(
+            false !== strpos($adviceAfter, $this->getExpectedAdviceAfterConversion()),
+            sprintf(
+                'Advice must contain "%s" copy. Actual advice is: "%s"',
+                $this->getExpectedAdviceAfterConversion(),
+                $adviceAfter
+            )
         );
 
         $this->assertCommand(
