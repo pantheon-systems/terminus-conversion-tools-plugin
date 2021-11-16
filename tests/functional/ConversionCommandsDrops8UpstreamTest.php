@@ -46,4 +46,14 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
     {
         return 'Sorry, no advice is available.';
     }
+
+    /**
+     * @inheritdoc
+     *
+     * @group upstream_drops8
+     */
+    public function testConversionComposerCommands(): void
+    {
+        parent::testConversionComposerCommands();
+    }
 }

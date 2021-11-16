@@ -131,8 +131,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      * @covers \Pantheon\TerminusConversionTools\Commands\ReleaseComposerifyToMasterCommand
      * @covers \Pantheon\TerminusConversionTools\Commands\RestoreMasterCommand
      *
-     * @group convert_composer
-     *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     public function testConversionComposerCommands(): void

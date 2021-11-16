@@ -46,4 +46,14 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
     {
         return 'Sorry, no advice is available.';
     }
+
+    /**
+     * @inheritdoc
+     *
+     * @group upstream_empty
+     */
+    public function testConversionComposerCommands(): void
+    {
+        parent::testConversionComposerCommands();
+    }
 }

@@ -34,6 +34,8 @@
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
         "tests:unit": "phpunit --testsuit=unit --debug -c ./phpunit.xml",
         "tests:functional": "phpunit --testsuit=functional --debug -c ./phpunit.xml",
+        "tests:functional:group:upstream:drops8": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_drops8",
+        "tests:functional:group:upstream:empty": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_empty",
         "tests:all": [
             "@tests:unit",
             "@tests:functional"
