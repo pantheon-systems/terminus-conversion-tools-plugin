@@ -6,7 +6,6 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
-use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
@@ -26,7 +25,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use WorkflowProcessingTrait;
     use ConversionCommandsTrait;
 
-    private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const TARGET_GIT_BRANCH = 'composerify';
     private const IC_GIT_REMOTE_NAME = 'ic';
     private const IC_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
@@ -34,6 +32,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
+    private const WEB_ROOT = 'web';
 
     /**
      * @var string
@@ -51,14 +50,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private Drupal8Projects $drupal8ComponentsDetector;
 
     /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Git
-     */
-    private Git $git;
-
-    /**
      * @var \Pantheon\TerminusConversionTools\Utils\Composer
      */
     private Composer $composer;
+
+    /**
+     * @var bool
+     */
+    private bool $isWebRootSite;
 
     /**
      * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -79,19 +78,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
     ): void {
-        $site = $this->getSite($site_id);
+        $this->site = $this->getSite($site_id);
 
-        if (!$site->getFramework()->isDrupal8Framework()) {
+        if (!$this->site->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
                 'The site {site_name} is not a Drupal 8 based site.',
-                ['site_name' => $site->getName()]
+                ['site_name' => $this->site->getName()]
             );
         }
 
-        if (self::DROPS_8_UPSTREAM_ID !== $site->getUpstream()->get('machine_name')) {
+        if (!in_array(
+            $this->site->getUpstream()->get('machine_name'),
+            $this->getSupportedSourceUpstreamIds(),
+            true
+        )) {
             throw new TerminusException(
-                'The site {site_name} is not a "drops-8" upstream based site.',
-                ['site_name' => $site->getName()]
+                'Unsupported upstream {upstream}. Supported upstreams are: {supported_upstreams}.',
+                [
+                    'upstream' => $this->site->getUpstream()->get('machine_name'),
+                    'supported_upstreams' => implode(', ', $this->getSupportedSourceUpstreamIds())
+                ]
             );
         }
 
@@ -102,11 +108,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        $this->localPath = $this->cloneSiteGitRepository(
-            $site,
-            sprintf('%s_composer_conversion', $site->getName())
-        );
-        $this->drupal8ComponentsDetector = new Drupal8Projects($this->localPath);
+        $this->localPath = $this->cloneSiteGitRepository();
+
+        $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
+        $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
+
+        $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalAbsolutePath());
         $this->git = new Git($this->localPath);
         $this->composer = new Composer($this->localPath);
 
@@ -115,24 +122,31 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $customProjectsDirs = $this->getCustomProjectsDirectories();
 
         $this->createLocalGitBranch();
-        $this->copyConfigurationFiles();
-        $this->copyPantheonYml();
-
-        if (!$options['dry-run']) {
-            $this->deleteMultidevIfExists($site);
-
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-            $mdEnv = $this->createMultidev($site, $this->branch);
+        if ($isDefaultConfigFilesExist) {
+            $this->copyConfigurationFiles();
+        } else {
+            $this->log()->notice(
+                sprintf(
+                    'Skipped copying configuration files: default configuration files directory (%s) not found.',
+                    $defaultConfigFilesDir
+                )
+            );
         }
+        $this->copyPantheonYml();
+        $this->copyCustomProjects($customProjectsDirs);
+        $this->copySettingsPhp();
 
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
-        $this->copyCustomProjects($customProjectsDirs);
-        $this->copySettingsPhp();
-        $this->addCommitToTriggerBuild();
 
         if (!$options['dry-run']) {
+            $this->deleteMultidevIfExists();
+
+            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+            $this->git->push($this->branch);
+            $mdEnv = $this->createMultidev($this->branch);
+
+            $this->addCommitToTriggerBuild();
             $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
             $this->git->push($this->branch);
 
@@ -143,6 +157,49 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
+     * Returns TRUE if the site is a webroot-based site.
+     *
+     * @return bool
+     */
+    private function isWebRootSite(): bool
+    {
+        if (isset($this->isWebRootSite)) {
+            return $this->isWebRootSite;
+        }
+
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->localPath, 'pantheon.yml'));
+        $this->isWebRootSite = $pantheonYmlContent['web_docroot'] ?? false;
+
+        return $this->isWebRootSite;
+    }
+
+    /**
+     * Returns the absolute site's Drupal core installation directory.
+     *
+     * @return string
+     */
+    private function getDrupalAbsolutePath(): string
+    {
+        return $this->isWebRootSite()
+            ? Files::buildPath($this->localPath, self::WEB_ROOT)
+            : $this->localPath;
+    }
+
+    /**
+     * Returns webroot-aware relative path.
+     *
+     * @param string ...$parts
+     *
+     * @return string
+     */
+    private function getWebRootAwareRelativePath(string ...$parts): string
+    {
+        return $this->isWebRootSite()
+            ? Files::buildPath(self::WEB_ROOT, ...$parts)
+            : Files::buildPath(...$parts);
+    }
+
+    /**
      * Detects and returns the list of Drupal8 libraries.
      *
      * @return array
@@ -150,11 +207,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getLibraries(): array
     {
-        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->localPath));
+        $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
         $projects = $this->drupal8ComponentsDetector->getLibraries();
 
         if (0 === count($projects)) {
-            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->localPath));
+            $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
 
             return [];
         }
@@ -184,10 +241,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getContribDrupal8Projects(): array
     {
-        $this->log()->notice(sprintf('Detecting contrib modules and themes in "%s"...', $this->localPath));
+        $this->log()->notice(
+            sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
+        );
         $projects = $this->drupal8ComponentsDetector->getContribProjects();
         if (0 === count($projects)) {
-            $this->log()->notice(sprintf('No contrib modules or themes were detected in "%s"', $this->localPath));
+            $this->log()->notice(
+                sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
+            );
 
             return [];
         }
@@ -214,11 +275,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getCustomProjectsDirectories(): array
     {
-        $this->log()->notice(sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->localPath));
+        $this->log()->notice(
+            sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
+        );
         $customModuleDirs = $this->drupal8ComponentsDetector->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
+
         $customThemeDirs = $this->drupal8ComponentsDetector->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
@@ -242,7 +306,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         );
         $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
         $this->git->fetch(self::IC_GIT_REMOTE_NAME);
-        $this->git->checkout('--no-track', '-b', $this->branch, self::IC_GIT_REMOTE_NAME . '/master');
+        $this->git->checkout(
+            '--no-track',
+            '-b',
+            $this->branch,
+            self::IC_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
+        );
     }
 
     /**
@@ -252,12 +321,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Copying configuration files...');
         try {
-            $this->git->checkout('master', Files::buildPath('sites', 'default', 'config'));
-            $sourcePath = Files::buildPath($this->localPath, 'sites', 'default', 'config');
-            $destinationPath = Files::buildPath($this->localPath, 'config');
-            $this->git->move(sprintf('%s%s*', $sourcePath, DIRECTORY_SEPARATOR), $destinationPath);
+            $sourceRelativePath = $this->getWebRootAwareRelativePath('sites', 'default', 'config');
+            $this->git->checkout(Git::DEFAULT_BRANCH, $sourceRelativePath);
+            $sourceAbsolutePath = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
+            $destinationPath = Files::buildPath($this->getDrupalAbsolutePath(), 'config');
+            $this->git->move(sprintf('%s%s*', $sourceAbsolutePath, DIRECTORY_SEPARATOR), $destinationPath);
 
-            $htaccessFile = Files::buildPath('sites', 'default', 'config', '.htaccess');
+            $htaccessFile = $this->getWebRootAwareRelativePath('sites', 'default', 'config', '.htaccess');
             $this->git->remove('-f', $htaccessFile);
 
             if ($this->git->isAnythingToCommit()) {
@@ -278,7 +348,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyPantheonYml(): void
     {
         $this->log()->notice('Copying pantheon.yml file...');
-        $this->git->checkout('master', 'pantheon.yml');
+        $this->git->checkout(Git::DEFAULT_BRANCH, 'pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
         $path = Files::buildPath($this->localPath, 'pantheon.yml');
@@ -298,15 +368,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Deletes the target multidev environment and associated git branch if exists.
      *
-     * @param \Pantheon\Terminus\Models\Site $site
-     *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function deleteMultidevIfExists(Site $site)
+    private function deleteMultidevIfExists()
     {
         try {
             /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $site->getEnvironments()->get($this->branch);
+            $multidev = $this->site->getEnvironments()->get($this->branch);
             if (!$this->input()->getOption('yes') && !$this->io()
                 ->confirm(
                     sprintf(
@@ -433,14 +501,18 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying custom modules and themes...');
         foreach ($customProjectsDirs as $subDir => $dirs) {
             foreach ($dirs as $relativePath) {
+                $relativePath = $this->getWebRootAwareRelativePath($relativePath);
                 try {
-                    $this->git->checkout('master', $relativePath);
-                    $targetPath = Files::buildPath('web', $subDir, 'custom');
+                    $this->git->checkout(Git::DEFAULT_BRANCH, $relativePath);
+                    $targetPath = Files::buildPath(self::WEB_ROOT, $subDir, 'custom');
 
                     if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
                         mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
                     }
-                    $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
+
+                    if (!$this->isWebRootSite()) {
+                        $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
+                    }
 
                     if ($this->git->isAnythingToCommit()) {
                         $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
@@ -463,13 +535,21 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copySettingsPhp(): void
     {
         $this->log()->notice('Copying settings.php file...');
-        $this->git->checkout('master', Files::buildPath('sites', 'default', 'settings.php'));
-        $this->git->move(
-            Files::buildPath('sites', 'default', 'settings.php'),
-            Files::buildPath('web', 'sites', 'default', 'settings.php'),
-            '-f',
-        );
-        $this->git->commit('Copy settings.php');
+        $settingsPhpFilePath = $this->getWebRootAwareRelativePath('sites', 'default', 'settings.php');
+        $this->git->checkout(Git::DEFAULT_BRANCH, $settingsPhpFilePath);
+
+        if (!$this->isWebRootSite()) {
+            $this->git->move(
+                $settingsPhpFilePath,
+                Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'settings.php'),
+                '-f',
+            );
+        }
+
+        if ($this->git->isAnythingToCommit()) {
+            $this->git->commit('Copy settings.php');
+            $this->log()->notice('settings.php file has been copied.');
+        }
     }
 
     /**
@@ -482,7 +562,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Adding comment to pantheon.yml to trigger a build...');
         $path = Files::buildPath($this->localPath, 'pantheon.yml');
         $pantheonYml = fopen($path, 'a');
-        fwrite($pantheonYml, PHP_EOL . '# add a comment to trigger a change and build');
+        fwrite($pantheonYml, PHP_EOL . '# comment to trigger a Pantheon IC build');
         fclose($pantheonYml);
         $this->git->commit('Trigger Pantheon build');
     }

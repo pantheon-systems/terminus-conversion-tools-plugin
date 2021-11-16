@@ -136,12 +136,12 @@ class Drupal8Projects
      */
     private function getContribProjectDirectories(): array
     {
-        return [
+        return array_filter([
             Files::buildPath($this->siteRootPath, 'modules'),
             Files::buildPath($this->siteRootPath, 'sites', 'all', 'modules'),
             Files::buildPath($this->siteRootPath, 'themes'),
             Files::buildPath($this->siteRootPath, 'sites', 'all', 'themes'),
-        ];
+        ], fn($directory) => is_dir($directory));
     }
 
     /**
@@ -154,7 +154,8 @@ class Drupal8Projects
         return array_filter([
             Files::buildPath('modules', 'custom'),
             Files::buildPath('sites', 'all', 'modules', 'custom'),
-        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory)));
+        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory))
+            && count($this->getCustomProjectSubdirs(Files::buildPath($this->siteRootPath, $directory))) > 0);
     }
 
     /**
@@ -179,6 +180,27 @@ class Drupal8Projects
         return array_filter([
             Files::buildPath('themes', 'custom'),
             Files::buildPath('sites', 'all', 'themes', 'custom'),
-        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory)));
+        ], fn($directory) => is_dir(Files::buildPath($this->siteRootPath, $directory))
+            && count($this->getCustomProjectSubdirs(Files::buildPath($this->siteRootPath, $directory))) > 0);
+    }
+
+    /**
+     * Returns the list of subdirectories in custom projects' directory.
+     *
+     * @param string $directory
+     *   The absolute path to custom projects' directory.
+     *
+     * @return array
+     */
+    private function getCustomProjectSubdirs(string $directory): array
+    {
+        return array_filter(
+            scandir($directory),
+            fn($item) => !in_array(
+                $item,
+                ['.', '..', '.gitkeep', 'README.txt', 'README.md'],
+                true
+            )
+        );
     }
 }

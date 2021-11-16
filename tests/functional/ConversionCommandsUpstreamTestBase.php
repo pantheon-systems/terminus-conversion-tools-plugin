@@ -8,15 +8,14 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
 
 /**
- * Class ConversionCommandsTest.
+ * Class ConversionCommandsUpstreamTestBase.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-class ConversionCommandsTest extends TestCase
+abstract class ConversionCommandsUpstreamTestBase extends TestCase
 {
     use TerminusTestTrait;
 
-    private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const DEV_ENV = 'dev';
 
     /**
@@ -35,6 +34,20 @@ class ConversionCommandsTest extends TestCase
     protected $httpClient;
 
     /**
+     * Returns env variable name for the fixture Upstream ID.
+     *
+     * @return string
+     */
+    abstract protected function getUpstreamIdEnvName(): string;
+
+    /**
+     * Returns the initial and expected (real) upstream ID of a fixture site.
+     *
+     * @return string
+     */
+    abstract protected function getRealUpstreamId(): string;
+
+    /**
      * @inheritdoc
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
@@ -44,7 +57,7 @@ class ConversionCommandsTest extends TestCase
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
         $this->httpClient = HttpClient::create();
 
-        $this->siteName = uniqid('site-drops8-non-composer-');
+        $this->siteName = uniqid(sprintf('fixture-term3-conv-plugin-%s-', $this->getRealUpstreamId()));
         $command = sprintf(
             'site:create %s %s %s',
             $this->siteName,
@@ -62,7 +75,7 @@ class ConversionCommandsTest extends TestCase
 
         $this->terminus(sprintf('connection:set %s.dev %s', $this->siteName, 'git'));
         $this->terminus(
-            sprintf('site:upstream:set %s %s', $this->siteName, self::DROPS_8_UPSTREAM_ID),
+            sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()),
         );
 
         $contribProjects = [
@@ -150,6 +163,7 @@ class ConversionCommandsTest extends TestCase
         sleep(60);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
         $this->assertPagesExists($env);
+        $this->assertLibrariesExists($env);
     }
 
     /**
@@ -188,7 +202,34 @@ class ConversionCommandsTest extends TestCase
     }
 
     /**
-     * Returns the upstream ID of the fixture Drops-8 site.
+     * Asserts test JavaScript libraries' scripts exist.
+     *
+     * @param string $env
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    private function assertLibrariesExists(string $env): void
+    {
+        $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
+        $libraries = [
+            'blazy' => 'blazy.js',
+            'font' => 'plugin.js',
+            'rtseo.js' => 'dist/rtseo.js',
+            'superfish' => 'superfish.js',
+        ];
+
+        foreach ($libraries as $directory => $file) {
+            $url = sprintf('%s/libraries/%s/%s', $baseUrl, $directory, $file);
+            $this->assertEquals(
+                200,
+                $this->httpClient->request('HEAD', $url)->getStatusCode(),
+                sprintf('Library "%s" must have script file "%s"', $directory, $url)
+            );
+        }
+    }
+
+    /**
+     * Returns the fixture Upstream ID.
      *
      * @return string
      *
@@ -196,11 +237,11 @@ class ConversionCommandsTest extends TestCase
      */
     private function getUpstreamId(): string
     {
-        if (!getenv('TERMINUS_UPSTREAM_ID')) {
-            throw new TerminusException('Missing "TERMINUS_UPSTREAM_ID" env var');
+        if (!getenv($this->getUpstreamIdEnvName())) {
+            throw new TerminusException(sprintf('Missing "%s" env var', $this->getUpstreamIdEnvName()));
         }
 
-        return getenv('TERMINUS_UPSTREAM_ID');
+        return getenv($this->getUpstreamIdEnvName());
     }
 
     /**

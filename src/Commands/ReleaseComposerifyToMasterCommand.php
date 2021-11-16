@@ -20,8 +20,6 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
     use ConversionCommandsTrait;
 
     private const COMPOSERIFY_GIT_BRANCH = 'composerify';
-    private const BACKUP_GIT_BRANCH = 'master-bckp';
-    private const MASTER_GIT_BRANCH = 'master';
     private const DRUPAL9_UPSTREAM_ID = 'drupal9';
 
     /**
@@ -41,28 +39,23 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
      */
     public function releaseToMaster(string $site_id, array $options = ['branch' => self::COMPOSERIFY_GIT_BRANCH]): void
     {
-        $site = $this->getSite($site_id);
-
+        $this->site = $this->getSite($site_id);
         $sourceBranch = $options['branch'];
+        $localPath = $this->cloneSiteGitRepository();
 
-        $localPath = $this->cloneSiteGitRepository(
-            $site,
-            sprintf('%s_composer_conversion', $site->getName())
-        );
-
-        $git = new Git($localPath);
-        if (!$git->isRemoteBranchExists($sourceBranch)) {
+        $this->git = new Git($localPath);
+        if (!$this->git->isRemoteBranchExists($sourceBranch)) {
             throw new TerminusException(sprintf('The source branch "%s" does not exist', $sourceBranch));
         }
 
-        $composerifyCommitHash = $git->getHeadCommitHash($sourceBranch);
-        $masterCommitHash = $git->getHeadCommitHash(self::MASTER_GIT_BRANCH);
+        $composerifyCommitHash = $this->git->getHeadCommitHash($sourceBranch);
+        $masterCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($composerifyCommitHash === $masterCommitHash) {
             $this->log()->warning(
                 sprintf(
                     'Abort: already released to "%s" (the "%s" git branch matches "%s")',
-                    self::MASTER_GIT_BRANCH,
-                    self::MASTER_GIT_BRANCH,
+                    Git::DEFAULT_BRANCH,
+                    Git::DEFAULT_BRANCH,
                     $sourceBranch
                 )
             );
@@ -70,23 +63,29 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
             return;
         }
 
-        if (!$git->isRemoteBranchExists(self::BACKUP_GIT_BRANCH)) {
-            $masterBranchHeadCommitHash = $git->getHeadCommitHash(self::MASTER_GIT_BRANCH);
+        $backupBranchName = $this->getBackupBranchName();
+        if (!$this->git->isRemoteBranchExists($backupBranchName)) {
+            $masterBranchHeadCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
             $this->log()->notice(
                 sprintf(
                     'Creating backup of "%s" ("%s" commit)...',
-                    self::MASTER_GIT_BRANCH,
+                    Git::DEFAULT_BRANCH,
                     $masterBranchHeadCommitHash
                 )
             );
-            $git->checkout('--no-track', '-b', self::BACKUP_GIT_BRANCH, sprintf('origin/%s', self::MASTER_GIT_BRANCH));
-            $git->push(self::BACKUP_GIT_BRANCH);
-            $this->createMultidev($site, self::BACKUP_GIT_BRANCH);
+            $this->git->checkout(
+                '--no-track',
+                '-b',
+                $backupBranchName,
+                sprintf('%s/%s', Git::DEFAULT_REMOTE, Git::DEFAULT_BRANCH)
+            );
+            $this->git->push($backupBranchName);
+            $this->createMultidev($backupBranchName);
         } else {
             $this->log()->notice(
                 sprintf(
-                    'Skipped creating a backup multidev env: "%s" already exists',
-                    self::BACKUP_GIT_BRANCH
+                    'Skipped creating a backup branch and a multidev env: "%s" already exists',
+                    $backupBranchName
                 )
             );
         }
@@ -95,7 +94,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
                 ->confirm(
                     sprintf(
                         'Are you sure you want to replace "%s" with "%s" git branch?',
-                        self::MASTER_GIT_BRANCH,
+                        Git::DEFAULT_BRANCH,
                         $sourceBranch
                     ),
                     false
@@ -104,15 +103,15 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
             return;
         }
 
-        $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', self::MASTER_GIT_BRANCH, $sourceBranch));
-        $git->checkout(self::MASTER_GIT_BRANCH);
-        $git->reset('--hard', $composerifyCommitHash);
-        $git->push(self::MASTER_GIT_BRANCH, '--force');
+        $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', Git::DEFAULT_BRANCH, $sourceBranch));
+        $this->git->checkout(Git::DEFAULT_BRANCH);
+        $this->git->reset('--hard', $composerifyCommitHash);
+        $this->git->push(Git::DEFAULT_BRANCH, '--force');
 
-        $this->switchUpstream($site, self::DRUPAL9_UPSTREAM_ID);
+        $this->switchUpstream(self::DRUPAL9_UPSTREAM_ID);
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $site->getEnvironments()->get('dev');
+        $devEnv = $this->site->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
     }
 }
