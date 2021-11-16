@@ -486,11 +486,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 'is_dev' => false,
             ],
             [
-                'package' => 'drupal/core-composer-scaffold',
-                'version' => '^8.9',
-                'is_dev' => false,
-            ],
-            [
                 'package' => 'pantheon-systems/drupal-integrations',
                 'version' => '^8',
                 'is_dev' => false,
