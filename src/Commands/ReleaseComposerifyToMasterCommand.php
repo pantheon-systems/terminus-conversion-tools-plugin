@@ -20,7 +20,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
     use ConversionCommandsTrait;
 
     private const COMPOSERIFY_GIT_BRANCH = 'composerify';
-    private const DRUPAL9_UPSTREAM_ID = 'drupal9';
+    private const TARGET_UPSTREAM_ID = 'drupal-recommended';
 
     /**
      * Releases a converted Drupal8 site managed by Composer to the master git branch:
@@ -108,7 +108,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
         $this->git->reset('--hard', $composerifyCommitHash);
         $this->git->push(Git::DEFAULT_BRANCH, '--force');
 
-        $this->switchUpstream(self::DRUPAL9_UPSTREAM_ID);
+        $this->switchUpstream(self::TARGET_UPSTREAM_ID);
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
