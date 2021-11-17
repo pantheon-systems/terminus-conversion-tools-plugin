@@ -54,7 +54,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
-        $this->log()->warning('Sorry, no advice is available.');
+        $this->output()->write('Sorry, no advice is available.');
     }
 
     /**
@@ -84,12 +84,12 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
                     $composerJsonDiff
                 )
             );
-            $this->log()->warning('Composer used incorrectly.');
+            $this->output()->write('Composer used incorrectly.');
         } else {
-            $this->log()->notice('Standard drops-8 site.');
+            $this->output()->write('Standard drops-8 site.');
         }
 
-        $this->log()->notice(
+        $this->output()->write(
             <<<EOD
 Advise: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer).
 EOD
@@ -101,7 +101,7 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
-        $this->log()->notice(
+        $this->output()->write(
             <<<EOD
 Advise: convert the site to use "drupal-recommended" Pantheon Upstream
 (https://github.com/pantheon-systems/drupal-recommended).
@@ -121,13 +121,13 @@ EOD
         $localPath = $this->cloneSiteGitRepository();
         if (is_file(Files::buildPath($localPath, 'build-metadata.json'))) {
             // Build artifact created by Terminus Build Tools plugin is present.
-            $this->log()->notice(
+            $this->output()->write(
                 <<<EOD
 Advise: stay on empty upstream.
 EOD
             );
         } else {
-            $this->log()->notice(
+            $this->output()->write(
                 <<<EOD
 Advise: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer),
 stay on empty upstream.
