@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -18,6 +19,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
+    private const EMPTY_UPSTREAM_ID = 'empty';
     private const DROPS_8_GIT_REMOTE_URL = 'https://github.com/pantheon-systems/drops-8.git';
 
     /**
@@ -45,6 +47,11 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
+        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnEmpty();
+            return;
+        }
+
         $this->log()->warning('Sorry, no advice is available.');
     }
 
@@ -59,13 +66,6 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     {
         $localPath = $this->cloneSiteGitRepository();
         $git = new Git($localPath);
-
-        $this->log()->notice(
-            <<<EOD
-Advise: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer).
-EOD
-        );
-
         $git->addRemote(self::DROPS_8_GIT_REMOTE_URL, 'drops-8');
         $git->fetch('drops-8');
         $composerJsonDiff = $git->diff(
@@ -82,8 +82,16 @@ EOD
                     $composerJsonDiff
                 )
             );
-            $this->log()->warning('Composer used incorrectly');
+            $this->log()->warning('Composer used incorrectly.');
+        } else {
+            $this->log()->notice('Standard drops-8 site.');
         }
+
+        $this->log()->notice(
+            <<<EOD
+Advise: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer).
+EOD
+        );
     }
 
     /**
@@ -97,5 +105,32 @@ Advise: convert the site to use "drupal-recommended" Pantheon Upstream
 (https://github.com/pantheon-systems/drupal-recommended).
 EOD
         );
+    }
+
+    /**
+     * Prints advice related to "empty" upstream.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    private function adviseOnEmpty(): void
+    {
+        $localPath = $this->cloneSiteGitRepository();
+        if (is_file(Files::buildPath($localPath, 'build-metadata.json'))) {
+            // Build artifact created by Terminus Build Tools plugin is present.
+            $this->log()->notice(
+                <<<EOD
+Advise: stay on empty upstream.
+EOD
+            );
+        } else {
+            $this->log()->notice(
+                <<<EOD
+Advise: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer),
+stay on empty upstream.
+EOD
+            );
+        }
     }
 }
