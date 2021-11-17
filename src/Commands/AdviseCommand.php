@@ -18,9 +18,11 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
-    private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
-    private const EMPTY_UPSTREAM_ID = 'empty';
     private const DROPS_8_GIT_REMOTE_URL = 'https://github.com/pantheon-systems/drops-8.git';
+
+    private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
+
+    private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
      * Analyze the current state of the site and give advice on the next steps.
