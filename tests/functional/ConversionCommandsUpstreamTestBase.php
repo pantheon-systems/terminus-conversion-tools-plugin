@@ -80,6 +80,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         );
 
         $this->terminus(sprintf('connection:set %s.dev %s', $this->siteName, 'git'));
+        $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
 
         $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
