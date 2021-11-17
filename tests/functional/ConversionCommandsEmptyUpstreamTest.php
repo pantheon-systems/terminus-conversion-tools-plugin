@@ -34,7 +34,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'Sorry, no advice is available.';
+        return 'convert the site to support Pantheon Integrated Composer';
     }
 
     /**
@@ -44,7 +44,10 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'Sorry, no advice is available.';
+        // @todo: update with 'Sorry, no advice is available.' once
+        // "[CMS-406] Use "drupal-recommended" target upstream in conversion:composer
+        // and conversion:release-to-master commands" has merged.
+        return 'convert the site to use "drupal-recommended" Pantheon Upstream';
     }
 
     /**
