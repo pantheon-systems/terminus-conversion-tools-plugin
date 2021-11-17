@@ -34,6 +34,11 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     protected $httpClient;
 
     /**
+     * @var string
+     */
+    private string $expectedSiteInfoUpstream;
+
+    /**
      * Returns env variable name for the fixture Upstream ID.
      *
      * @return string
@@ -74,6 +79,12 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         );
 
         $this->terminus(sprintf('connection:set %s.dev %s', $this->siteName, 'git'));
+
+        $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
+        $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
+            sprintf('site:info %s', $this->siteName)
+        )['upstream'];
+
         $this->terminus(
             sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()),
         );
@@ -142,11 +153,19 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             sprintf('conversion:release-to-master %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
+        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
+        $this->assertEquals(
+            '897fdf15-992e-4fa1-beab-89e2b5027e03: https://github.com/pantheon-upstreams/drupal-recommended',
+            $siteInfoUpstream
+        );
 
         $this->assertCommand(
             sprintf('conversion:restore-master %s', $this->siteName),
             self::DEV_ENV
         );
+
+        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
+        $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
     }
 
     /**

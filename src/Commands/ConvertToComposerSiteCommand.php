@@ -9,6 +9,7 @@ use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -26,10 +27,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'composerify';
-    private const IC_GIT_REMOTE_NAME = 'ic';
-    private const IC_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
-    private const COMPOSER_DRUPAL_PACKAGE_NAME = 'drupal/core-recommended';
-    private const COMPOSER_DRUPAL_PACKAGE_VERSION = '^8.9';
+    private const TARGET_UPSTREAM_GIT_REMOTE_NAME = 'target-upstream';
+    private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
     private const WEB_ROOT = 'web';
@@ -140,7 +139,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->addComposerPackages($libraryProjects);
 
         if (!$options['dry-run']) {
-            $this->deleteMultidevIfExists();
+            try {
+                $this->deleteMultidevIfExists();
+            } catch (TerminusCancelOperationException $e) {
+                return;
+            }
 
             $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
             $this->git->push($this->branch);
@@ -304,13 +307,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Creating "%s" git branch based on "drupal-project" upstream...', $this->branch)
         );
-        $this->git->addRemote(self::IC_GIT_REMOTE_URL, self::IC_GIT_REMOTE_NAME);
-        $this->git->fetch(self::IC_GIT_REMOTE_NAME);
+        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
+        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
         $this->git->checkout(
             '--no-track',
             '-b',
             $this->branch,
-            self::IC_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
+            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
         );
     }
 
@@ -368,6 +371,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Deletes the target multidev environment and associated git branch if exists.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function deleteMultidevIfExists()
@@ -383,7 +387,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     )
                 )
             ) {
-                return;
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete multidev "%s" operation has not been confirmed.', $this->branch)
+                );
             }
 
             $this->log()->notice(
@@ -401,7 +407,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                         )
                     )
                 ) {
-                    return;
+                    throw new TerminusCancelOperationException(
+                        sprintf('Delete git branch "%s" operation has not been confirmed.', $this->branch)
+                    );
                 }
 
                 $this->git->deleteRemoteBranch($this->branch);
@@ -418,27 +426,25 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Adding packages to Composer...');
         try {
-            $this->composer->require(self::COMPOSER_DRUPAL_PACKAGE_NAME, self::COMPOSER_DRUPAL_PACKAGE_VERSION);
-            $this->git->commit(
-                sprintf(
-                    'Add %s (%s) project to Composer',
-                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
-                )
-            );
-            $this->log()->notice(
-                sprintf(
-                    '%s (%s) is added',
-                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                    self::COMPOSER_DRUPAL_PACKAGE_VERSION
-                )
-            );
+            foreach ($this->getDrupal8ComposerDependencies() as $dependency) {
+                $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
+                if ($dependency['is_dev']) {
+                    $arguments[] = '--dev';
+                }
+
+                $this->composer->require(...$arguments);
+                $this->git->commit(
+                    sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
+                );
+                $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
+            }
+
+            $this->composer->install('--no-dev');
+            $this->git->commit('Install composer packages');
         } catch (Throwable $t) {
             $this->log()->warning(
                 sprintf(
-                    'Failed adding %s (%s) composer package: %s',
-                    self::COMPOSER_DRUPAL_PACKAGE_NAME,
-                    self::COMPOSER_DRUPAL_PACKAGE_VERSION,
+                    'Failed adding and/or installing Drupal 8 dependencies: %s',
                     $t->getMessage()
                 )
             );
@@ -462,6 +468,36 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 );
             }
         }
+    }
+
+    /**
+     * Returns the list of Drupal8 composer dependencies.
+     *
+     * @return array[]
+     *   Each dependency is an array that consists of the following keys:
+     *     "package" - a package name;
+     *     "version" - a version constraint;
+     *     "is_dev" - a "dev" package flag.
+     */
+    private function getDrupal8ComposerDependencies(): array
+    {
+        return [
+            [
+                'package' => 'drupal/core-recommended',
+                'version' => '^8.9',
+                'is_dev' => false,
+            ],
+            [
+                'package' => 'pantheon-systems/drupal-integrations',
+                'version' => '^8',
+                'is_dev' => false,
+            ],
+            [
+                'package' => 'drupal/core-dev',
+                'version' => '^8.9',
+                'is_dev' => true,
+            ],
+        ];
     }
 
     /**
