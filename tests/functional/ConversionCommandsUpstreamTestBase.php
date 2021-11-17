@@ -40,11 +40,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     private string $expectedSiteInfoUpstream;
 
     /**
-     * @var string
-     */
-    private string $expectedSiteInfoUpstream;
-
-    /**
      * Returns env variable name for the fixture Upstream ID.
      *
      * @return string
@@ -90,10 +85,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
             sprintf('site:info %s', $this->siteName)
         )['upstream'];
-
-        $this->terminus(
-            sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()),
-        );
 
         $contribProjects = [
             'webform',
@@ -190,9 +181,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             sprintf('conversion:restore-master %s', $this->siteName),
             self::DEV_ENV
         );
-
-        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
-        $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
     }
 
     /**
