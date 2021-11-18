@@ -119,6 +119,27 @@ EOD
     private function adviseOnEmpty(): void
     {
         $localPath = $this->cloneSiteGitRepository();
+
+        $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
+        if (is_file($upstreamConfComposerJsonPath)) {
+            // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
+
+            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
+            if (false !== strpos($composerJsonContent, 'drupal/core-recommended')) {
+                // Repository contents matches "drupal-project" upstream.
+                $this->output()->write(
+                    <<<EOD
+Advice: convert the site to use "drupal-recommended" Pantheon Upstream
+(https://github.com/pantheon-systems/drupal-recommended).
+EOD
+                );
+            } else {
+                // Repository contents matches "drupal-recommended" upstream.
+            }
+
+            return;
+        }
+
         if (is_file(Files::buildPath($localPath, 'build-metadata.json'))) {
             // Build artifact created by Terminus Build Tools plugin is present.
             $this->output()->write(
