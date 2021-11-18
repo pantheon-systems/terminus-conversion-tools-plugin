@@ -19,6 +19,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
 
     private const COMPOSERIFY_GIT_BRANCH = 'composerify';
     private const TARGET_UPSTREAM_ID = 'drupal-recommended';
+    private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
      * Releases a converted Drupal8 site managed by Composer to the master git branch:
@@ -106,7 +107,19 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
         $this->git->reset('--hard', $composerifyCommitHash);
         $this->git->push(Git::DEFAULT_BRANCH, '--force');
 
-        $this->switchUpstream(self::TARGET_UPSTREAM_ID);
+        if (self::EMPTY_UPSTREAM_ID !== $this->site->getUpstream()->get('machine_name')
+            || $this->input()->getOption('yes')
+            || $this->io()->confirm(
+                sprintf(
+                    'Switch to "%s" upstream (currently on "%s")?',
+                    self::TARGET_UPSTREAM_ID,
+                    self::EMPTY_UPSTREAM_ID
+                ),
+                false
+            )
+        ) {
+            $this->switchUpstream(self::TARGET_UPSTREAM_ID);
+        }
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
