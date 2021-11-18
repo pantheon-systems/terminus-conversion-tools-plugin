@@ -34,7 +34,7 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to using `conversion:composer` Terminus command';
+        return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
     }
 
     /**
