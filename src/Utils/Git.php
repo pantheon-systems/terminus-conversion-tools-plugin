@@ -212,6 +212,22 @@ class Git
     }
 
     /**
+     * Returns the list of commit hashes for the branch.
+     *
+     * @param string $branch
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function getCommitHashes(string $branch): array
+    {
+        $commitHashes = $this->execute(['log', $branch, '--pretty=format:%H']);
+
+        return preg_split('/\r\n|\n|\r/', $commitHashes);
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command
