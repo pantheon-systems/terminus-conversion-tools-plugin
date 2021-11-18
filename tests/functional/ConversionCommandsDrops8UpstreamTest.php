@@ -44,10 +44,7 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        // @todo: update with 'Sorry, no advice is available.' once
-        // "[CMS-406] Use "drupal-recommended" target upstream in conversion:composer
-        // and conversion:release-to-master commands" has merged.
-        return 'convert the site to use "drupal-recommended" Pantheon Upstream';
+        return 'Sorry, no advice is available.';
     }
 
     /**
