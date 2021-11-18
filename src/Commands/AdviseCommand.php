@@ -91,7 +91,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
         $this->output()->write(
             <<<EOD
-Advice: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer).
+Advice: convert the site to using `conversion:composer` Terminus command.
 EOD
         );
     }
@@ -123,13 +123,13 @@ EOD
             // Build artifact created by Terminus Build Tools plugin is present.
             $this->output()->write(
                 <<<EOD
-Advice: stay on empty upstream.
+Advice: stay on "empty" upstream.
 EOD
             );
         } else {
             $this->output()->write(
                 <<<EOD
-Advice: convert the site to support Pantheon Integrated Composer (https://pantheon.io/docs/integrated-composer),
+Advice: convert the site to using `conversion:composer` Terminus command,
 stay on empty upstream.
 EOD
             );
