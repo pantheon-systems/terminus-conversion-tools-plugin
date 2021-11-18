@@ -130,15 +130,7 @@ EOD
             // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
 
             $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
-            if (false !== strpos($composerJsonContent, 'drupal/core-recommended')) {
-                // Repository contents matches "drupal-project" upstream.
-
-                $this->output()->write(
-                    <<<EOD
-Advice: convert the site to use "drupal-recommended" Pantheon Upstream.
-EOD
-                );
-            } else {
+            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
                 // Repository contents matches "drupal-recommended" upstream.
 
                 $git = new Git($localPath);
