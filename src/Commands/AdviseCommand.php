@@ -144,7 +144,7 @@ EOD
                     sprintf('%s/%s', self::DRUPAL_RECOMMENDED_UPSTREAM_ID, Git::DEFAULT_BRANCH)
                 );
                 $siteCommitHashes = $git->getCommitHashes(
-                    sprintf('%s/%s', Git::DEFAULT_REMOTE, 'drupal-recommended-based-branch')//Git::DEFAULT_BRANCH)
+                    sprintf('%s/%s', Git::DEFAULT_REMOTE, Git::DEFAULT_BRANCH)
                 );
                 $identicalCommitHashes = array_intersect($siteCommitHashes, $upstreamCommitHashes);
                 if (0 < count($identicalCommitHashes)) {
