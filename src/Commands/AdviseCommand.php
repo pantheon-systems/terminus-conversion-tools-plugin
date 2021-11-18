@@ -44,16 +44,19 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
+
             return;
         }
 
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrupalProject();
+
             return;
         }
 
         if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnEmpty();
+
             return;
         }
 
@@ -155,16 +158,17 @@ Advice: switch the upstream to "drupal-recommended" with Terminus -
 `terminus site:upstream:set {$this->site->getName()} drupal-recommended`.
 EOD
                     );
+
                     return;
                 }
+            }
 
-                $this->output()->write(
-                    <<<EOD
+            $this->output()->write(
+                <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream and then switch the upstream with Terminus to
 "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site->getName()} drupal-recommended`).
 EOD
-                );
-            }
+            );
 
             return;
         }
@@ -177,13 +181,15 @@ EOD
 Advice: stay on "empty" upstream.
 EOD
             );
-        } else {
-            $this->output()->write(
-                <<<EOD
+
+            return;
+        }
+
+        $this->output()->write(
+            <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
 (i.e. `terminus conversion:composer {$this->site->getName()}`), but stay on "empty" upstream.
 EOD
-            );
-        }
+        );
     }
 }
