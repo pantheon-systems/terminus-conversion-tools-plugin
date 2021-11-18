@@ -179,6 +179,8 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             sprintf('conversion:restore-master %s', $this->siteName),
             self::DEV_ENV
         );
+        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
+        $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
     }
 
     /**
