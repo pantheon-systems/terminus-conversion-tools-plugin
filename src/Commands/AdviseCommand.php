@@ -94,7 +94,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
         $this->output()->write(
             <<<EOD
-Advice: convert the site to a Composer managed ony by using `conversion:composer` Terminus command.
+Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command.
 EOD
         );
     }
@@ -179,7 +179,7 @@ EOD
         } else {
             $this->output()->write(
                 <<<EOD
-Advice: convert the site to a Composer managed ony by using `conversion:composer {$this->site->getName()}` Terminus
+Advice: convert the site to a Composer managed one by using `conversion:composer {$this->site->getName()}` Terminus
 command, but stay on "empty" upstream.
 EOD
             );
