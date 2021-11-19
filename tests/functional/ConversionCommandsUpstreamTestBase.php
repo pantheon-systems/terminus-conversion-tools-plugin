@@ -242,6 +242,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         $this->terminus($command);
         sleep(60);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
+        sleep(10);
         $this->assertPagesExists($env);
         $this->assertLibrariesExists($env);
     }
@@ -266,10 +267,10 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         );
 
         $pathsToTest = [
+            'webform' => 'form/contact',
             'custom1' => 'custom1/page',
             'custom2' => 'custom2/page',
             'custom3' => 'custom3/page',
-            'webform' => 'form/contact',
         ];
         foreach ($pathsToTest as $module => $path) {
             $url = sprintf('%s/%s', $baseUrl, $path);
