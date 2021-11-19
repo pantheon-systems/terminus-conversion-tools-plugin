@@ -41,7 +41,14 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     {
         $this->site = $this->getSite($site_id);
         $upstreamId = $this->site->getUpstream()->get('machine_name');
-        $this->log()->notice(sprintf('The site %s uses %s upstream.', $this->site->getName(), $upstreamId));
+        $this->writeln(
+            sprintf(
+                'The site %s uses "%s" (%s) upstream.',
+                $this->site->getName(),
+                $this->site->getUpstream()->get('label'),
+                $upstreamId
+            )
+        );
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
