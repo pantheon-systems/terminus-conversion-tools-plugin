@@ -114,7 +114,8 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `terminus conversion:composer {$this->site->getName()}`).
+(i.e. `terminus conversion:composer {$this->site->getName()}`) or manually according to the following
+guide - https://pantheon.io/docs/guides/composer-convert
 EOD
         );
     }
