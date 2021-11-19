@@ -80,7 +80,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function adviseOnDrops8(): void
     {
-        $localPath = $this->cloneSiteGitRepository();
+        $localPath = $this->cloneSiteGitRepository(false);
         $git = new Git($localPath);
         $git->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
         $git->fetch(self::DROPS_8_UPSTREAM_ID);
@@ -140,7 +140,7 @@ EOD
      */
     private function adviseOnEmpty(): void
     {
-        $localPath = $this->cloneSiteGitRepository();
+        $localPath = $this->cloneSiteGitRepository(false);
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
         if (is_file($upstreamConfComposerJsonPath)) {
             // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
