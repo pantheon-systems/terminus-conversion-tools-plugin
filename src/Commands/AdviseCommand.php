@@ -26,7 +26,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     private const EMPTY_UPSTREAM_ID = 'empty';
 
     private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
-    private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'git@github.com:pantheon-upstreams/drupal-recommended.git';
+    private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
     /**
      * Analyze the current state of the site and give advice on the next steps.
