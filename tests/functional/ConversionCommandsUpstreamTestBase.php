@@ -22,7 +22,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    protected string $siteName;
+    private string $siteName;
 
     /**
      * @var string
@@ -52,6 +52,20 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      * @return string
      */
     abstract protected function getRealUpstreamId(): string;
+
+    /**
+     * Returns the part of the advice copy before the conversion is executed.
+     *
+     * @return string
+     */
+    abstract protected function getExpectedAdviceBeforeConversion(): string;
+
+    /**
+     * Returns the part of the advice copy after the conversion is executed.
+     *
+     * @return string
+     */
+    abstract protected function getExpectedAdviceAfterConversion(): string;
 
     /**
      * @inheritdoc
@@ -105,7 +119,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * Sets up (installs) projects (modules and themes).
      */
-    protected function setUpProjects(): void
+    private function setUpProjects(): void
     {
         $contribProjects = [
             'webform',
@@ -156,16 +170,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      */
     public function testConversionComposerCommands(): void
     {
-        $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
-        $this->assertTrue(
-            false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),
-            sprintf(
-                'Advice for %s upstream-based site must contain "%s" copy. Actual advice is: "%s"',
-                $this->getRealUpstreamId(),
-                $this->getExpectedAdviceBeforeConversion(),
-                $adviceBefore
-            )
-        );
+        $this->assertAdviseBeforeCommand();
 
         $this->assertCommand(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
@@ -181,7 +186,38 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             '897fdf15-992e-4fa1-beab-89e2b5027e03: https://github.com/pantheon-upstreams/drupal-recommended',
             $siteInfoUpstream
         );
+        $this->assertAdviseAfterCommand();
 
+        $this->assertCommand(
+            sprintf('conversion:restore-master %s', $this->siteName),
+            self::DEV_ENV
+        );
+        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
+        $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
+    }
+
+    /**
+     * Asserts the `conversion:advise` command before the conversion is executed.
+     */
+    protected function assertAdviseBeforeCommand(): void
+    {
+        $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $this->assertTrue(
+            false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),
+            sprintf(
+                'Advice for %s upstream-based site must contain "%s" copy. Actual advice is: "%s"',
+                $this->getRealUpstreamId(),
+                $this->getExpectedAdviceBeforeConversion(),
+                $adviceBefore
+            )
+        );
+    }
+
+    /**
+     * Asserts the `conversion:advise` command after the conversion is executed.
+     */
+    protected function assertAdviseAfterCommand(): void
+    {
         $adviceAfter = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
         $this->assertTrue(
             false !== strpos($adviceAfter, $this->getExpectedAdviceAfterConversion()),
@@ -191,13 +227,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
                 $adviceAfter
             )
         );
-
-        $this->assertCommand(
-            sprintf('conversion:restore-master %s', $this->siteName),
-            self::DEV_ENV
-        );
-        $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
-        $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
     }
 
     /**

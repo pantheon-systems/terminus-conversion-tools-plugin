@@ -36,13 +36,19 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
     }
 
     /**
-     * Returns the part of the advice copy before the conversion is executed.
-     *
-     * @return string
+     * @inheritdoc
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
         return 'convert the site to use "drupal-recommended" Pantheon Upstream';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getExpectedAdviceAfterConversion(): string
+    {
+        return '';
     }
 
     /**
@@ -53,15 +59,6 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
      */
     public function testConversionComposerCommands(): void
     {
-        $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
-        $this->assertTrue(
-            false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),
-            sprintf(
-                'Advice for %s upstream-based site must contain "%s" copy. Actual advice is: "%s"',
-                $this->getRealUpstreamId(),
-                $this->getExpectedAdviceBeforeConversion(),
-                $adviceBefore
-            )
-        );
+        $this->assertAdviseBeforeCommand();
     }
 }

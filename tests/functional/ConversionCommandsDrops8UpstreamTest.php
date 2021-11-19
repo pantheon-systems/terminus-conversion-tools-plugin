@@ -28,9 +28,7 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
     }
 
     /**
-     * Returns the part of the advice copy before the conversion is executed.
-     *
-     * @return string
+     * @inheritdoc
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
@@ -38,9 +36,7 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
     }
 
     /**
-     * Returns the part of the advice copy after the conversion is executed.
-     *
-     * @return string
+     * @inheritdoc
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
