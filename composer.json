@@ -38,7 +38,7 @@
         "tests:functional:group:upstream:drops8": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_drops8",
         "tests:functional:group:upstream:empty": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_empty",
         "tests:functional:group:upstream:drupal-project": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_drupal_project",
-        "tests:functional:group:upstream:empty-drupal-recommended": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=upstream_empty_drupal_recommended",
+        "tests:functional:group:advise-scenarios:empty": "phpunit --testsuit=functional --debug -c ./phpunit.xml --group=advise_scenarios_empty_upstream",
         "tests:all": [
             "@tests:unit",
             "@tests:functional"

@@ -37,8 +37,8 @@ jobs:
             group: upstream:empty
           - name: on drupal-project upstream
             group: upstream:drupal-project
-          - name: on empty upstream on top of drupal-recommended
-            group: upstream:empty-drupal-recommended
+          - name: advise command scenarios on empty upstream
+            group: advise-scenarios:empty
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}

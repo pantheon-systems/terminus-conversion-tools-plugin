@@ -75,7 +75,7 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
      *   1. empty upstream on top of drupal-recommended upstream;
      *   2. empty upstream on top of drupal-project upstream.
      *
-     * @group upstream_empty_drupal_recommended
+     * @group advise_scenarios_empty_upstream
      * @group advise_command
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface
