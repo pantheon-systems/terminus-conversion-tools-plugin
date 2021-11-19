@@ -22,7 +22,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    private string $siteName;
+    protected string $siteName;
 
     /**
      * @var string
@@ -32,7 +32,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var \Symfony\Contracts\HttpClient\HttpClientInterface
      */
-    private HttpClientInterface $httpClient;
+    protected HttpClientInterface $httpClient;
 
     /**
      * @var string
