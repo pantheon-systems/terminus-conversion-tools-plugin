@@ -33,15 +33,21 @@ trait ConversionCommandsTrait
     /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
+     * @param bool $force
+     *
      * @return string
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function cloneSiteGitRepository(): string
+    private function cloneSiteGitRepository(bool $force = true): string
     {
         $siteDirName = sprintf('%s_composer_conversion', $this->site->getName());
         $path = $this->site->getLocalCopyDir($siteDirName);
+        if (!$force && 2 < count(scandir($path))) {
+            return $path;
+        }
+
         $this->log()->notice(
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
