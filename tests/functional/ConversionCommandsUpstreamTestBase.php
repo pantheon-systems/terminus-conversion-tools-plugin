@@ -22,7 +22,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    private string $siteName;
+    protected string $siteName;
 
     /**
      * @var string
@@ -60,6 +60,17 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      */
     protected function setUp(): void
     {
+        $this->setUpFixtureSite();
+        $this->setUpProjects();
+    }
+
+    /**
+     * Creates a fixture site and sets up upstream, and SSH keys on CI env.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    protected function setUpFixtureSite(): void
+    {
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
         $this->httpClient = HttpClient::create();
 
@@ -86,6 +97,16 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             sprintf('site:info %s', $this->siteName)
         )['upstream'];
 
+        if ($this->isCiEnv()) {
+            $this->addGitHostToKnownHosts();
+        }
+    }
+
+    /**
+     * Sets up (installs) projects (modules and themes).
+     */
+    protected function setUpProjects(): void
+    {
         $contribProjects = [
             'webform',
             'metatag',
@@ -135,10 +156,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      */
     public function testConversionComposerCommands(): void
     {
-        if ($this->isCiEnv()) {
-            $this->addGitHostToKnownHosts();
-        }
-
         $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
         $this->assertTrue(
             false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),

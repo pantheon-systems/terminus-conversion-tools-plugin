@@ -51,6 +51,10 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
      * @inheritdoc
      *
      * @group upstream_drops8
+     * @group composer_command
+     * @group release_to_master_command
+     * @group restore_master_command
+     * @group advise_command
      */
     public function testConversionComposerCommands(): void
     {

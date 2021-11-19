@@ -51,6 +51,10 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      * @inheritdoc
      *
      * @group upstream_empty
+     * @group composer_command
+     * @group release_to_master_command
+     * @group restore_master_command
+     * @group advise_command
      */
     public function testConversionComposerCommands(): void
     {
