@@ -8,6 +8,7 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Throwable;
 
 /**
  * Class AdviseCommand.
@@ -60,7 +61,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
-        $this->output()->write('Sorry, no advice is available.');
+        $this->output()->writeln('Sorry, no advice is available.');
     }
 
     /**
@@ -76,26 +77,34 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $git = new Git($localPath);
         $git->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
         $git->fetch(self::DROPS_8_UPSTREAM_ID);
-        $composerJsonDiff = $git->diff(
-            '--ignore-space-change',
-            '--unified=0',
-            Git::DEFAULT_BRANCH,
-            sprintf('%s/%s', self::DROPS_8_UPSTREAM_ID, 'default'),
-            'composer.json'
-        );
-        if ($composerJsonDiff) {
-            $this->log()->notice(
-                sprintf(
-                    'Differences in composer.json between the site code and the upstream code found: %s',
-                    $composerJsonDiff
-                )
+
+        try {
+            $composerJsonRequireExtraPackages = [];
+            $composerJsonContents = file_get_contents(Files::buildPath($localPath, 'composer.json'));
+            $composerJsonRequireExtraPackages = array_keys(array_filter(
+                json_decode($composerJsonContents, true)['require'],
+                fn($package) => 'composer/installers' !== $package && false === strpos($package, 'drupal/core-'),
+                ARRAY_FILTER_USE_KEY
+            ));
+        } catch (Throwable $t) {
+            $this->log()->error(
+                sprintf('Failed composer.json analysis: %s', $t->getMessage())
             );
-            $this->output()->write('Composer used incorrectly.');
-        } else {
-            $this->output()->write('Standard drops-8 site.');
         }
 
-        $this->output()->write(
+        if (0 < count($composerJsonRequireExtraPackages)) {
+            $this->log()->notice(
+                sprintf(
+                    'Extra packages found in composer.json: %s.',
+                    implode(', ', $composerJsonRequireExtraPackages)
+                )
+            );
+            $this->output()->writeln('Composer used incorrectly.');
+        } else {
+            $this->output()->writeln('Standard drops-8 site.');
+        }
+
+        $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
 (i.e. `terminus conversion:composer {$this->site->getName()}`).
@@ -108,7 +117,7 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
-        $this->output()->write(
+        $this->output()->writeln(
             <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream.
 EOD
@@ -144,7 +153,7 @@ EOD
                 );
                 $identicalCommitHashes = array_intersect($siteCommitHashes, $upstreamCommitHashes);
                 if (0 < count($identicalCommitHashes)) {
-                    $this->output()->write(
+                    $this->output()->writeln(
                         <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus -
 `terminus site:upstream:set {$this->site->getName()} drupal-recommended`.
@@ -155,7 +164,7 @@ EOD
                 }
             }
 
-            $this->output()->write(
+            $this->output()->writeln(
                 <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream and then switch the upstream with Terminus to
 "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site->getName()} drupal-recommended`).
@@ -168,7 +177,7 @@ EOD
         if (is_file(Files::buildPath($localPath, 'build-metadata.json'))) {
             // Build artifact created by Terminus Build Tools plugin is present.
 
-            $this->output()->write(
+            $this->output()->writeln(
                 <<<EOD
 Advice: stay on "empty" upstream.
 EOD
@@ -177,7 +186,7 @@ EOD
             return;
         }
 
-        $this->output()->write(
+        $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
 (i.e. `terminus conversion:composer {$this->site->getName()}`), but stay on "empty" upstream.
