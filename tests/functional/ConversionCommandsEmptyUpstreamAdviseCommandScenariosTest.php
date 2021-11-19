@@ -90,7 +90,7 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
         $this->scenario = self::SCENARIO_ON_TOP_OF_DRUPAL_PROJECT;
 
         $composerJsonPath = Files::buildPath(
-            '~',
+            getenv('HOME'),
             'pantheon-local-copies',
             $this->siteName . '_composer_conversion',
             'upstream-configuration',
