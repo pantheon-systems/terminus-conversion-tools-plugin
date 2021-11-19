@@ -69,9 +69,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @param string $site_id
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function convert(
         string $site_id,

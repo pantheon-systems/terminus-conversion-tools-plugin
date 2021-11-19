@@ -35,9 +35,8 @@ trait ConversionCommandsTrait
      *
      * @return string
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function cloneSiteGitRepository(): string
     {
@@ -60,6 +59,8 @@ trait ConversionCommandsTrait
      * Returns the LocalMachineHelper.
      *
      * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
+     *
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getLocalMachineHelper(): LocalMachineHelper
     {

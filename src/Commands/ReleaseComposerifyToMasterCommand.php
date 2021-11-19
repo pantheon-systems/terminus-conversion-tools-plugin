@@ -35,6 +35,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
      * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function releaseToMaster(string $site_id, array $options = ['branch' => self::COMPOSERIFY_GIT_BRANCH]): void
     {

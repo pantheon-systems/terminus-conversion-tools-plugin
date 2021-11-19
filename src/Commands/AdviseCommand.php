@@ -36,6 +36,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      * @param string $site_id
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function advise(string $site_id): void
     {
@@ -74,9 +75,8 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Prints advice related to "drops-8" upstream.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function adviseOnDrops8(): void
     {
@@ -135,9 +135,8 @@ EOD
     /**
      * Prints advice related to "empty" upstream.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function adviseOnEmpty(): void
     {

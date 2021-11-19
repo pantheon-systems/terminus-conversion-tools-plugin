@@ -26,6 +26,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      * @param string $site_id
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function restoreMaster(string $site_id): void
     {
