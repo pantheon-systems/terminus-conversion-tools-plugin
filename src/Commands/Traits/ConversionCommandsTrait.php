@@ -4,8 +4,10 @@ namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
 use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\TerminusModel;
+use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -182,5 +184,56 @@ trait ConversionCommandsTrait
         }
 
         return $this->getSupportedSourceUpstreamIds()[$upstreamAlias];
+    }
+
+    /**
+     * Deletes the target multidev environment and associated git branch if exists.
+     *
+     * @param string $branch
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function deleteMultidevIfExists(string $branch)
+    {
+        try {
+            /** @var \Pantheon\Terminus\Models\Environment $multidev */
+            $multidev = $this->site->getEnvironments()->get($branch);
+            if (!$this->input()->getOption('yes') && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                        $branch
+                    )
+                )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete multidev "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->log()->notice(
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $branch)
+            );
+            $workflow = $multidev->delete(['delete_branch' => true]);
+            $this->processWorkflow($workflow);
+        } catch (TerminusNotFoundException $e) {
+            if ($this->git->isRemoteBranchExists($branch)) {
+                if (!$this->input()->getOption('yes')
+                    && !$this->io()->confirm(
+                        sprintf(
+                            'The git branch "%s" already exists. Are you sure you want to delete it?',
+                            $branch
+                        )
+                    )
+                ) {
+                    throw new TerminusCancelOperationException(
+                        sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
+                    );
+                }
+
+                $this->git->deleteRemoteBranch($branch);
+            }
+        }
     }
 }
