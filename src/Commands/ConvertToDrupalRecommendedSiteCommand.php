@@ -88,6 +88,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         $this->updateComposerJsonMeta();
 
+        $this->log()->notice('Adding composer dependencies...');
         try {
             foreach ($this->getComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
@@ -98,6 +99,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                 $composer->require(...$arguments);
                 $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
             }
+
+            $this->log()->notice('Updating composer dependencies...');
 
             $composer->update();
         } catch (Throwable $t) {
@@ -147,12 +150,15 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composerJson['require']['pantheon-upstreams/upstream-configuration'] = 'self.version';
         $composerJson['minimum-stability'] = 'stable';
 
+        // Change installer-paths for contrib projects.
         unset($composerJson['extra']['installer-paths']['web/modules/composer/{$name}']);
         unset($composerJson['extra']['installer-paths']['web/profiles/composer/{$name}']);
         unset($composerJson['extra']['installer-paths']['web/themes/composer/{$name}']);
         $composerJson['extra']['installer-paths']['web/modules/contrib/{$name}'] = ['type:drupal-module'];
         $composerJson['extra']['installer-paths']['web/profiles/contrib/{$name}'] = ['type:drupal-profile'];
         $composerJson['extra']['installer-paths']['web/themes/contrib/{$name}'] = ['type:drupal-theme'];
+
+        // Add installer-paths for custom projects.
         $composerJson['extra']['installer-paths']['web/modules/custom/{$name}'] = ['type:drupal-custom-module'];
         $composerJson['extra']['installer-paths']['web/profiles/custom/{$name}'] = ['type:drupal-custom-profile'];
         $composerJson['extra']['installer-paths']['web/themes/custom/{$name}'] = ['type:drupal-custom-theme'];
