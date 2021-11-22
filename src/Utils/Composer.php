@@ -69,6 +69,18 @@ class Composer
     }
 
     /**
+     * Executes `composer update` command.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function update(...$options): void
+    {
+        $this->execute(['composer', 'update', ...$options]);
+    }
+
+    /**
      * Executes the Composer command.
      *
      * @param array $command
