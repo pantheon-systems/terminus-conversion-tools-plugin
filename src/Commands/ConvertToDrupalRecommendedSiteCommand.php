@@ -114,7 +114,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        // @todo: apply site-specific changes related to "drupal-project" on top of "drupal-recommended".
+        $this->detectDrupalProjectDiff();
 
         if (!$options['dry-run']) {
             try {
@@ -233,5 +233,88 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                 'is_dev' => true,
             ],
         ];
+    }
+
+    /**
+     * Detects the differences between the site's code and "drupal-project" upstream code.
+     *
+     * If the difference is found, try to apply a patch and ask the user to resolve merge conflicts if found.
+     */
+    private function detectDrupalProjectDiff()
+    {
+        $this->log()->notice(
+            <<<EOD
+Detecting the difference between the site code and its upstream ("drupal-project") that need to be applied...
+EOD
+        );
+        try {
+            $this->git->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
+            $this->git->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
+
+            $diffFiles = $this->git->diff(
+                '--diff-filter=M',
+                '--name-only',
+                sprintf(
+                    '%s/%s..%s/%s',
+                    self::DRUPAL_PROJECT_UPSTREAM_ID,
+                    Git::DEFAULT_BRANCH,
+                    Git::DEFAULT_REMOTE,
+                    Git::DEFAULT_BRANCH
+                ),
+                '--',
+                ':!composer.json'
+            );
+
+            if ($diffFiles) {
+                // @todo: minimize interaction with a user (automate as much as possible):
+                //        - detect merge conflicts automatically;
+                //        - apply all non-conflict changes automatically;
+                //        - ask to resolve conflicts manually;
+                //        - ask to execute the command with `--conflicts-resolved` option;
+                //        - commit the changes automatically.
+                //
+                // @todo: implement `--conflicts-resolved` option
+
+                $this->log()->warning(
+                    sprintf(
+                        'The code difference detected in the following files: %s',
+                        implode(', ', array_filter(explode(PHP_EOL, $diffFiles)))
+                    )
+                );
+                $this->log()->warning(
+                    sprintf(
+                        <<<EOD
+The next step in the site conversion process is to apply the changes manually in %s branch and resolve possible
+subsequent merge conflicts as follows:
+1. `cd %s`
+2. `%s`
+3. resolve code conflicts if required
+4. commit the changes: `git add -A && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
+5. execute the `conversion:drupal-recommended` Terminus command with `--conflicts-resolved` option to continue
+EOD,
+                        self::TARGET_GIT_BRANCH,
+                        $this->localPath,
+                        sprintf(
+                            'git diff --diff-filter=M %s/%s..%s/%s -- \':!composer.json\' | git apply -3',
+                            self::DRUPAL_PROJECT_UPSTREAM_ID,
+                            Git::DEFAULT_BRANCH,
+                            Git::DEFAULT_REMOTE,
+                            Git::DEFAULT_BRANCH
+                        )
+                    )
+                );
+            } else {
+                $this->log()->notice(
+                    'No differences between the site code and its upstream ("drupal-project") are detected'
+                );
+            }
+        } catch (Throwable $t) {
+            $this->log()->error(
+                sprintf(
+                    'Failed detecting the differences between the site code and its upstream: %s',
+                    $t->getMessage()
+                )
+            );
+        }
     }
 }
