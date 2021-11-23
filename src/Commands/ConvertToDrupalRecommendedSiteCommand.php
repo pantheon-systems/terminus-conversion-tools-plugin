@@ -146,7 +146,10 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         if ($siteSpecificFiles) {
             $this->log()->notice('Copying site-specific files...');
             $this->git->reset();
-            $this->git->commit('Copy site-specific files', $siteSpecificFiles);
+            $this->git->commit(
+                'Copy site-specific files',
+                array_filter(explode(PHP_EOL, $siteSpecificFiles))
+            );
             $this->log()->notice('Site-specific files have been copied');
         }
 
