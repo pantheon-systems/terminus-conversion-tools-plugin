@@ -294,26 +294,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function createLocalGitBranch(): void
-    {
-        $this->log()->notice(
-            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
-        );
-        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->checkout(
-            '--no-track',
-            '-b',
-            $this->branch,
-            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
-        );
-    }
-
-    /**
      * Copies configuration files.
      */
     private function copyConfigurationFiles(): void
