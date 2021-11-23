@@ -26,11 +26,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
     private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
+    private const DRUPAL_PROJECT_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
 
     /**
      * @var string
      */
     private string $localPath;
+
+    /**
+     * @var string
+     */
+    private string $branch;
 
     /**
      * Converts a "drupal-project" upstream-based site into "drupal-recommended" upstream-based one.
@@ -61,8 +67,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $branch = $options['branch'];
-        if (strlen($branch) > 11) {
+        $this->branch = $options['branch'];
+        if (strlen($this->branch) > 11) {
             throw new TerminusException(
                 'The target git branch name for multidev env must not exceed 11 characters limit'
             );
@@ -73,24 +79,15 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->git = new Git($this->localPath);
         $composer = new Composer($this->localPath);
 
-        $this->log()->notice(sprintf('Creating "%s" git branch...', $branch));
-        $this->git->checkout('-b', $branch, Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH);
-        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
+        $this->createLocalGitBranch();
+        $this->copySiteSpecificFiles();
 
-        $this->git->checkout(
-            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH,
-            'upstream-configuration'
-        );
-        $this->git->checkout(
-            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH,
-            'pantheon.upstream.yml'
-        );
-
-        $this->updateComposerJsonMeta();
-
-        $this->log()->notice('Adding composer dependencies...');
+        $this->log()->notice('Updating composer.json to match "drupal-recommended" upstream...');
         try {
+            $this->git->checkout(Git::DEFAULT_BRANCH, 'composer.json');
+            $this->git->commit('Update composer.json to include site-specific changes', ['composer.json']);
+
+            $this->updateComposerJsonMeta();
             foreach ($this->getComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
                 if ($dependency['is_dev']) {
@@ -102,37 +99,58 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             }
 
             $this->log()->notice('Updating composer dependencies...');
-
             $composer->update();
+            $this->git->commit(
+                'Update composer.json to match "drupal-recommended" upstream and install dependencies',
+                ['composer.json', 'composer.lock']
+            );
+            $this->log()->notice('composer.json updated to match "drupal-recommended" upstream');
         } catch (Throwable $t) {
-            $this->log()->warning(
+            $this->log()->error(
                 sprintf(
-                    'Failed updating composer dependencies: %s',
+                    'Failed updating composer.json: %s',
                     $t->getMessage()
                 )
             );
         }
 
-        if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Convert to "drupal-recommended" upstream');
-            $this->log()->notice('Codebase converted to match "drupal-recommended" upstream');
-        }
+        // @todo: apply site-specific changes related to "drupal-project" on top of "drupal-recommended".
 
         if (!$options['dry-run']) {
             try {
-                $this->deleteMultidevIfExists($branch);
+                $this->deleteMultidevIfExists($this->branch);
             } catch (TerminusCancelOperationException $e) {
                 return;
             }
 
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $branch));
-            $this->git->push($branch);
-            $mdEnv = $this->createMultidev($branch);
+            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+            $this->git->push($this->branch);
+            $mdEnv = $this->createMultidev($this->branch);
 
             $this->log()->notice(
-                sprintf('Link to "%s" multidev environment dashboard: %s', $branch, $mdEnv->dashboardUrl())
+                sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
             );
         }
+    }
+
+    /**
+     * Copies the site-specific files.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function copySiteSpecificFiles(): void
+    {
+        $this->git->checkout(Git::DEFAULT_BRANCH, '.');
+
+        $siteSpecificFiles = $this->git->diff('--cached', '--name-only', '--diff-filter=A');
+        if ($siteSpecificFiles) {
+            $this->log()->notice('Copying site-specific files...');
+            $this->git->reset();
+            $this->git->commit('Copy site-specific files', $siteSpecificFiles);
+            $this->log()->notice('Site-specific files have been copied');
+        }
+
+        $this->git->reset('HEAD', '--hard');
     }
 
     /**
