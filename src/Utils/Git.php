@@ -45,12 +45,19 @@ class Git
      *
      * @param string $commitMessage
      *   The commit message.
+     * @param null|array $files
+     *   The files to stage.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function commit(string $commitMessage): void
+    public function commit(string $commitMessage, ?array $files = null): void
     {
-        $this->execute(['add', '-A']);
+        if (null === $files) {
+            $this->execute(['add', '-A']);
+        } else {
+            $this->execute(['add', ...$files]);
+        }
+
         $this->execute(['commit', '-m', $commitMessage]);
     }
 
