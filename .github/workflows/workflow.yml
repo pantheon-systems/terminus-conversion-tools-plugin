@@ -32,13 +32,13 @@ jobs:
       matrix:
         testing_groups:
           - name: on drops-8 upstream
-            group: upstream:drops8
+            group: upstream_drops8
           - name: on empty upstream
-            group: upstream:empty
+            group: upstream_empty
           - name: on drupal-project upstream
-            group: upstream:drupal-project
+            group: upstream_drupal_project
           - name: advise command scenarios on empty upstream
-            group: advise-scenarios:empty
+            group: advise_scenarios_empty_upstream
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
@@ -80,4 +80,4 @@ jobs:
           ./terminus conversion:composer -h
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
-        run: composer tests:functional:group:${{ matrix.testing_groups.group }}
+        run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
