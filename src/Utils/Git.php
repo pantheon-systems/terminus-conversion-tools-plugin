@@ -64,18 +64,13 @@ class Git
     /**
      * Returns the result of `git diff` command.
      *
-     * @param array $options
+     * @param string $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function diff(...$options): array
+    public function diff(...$options): string
     {
-        $files = $this->execute(['diff', ...$options]);
-        if (!$files) {
-            return [];
-        }
-
-        return array_filter(explode(PHP_EOL, $files));
+        return $this->execute(['diff', ...$options]);
     }
 
     /**
