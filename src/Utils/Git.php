@@ -62,32 +62,6 @@ class Git
     }
 
     /**
-     * Returns the result of `git diff` command.
-     *
-     * @param string $options
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    public function diff(...$options): string
-    {
-        return $this->execute(['diff', ...$options]);
-    }
-
-    /**
-     * Returns the result of `git diff` command as a list of files affected.
-     *
-     * @param string $options
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    public function diffFileList(...$options): array
-    {
-        return array_filter(
-            explode(PHP_EOL, $this->diff('--name-only', ...$options))
-        );
-    }
-
-    /**
      * Returns the result of `git apply` command.
      *
      * @param string $patch
@@ -214,15 +188,29 @@ class Git
     }
 
     /**
-     * Performs diff operation.
+     * Returns the result of `git diff` command.
      *
      * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function diff(...$options)
+    public function diff(...$options): string
     {
         return $this->execute(['diff', ...$options]);
+    }
+
+    /**
+     * Returns the result of `git diff` command as a list of files affected.
+     *
+     * @param string $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function diffFileList(...$options): array
+    {
+        return array_filter(
+            explode(PHP_EOL, $this->diff('--name-only', ...$options))
+        );
     }
 
     /**
