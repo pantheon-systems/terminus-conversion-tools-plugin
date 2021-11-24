@@ -194,7 +194,7 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function deleteMultidevIfExists(string $branch)
+    private function deleteMultidevIfExists(string $branch): void
     {
         try {
             /** @var \Pantheon\Terminus\Models\Environment $multidev */
