@@ -41,8 +41,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     /**
      * Converts a "drupal-project" upstream-based site into "drupal-recommended" upstream-based one.
      *
-     * @todo: update `conversion:advise` command advice message for a "drupal-project" upstream-based site.
-     *
      * @command conversion:drupal-recommended
      *
      * @option branch The target branch name for multidev env.

@@ -40,7 +40,10 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to use "drupal-recommended" Pantheon Upstream';
+        return
+            <<<EOD
+convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
+EOD;
     }
 
     /**

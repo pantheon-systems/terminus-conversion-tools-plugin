@@ -127,7 +127,8 @@ EOD
     {
         $this->output()->writeln(
             <<<EOD
-Advice: convert the site to use "drupal-recommended" Pantheon Upstream.
+Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
+Terminus command.
 EOD
         );
     }
