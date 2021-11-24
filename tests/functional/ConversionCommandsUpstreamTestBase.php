@@ -274,9 +274,9 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         ];
         foreach ($pathsToTest as $module => $path) {
             $url = sprintf('%s/%s', $baseUrl, $path);
-            $this->assertEquals(
+            $this->assertEqualsInAttempts(
+                fn () => $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 200,
-                $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
             );
         }
