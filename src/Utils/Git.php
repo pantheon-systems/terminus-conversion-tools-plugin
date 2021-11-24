@@ -74,6 +74,34 @@ class Git
     }
 
     /**
+     * Returns the result of `git diff` command as a list of files affected.
+     *
+     * @param string $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function diffFileList(...$options): array
+    {
+        return array_filter(
+            explode(PHP_EOL, $this->diff('--name-only', ...$options))
+        );
+    }
+
+    /**
+     * Returns the result of `git apply` command.
+     *
+     * @param string $patch
+     * @param string ...$options
+     *
+     * @return string
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function apply(string $patch, ...$options): string
+    {
+        return $this->execute(['apply', ...$options], $patch);
+    }
+
+    /**
      * Returns TRUE is there is anything to commit.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
@@ -250,18 +278,19 @@ class Git
      * Executes the Git command.
      *
      * @param array|string $command
+     * @param null|string $input
      *
      * @return string
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function execute($command): string
+    private function execute($command, ?string $input = null): string
     {
         try {
             if (is_string($command)) {
                 $process = Process::fromShellCommandline($command, $this->workingDirectory);
             } else {
-                $process = new Process(['git', ...$command], $this->workingDirectory, null, null, 180);
+                $process = new Process(['git', ...$command], $this->workingDirectory, null, $input, 180);
             }
             $process->mustRun();
         } catch (Throwable $t) {
