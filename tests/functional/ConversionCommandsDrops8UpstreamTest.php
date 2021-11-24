@@ -26,4 +26,34 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
     {
         return 'drupal8';
     }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getExpectedAdviceBeforeConversion(): string
+    {
+        return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getExpectedAdviceAfterConversion(): string
+    {
+        return 'Sorry, no advice is available.';
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @group upstream_drops8
+     * @group composer_command
+     * @group release_to_master_command
+     * @group restore_master_command
+     * @group advise_command
+     */
+    public function testConversionComposerCommands(): void
+    {
+        parent::testConversionComposerCommands();
+    }
 }

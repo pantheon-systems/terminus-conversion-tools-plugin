@@ -109,13 +109,13 @@ class Git
     /**
      * Fetches from the remote.
      *
-     * @param string $remote
+     * @param string $remoteName
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function fetch(string $remote)
+    public function fetch(string $remoteName)
     {
-        $this->execute(['fetch', $remote]);
+        $this->execute(['fetch', $remoteName]);
     }
 
     /**
@@ -167,6 +167,18 @@ class Git
     }
 
     /**
+     * Performs diff operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function diff(...$options)
+    {
+        return $this->execute(['diff', ...$options]);
+    }
+
+    /**
      * Deletes remote branch.
      *
      * @param string $branch
@@ -197,6 +209,22 @@ class Git
         }
 
         throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
+    }
+
+    /**
+     * Returns the list of commit hashes for the branch.
+     *
+     * @param string $branch
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    public function getCommitHashes(string $branch): array
+    {
+        $commitHashes = $this->execute(['log', $branch, '--pretty=format:%H']);
+
+        return preg_split('/\r\n|\n|\r/', $commitHashes);
     }
 
     /**

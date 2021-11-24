@@ -6,6 +6,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Tests\Traits\TerminusTestTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Class ConversionCommandsUpstreamTestBase.
@@ -21,7 +22,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    private string $siteName;
+    protected string $siteName;
 
     /**
      * @var string
@@ -31,7 +32,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var \Symfony\Contracts\HttpClient\HttpClientInterface
      */
-    protected $httpClient;
+    protected HttpClientInterface $httpClient;
 
     /**
      * @var string
@@ -53,11 +54,36 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     abstract protected function getRealUpstreamId(): string;
 
     /**
+     * Returns the part of the advice copy before the conversion is executed.
+     *
+     * @return string
+     */
+    abstract protected function getExpectedAdviceBeforeConversion(): string;
+
+    /**
+     * Returns the part of the advice copy after the conversion is executed.
+     *
+     * @return string
+     */
+    abstract protected function getExpectedAdviceAfterConversion(): string;
+
+    /**
      * @inheritdoc
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     protected function setUp(): void
+    {
+        $this->setUpFixtureSite();
+        $this->setUpProjects();
+    }
+
+    /**
+     * Creates a fixture site and sets up upstream, and SSH keys on CI env.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    protected function setUpFixtureSite(): void
     {
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
         $this->httpClient = HttpClient::create();
@@ -85,10 +111,16 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             sprintf('site:info %s', $this->siteName)
         )['upstream'];
 
-        $this->terminus(
-            sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()),
-        );
+        if ($this->isCiEnv()) {
+            $this->addGitHostToKnownHosts();
+        }
+    }
 
+    /**
+     * Sets up (installs) projects (modules and themes).
+     */
+    private function setUpProjects(): void
+    {
         $contribProjects = [
             'webform',
             'metatag',
@@ -134,15 +166,11 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      * @covers \Pantheon\TerminusConversionTools\Commands\ReleaseComposerifyToMasterCommand
      * @covers \Pantheon\TerminusConversionTools\Commands\RestoreMasterCommand
      *
-     * @group convert_composer
-     *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     public function testConversionComposerCommands(): void
     {
-        if ($this->isCiEnv()) {
-            $this->addGitHostToKnownHosts();
-        }
+        $this->assertAdviseBeforeCommand();
 
         $this->assertCommand(
             sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
@@ -158,14 +186,47 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             '897fdf15-992e-4fa1-beab-89e2b5027e03: https://github.com/pantheon-upstreams/drupal-recommended',
             $siteInfoUpstream
         );
+        $this->assertAdviseAfterCommand();
 
         $this->assertCommand(
             sprintf('conversion:restore-master %s', $this->siteName),
             self::DEV_ENV
         );
-
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
         $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
+    }
+
+    /**
+     * Asserts the `conversion:advise` command before the conversion is executed.
+     */
+    protected function assertAdviseBeforeCommand(): void
+    {
+        $adviceBefore = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $this->assertTrue(
+            false !== strpos($adviceBefore, $this->getExpectedAdviceBeforeConversion()),
+            sprintf(
+                'Advice for %s upstream-based site must contain "%s" copy. Actual advice is: "%s"',
+                $this->getRealUpstreamId(),
+                $this->getExpectedAdviceBeforeConversion(),
+                $adviceBefore
+            )
+        );
+    }
+
+    /**
+     * Asserts the `conversion:advise` command after the conversion is executed.
+     */
+    protected function assertAdviseAfterCommand(): void
+    {
+        $adviceAfter = $this->terminus(sprintf('conversion:advise %s', $this->siteName));
+        $this->assertTrue(
+            false !== strpos($adviceAfter, $this->getExpectedAdviceAfterConversion()),
+            sprintf(
+                'Advice must contain "%s" copy. Actual advice is: "%s"',
+                $this->getExpectedAdviceAfterConversion(),
+                $adviceAfter
+            )
+        );
     }
 
     /**
@@ -181,6 +242,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         $this->terminus($command);
         sleep(60);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
+        sleep(10);
         $this->assertPagesExists($env);
         $this->assertLibrariesExists($env);
     }

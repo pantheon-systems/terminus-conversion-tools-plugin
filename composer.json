@@ -4,6 +4,7 @@
     "type": "terminus-plugin",
     "license": "MIT",
     "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": { "Pantheon\\TerminusConversionTools\\": "src" }
     },
@@ -29,11 +30,12 @@
         }
     },
     "scripts": {
-        "cs": "phpcs --standard=PSR2 -n src tests",
-        "cbf": "phpcbf --standard=PSR2 -n src tests",
+        "cs": "vendor/bin/phpcs --standard=PSR2 -n src tests",
+        "cbf": "vendor/bin/phpcbf --standard=PSR2 -n src tests",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
-        "tests:unit": "phpunit --testsuit=unit --debug -c ./phpunit.xml",
-        "tests:functional": "phpunit --testsuit=functional --debug -c ./phpunit.xml",
+        "tests:unit": "vendor/bin/phpunit --testsuit=unit --debug --do-not-cache-result -c ./phpunit.xml --verbose",
+        "tests:functional": "vendor/bin/phpunit --testsuit=functional --debug --do-not-cache-result -c ./phpunit.xml --verbose",
+        "tests:functional:group": "vendor/bin/phpunit --testsuit=functional --debug --do-not-cache-result -c ./phpunit.xml --verbose --group",
         "tests:all": [
             "@tests:unit",
             "@tests:functional"

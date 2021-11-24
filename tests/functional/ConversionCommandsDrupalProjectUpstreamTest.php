@@ -3,14 +3,22 @@
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
 /**
- * Class ConversionCommandsEmptyUpstreamTest.
+ * Class ConversionCommandsDrupalProjectUpstreamTest.
  *
  * Uses a site fixture based on https://github.com/pantheon-fixtures/site-example-drops-8-non-composer custom upstream.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstreamTestBase
+final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpstreamTestBase
 {
+    /**
+     * @inheritdoc
+     */
+    protected function setUp(): void
+    {
+        $this->setUpFixtureSite();
+    }
+
     /**
      * @inheritdoc
      */
@@ -24,7 +32,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getRealUpstreamId(): string
     {
-        return 'empty';
+        return 'drupal9';
     }
 
     /**
@@ -32,7 +40,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
+        return 'convert the site to use "drupal-recommended" Pantheon Upstream';
     }
 
     /**
@@ -40,20 +48,17 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'Sorry, no advice is available.';
+        return '';
     }
 
     /**
      * @inheritdoc
      *
-     * @group upstream_empty
-     * @group composer_command
-     * @group release_to_master_command
-     * @group restore_master_command
+     * @group upstream_drupal_project
      * @group advise_command
      */
     public function testConversionComposerCommands(): void
     {
-        parent::testConversionComposerCommands();
+        $this->assertAdviseBeforeCommand();
     }
 }

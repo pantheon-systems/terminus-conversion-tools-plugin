@@ -8,12 +8,44 @@ on:
         required: true
         default: 1
 jobs:
-  main:
+  build:
     runs-on: ubuntu-latest
-    name: Validate code and run tests
+    name: Build
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        with:
+          coverage: pcov
+      - name: Install dependencies
+        run: composer install
+      - name: Validate code
+        run: composer cs
+      - name: Run unit tests
+        run: composer tests:unit
+
+  functional_tests:
+    if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
+    needs: [ build ]
+    strategy:
+      matrix:
+        testing_groups:
+          - name: on drops-8 upstream
+            group: upstream_drops8
+          - name: on empty upstream
+            group: upstream_empty
+          - name: on drupal-project upstream
+            group: upstream_drupal_project
+          - name: advise command scenarios on empty upstream
+            group: advise_scenarios_empty_upstream
+      fail-fast: false
+    runs-on: ubuntu-latest
+    name: Testing ${{ matrix.testing_groups.name }}
     env:
       TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:
@@ -23,6 +55,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           coverage: pcov
+      - name: Install dependencies
+        run: composer install
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.5.3
         with:
@@ -31,28 +65,19 @@ jobs:
         run: |
           git config --global user.email "${{ secrets.TERMINUS_USER_EMAIL }}"
           git config --global user.name "${{ secrets.TERMINUS_USER_NAME }}"
-      - name: Install dependencies
-        run: composer install
-      - name: Validate code
-        run: composer cs
-      - name: Run unit tests
-        run: composer tests:unit
       - name: Install and build Terminus
-        if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
         run: |
           mkdir ../terminus-source && cd ../terminus-source
           composer create-project pantheon-systems/terminus . ^3 --stability=dev
           composer phar:build
           rsync -r --copy-links . ..
           rm -rf ../terminus-source
-      - name: Install the plugin from the local path
-        if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
+      - name: Install plugin from local path
         working-directory: ..
         run: |
           ./terminus self:plugin:install terminus-conversion-tools-plugin
           ./terminus self:plugin:list
           ./terminus conversion:composer -h
       - name: Run functional tests
-        if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
         working-directory: ../terminus-conversion-tools-plugin
-        run: composer tests:functional
+        run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
