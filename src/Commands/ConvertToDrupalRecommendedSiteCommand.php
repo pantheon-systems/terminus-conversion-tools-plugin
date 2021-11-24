@@ -88,6 +88,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         }
 
         $this->createLocalGitBranch();
+        $drupalRecommendedComposerDependencies = $this->getComposerDependencies();
+
         $this->copySiteSpecificFiles();
 
         $this->log()->notice('Updating composer.json to match "drupal-recommended" upstream...');
@@ -96,7 +98,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             $this->git->commit('Update composer.json to include site-specific changes', ['composer.json']);
 
             $this->updateComposerJsonMeta();
-            foreach ($this->getComposerDependencies() as $dependency) {
+            foreach ($drupalRecommendedComposerDependencies as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
                 if ($dependency['is_dev']) {
                     $arguments[] = '--dev';
@@ -161,7 +163,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     {
         $this->git->checkout(Git::DEFAULT_BRANCH, '.');
 
-        $siteSpecificFiles = $this->git->diff('--cached', '--name-only', '--diff-filter=A');
+        $siteSpecificFiles = $this->git->diffFileList('--diff-filter=A');
         if ($siteSpecificFiles) {
             $this->log()->notice('Copying site-specific files...');
             $this->git->reset();
@@ -217,38 +219,29 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      */
     private function getComposerDependencies(): array
     {
-        return [
-            [
-                'package' => 'drupal/core-recommended',
-                'version' => '^9.2',
-                'is_dev' => false,
-            ],
-            [
-                'package' => 'drupal/core-composer-scaffold',
-                'version' => '^9.2',
-                'is_dev' => false,
-            ],
-            [
-                'package' => 'composer/installers',
-                'version' => '^1.9',
-                'is_dev' => false,
-            ],
-            [
-                'package' => 'pantheon-systems/drupal-integrations',
-                'version' => '^9',
-                'is_dev' => false,
-            ],
-            [
-                'package' => 'cweagans/composer-patches',
-                'version' => '^1.7',
-                'is_dev' => false,
-            ],
-            [
-                'package' => 'drupal/core-dev',
-                'version' => '^9.2',
-                'is_dev' => true,
-            ],
-        ];
+        $composerJson = file_get_contents(Files::buildPath($this->localPath, 'composer.json'));
+        $composerJson = json_decode($composerJson, true);
+
+        $dependencies = [];
+        foreach (['require', 'require-dev'] as $composerJsonSection) {
+            $dependencies = array_merge(
+                $dependencies,
+                array_map(
+                    fn($package, $version) => [
+                        'package' => $package,
+                        'version' => $version,
+                        'is_dev' => 'require-dev' === $composerJsonSection,
+                    ],
+                    array_keys($composerJson[$composerJsonSection]),
+                    $composerJson[$composerJsonSection]
+                )
+            );
+        }
+
+        return array_filter(
+            $dependencies,
+            fn($dependency) => 'self.version' !== $dependency['version']
+        );
     }
 
     /**
