@@ -297,6 +297,7 @@ EOD
                 )
             );
 
+            $this->log()->notice(sprintf('Copying the code differences onto %s branch...', self::TARGET_GIT_BRANCH));
             $patch = $this->git->diff(...$diffOptions);
             try {
                 // Try to apply the patch.
