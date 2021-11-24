@@ -47,15 +47,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.
+     * @option continue Continue an interrupted conversion process caused by code merge conflicts.
      *
      * @param string $site_id
      * @param array $options
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function convert(
         string $site_id,
-        array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
+        array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false, 'continue' => false]
     ): void {
         $this->site = $this->getSite($site_id);
 
@@ -74,10 +76,18 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $this->localPath = $this->cloneSiteGitRepository();
+        $this->localPath = $this->cloneSiteGitRepository(!$options['continue']);
 
         $this->git = new Git($this->localPath);
         $composer = new Composer($this->localPath);
+
+        if ($options['continue']) {
+            if (!$options['dry-run']) {
+                $this->pushTargetBranch();
+            }
+
+            return;
+        }
 
         $this->createLocalGitBranch();
         $this->copySiteSpecificFiles();
@@ -117,20 +127,31 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->detectDrupalProjectDiff();
 
         if (!$options['dry-run']) {
-            try {
-                $this->deleteMultidevIfExists($this->branch);
-            } catch (TerminusCancelOperationException $e) {
-                return;
-            }
-
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-            $mdEnv = $this->createMultidev($this->branch);
-
-            $this->log()->notice(
-                sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
-            );
+            $this->pushTargetBranch();
         }
+    }
+
+    /**
+     * Pushes the target branch to the site repository.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    private function pushTargetBranch(): void
+    {
+        try {
+            $this->deleteMultidevIfExists($this->branch);
+        } catch (TerminusCancelOperationException $e) {
+            return;
+        }
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
+        $mdEnv = $this->createMultidev($this->branch);
+
+        $this->log()->notice(
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
+        );
     }
 
     /**
@@ -291,7 +312,7 @@ Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
 1. resolve code merge conflicts found in %s files: %s
 2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
-2. run `conversion:drupal-recommended %s --continue` Terminus command to continue the conversion process
+3. run `terminus conversion:drupal-recommended %s --continue` Terminus command to continue the conversion process
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $this->localPath,
