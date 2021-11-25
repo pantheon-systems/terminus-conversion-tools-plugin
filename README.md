@@ -7,6 +7,7 @@ The main purposes of the Conversion Tools project are to ease the conversion of 
 
 Adds the following Terminus commands:
 * `conversion:composer`
+* `conversion:drupal-recommended`
 * `conversion:release-to-master`
 * `conversion:restore-master`
 
@@ -18,6 +19,7 @@ In active development
 
 ## Usage
 * Run `terminus conversion:composer` to convert a standard Drupal8 site into a Drupal8 site managed by Composer
+* Run `conversion:drupal-recommended` to convert a "drupal-project" upstream-based site into a "drupal-recommended" upstream-based one
 * Run `terminus conversion:release-to-master` to release a converted Drupal8 site managed by Composer to the master git branch
 * Run `terminus conversion:restore-master` to restore the master branch to its original state
 
@@ -30,5 +32,6 @@ terminus self:plugin:install terminus-conversion-tools-plugin
 
 ## Help
 Run `terminus help conversion:composer` for help.
+Run `conversion:drupal-recommended` for help
 Run `terminus help conversion:release-to-master` for help.
 Run `terminus help conversion:restore-master` for help.
