@@ -78,6 +78,7 @@ EOD;
     {
         return [
             'webform',
+            'examples',
             'entity',
             'ctools',
             'custom1',
