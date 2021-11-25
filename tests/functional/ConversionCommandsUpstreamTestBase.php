@@ -137,6 +137,8 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      */
     public function testConversionComposerCommands(): void
     {
+        $this->assertPagesExists(self::DEV_ENV);
+
         $this->assertAdviseBeforeCommand();
         $this->executeConvertCommand();
 
@@ -224,11 +226,13 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     }
 
     /**
-     * Sets up (installs) projects (modules and themes).
+     * Returns the list of contrib and custom projects to install.
+     *
+     * @return string[]
      */
-    private function setUpProjects(): void
+    protected function getProjects(): array
     {
-        $contribProjects = [
+        return [
             'webform',
             'metatag',
             'token',
@@ -242,13 +246,18 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             'adminimal_theme',
             'bootstrap',
             'omega',
-        ];
-        $customProjects = [
             'custom1',
             'custom2',
             'custom3',
         ];
-        foreach (array_merge($contribProjects, $customProjects) as $name) {
+    }
+
+    /**
+     * Sets up (installs) projects (modules and themes).
+     */
+    private function setUpProjects(): void
+    {
+        foreach ($this->getProjects() as $name) {
             $this->terminus(
                 sprintf('drush %s.dev -- en %s', $this->siteName, $name),
                 ['-y']
@@ -298,7 +307,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function assertLibrariesExists(string $env): void
+    protected function assertLibrariesExists(string $env): void
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
         $libraries = [
