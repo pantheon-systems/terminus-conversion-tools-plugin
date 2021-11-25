@@ -14,14 +14,6 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
     /**
      * @inheritdoc
      */
-    protected function setUp(): void
-    {
-        $this->setUpFixtureSite();
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function getUpstreamIdEnvName(): string
     {
         return 'TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID';
@@ -69,9 +61,7 @@ EOD;
     }
 
     /**
-     * Executes the conversion Terminus command.
-     *
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     * @inheritdoc
      */
     protected function executeConvertCommand(): void
     {
@@ -79,5 +69,27 @@ EOD;
             sprintf('conversion:drupal-recommended %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getProjects(): array
+    {
+        return [
+            'webform',
+            'entity',
+            'ctools',
+            'custom1',
+            'custom2',
+            'custom3',
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function assertLibrariesExists(string $env): void
+    {
     }
 }
