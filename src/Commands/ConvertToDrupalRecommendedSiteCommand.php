@@ -163,7 +163,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     {
         $this->git->checkout(Git::DEFAULT_BRANCH, '.');
 
-        $siteSpecificFiles = $this->git->diffFileList('--diff-filter=A');
+        $siteSpecificFiles = $this->git->diffFileList('--cached', '--diff-filter=A');
         if ($siteSpecificFiles) {
             $this->log()->notice('Copying site-specific files...');
             $this->git->reset();
