@@ -27,7 +27,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    private string $branch;
+    protected string $branch;
 
     /**
      * @var \Symfony\Contracts\HttpClient\HttpClientInterface
@@ -117,39 +117,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     }
 
     /**
-     * Sets up (installs) projects (modules and themes).
-     */
-    private function setUpProjects(): void
-    {
-        $contribProjects = [
-            'webform',
-            'metatag',
-            'token',
-            'entity',
-            'imce',
-            'field_group',
-            'ctools',
-            'date',
-            'pathauto',
-            'google_analytics',
-            'adminimal_theme',
-            'bootstrap',
-            'omega',
-        ];
-        $customProjects = [
-            'custom1',
-            'custom2',
-            'custom3',
-        ];
-        foreach (array_merge($contribProjects, $customProjects) as $name) {
-            $this->terminus(
-                sprintf('drush %s.dev -- en %s', $this->siteName, $name),
-                ['-y']
-            );
-        }
-    }
-
-    /**
      * @inheritdoc
      */
     protected function tearDown(): void
@@ -171,11 +138,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     public function testConversionComposerCommands(): void
     {
         $this->assertAdviseBeforeCommand();
-
-        $this->assertCommand(
-            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
-            $this->branch
-        );
+        $this->executeConvertCommand();
 
         $this->assertCommand(
             sprintf('conversion:release-to-master %s --branch=%s', $this->siteName, $this->branch),
@@ -194,6 +157,19 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         );
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
         $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
+    }
+
+    /**
+     * Executes the conversion Terminus command.
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    protected function executeConvertCommand(): void
+    {
+        $this->assertCommand(
+            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
+            $this->branch
+        );
     }
 
     /**
@@ -237,7 +213,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function assertCommand(string $command, string $env): void
+    protected function assertCommand(string $command, string $env): void
     {
         $this->terminus($command);
         sleep(60);
@@ -245,6 +221,39 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         sleep(10);
         $this->assertPagesExists($env);
         $this->assertLibrariesExists($env);
+    }
+
+    /**
+     * Sets up (installs) projects (modules and themes).
+     */
+    private function setUpProjects(): void
+    {
+        $contribProjects = [
+            'webform',
+            'metatag',
+            'token',
+            'entity',
+            'imce',
+            'field_group',
+            'ctools',
+            'date',
+            'pathauto',
+            'google_analytics',
+            'adminimal_theme',
+            'bootstrap',
+            'omega',
+        ];
+        $customProjects = [
+            'custom1',
+            'custom2',
+            'custom3',
+        ];
+        foreach (array_merge($contribProjects, $customProjects) as $name) {
+            $this->terminus(
+                sprintf('drush %s.dev -- en %s', $this->siteName, $name),
+                ['-y']
+            );
+        }
     }
 
     /**

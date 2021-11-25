@@ -5,7 +5,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 /**
  * Class ConversionCommandsDrupalProjectUpstreamTest.
  *
- * Uses a site fixture based on https://github.com/pantheon-fixtures/site-example-drops-8-non-composer custom upstream.
+ * Uses a site fixture based on https://github.com/pantheon-fixtures/site-drupal9 custom upstream.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
@@ -24,7 +24,7 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
      */
     protected function getUpstreamIdEnvName(): string
     {
-        return 'TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID';
+        return 'TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID';
     }
 
     /**
@@ -51,17 +51,33 @@ EOD;
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return '';
+        return 'Sorry, no advice is available.';
     }
 
     /**
      * @inheritdoc
      *
      * @group upstream_drupal_project
+     * @group drupal_recommended_command
+     * @group release_to_master_command
+     * @group restore_master_command
      * @group advise_command
      */
     public function testConversionComposerCommands(): void
     {
-        $this->assertAdviseBeforeCommand();
+        parent::testConversionComposerCommands();
+    }
+
+    /**
+     * Executes the conversion Terminus command.
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    protected function executeConvertCommand(): void
+    {
+        $this->assertCommand(
+            sprintf('conversion:drupal-recommended %s --branch=%s', $this->siteName, $this->branch),
+            $this->branch
+        );
     }
 }
