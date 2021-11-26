@@ -100,11 +100,11 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             [sprintf('--org=%s', $this->getOrg())]
         );
         $this->terminus(
-            sprintf('drush %s.dev -- site-install demo_umami', $this->siteName),
+            sprintf('drush %s.%s -- site-install demo_umami', $this->siteName, self::DEV_ENV),
             ['-y']
         );
 
-        $this->terminus(sprintf('connection:set %s.dev %s', $this->siteName, 'git'));
+        $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, self::DEV_ENV, 'git'));
 
         $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
@@ -218,9 +218,16 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     protected function assertCommand(string $command, string $env): void
     {
         $this->terminus($command);
-        sleep(60);
+        sleep(30);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
-        sleep(10);
+
+        $drushCrCommand = sprintf('drush %s.%s -- cache-rebuild', $this->siteName, $env);
+        $this->assertEqualsInAttempts(
+            fn() => static::callTerminus($drushCrCommand)[1],
+            0,
+            sprintf('Execution of `%s` has failed', $drushCrCommand)
+        );
+
         $this->assertPagesExists($env);
         $this->assertLibrariesExists($env);
     }
@@ -259,7 +266,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     {
         foreach ($this->getProjects() as $name) {
             $this->terminus(
-                sprintf('drush %s.dev -- en %s', $this->siteName, $name),
+                sprintf('drush %s.%s -- en %s', $this->siteName, self::DEV_ENV, $name),
                 ['-y']
             );
         }
@@ -276,7 +283,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
         $this->assertEqualsInAttempts(
-            fn () => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
+            fn() => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
             200,
             sprintf(
                 'Front page "%s" must return HTTP status code 200',
@@ -293,7 +300,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         foreach ($pathsToTest as $module => $path) {
             $url = sprintf('%s/%s', $baseUrl, $path);
             $this->assertEqualsInAttempts(
-                fn () => $this->httpClient->request('HEAD', $url)->getStatusCode(),
+                fn() => $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 200,
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
             );
@@ -349,7 +356,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     private function addGitHostToKnownHosts(): void
     {
         $gitInfo = $this->terminusJsonResponse(
-            sprintf('connection:info %s.dev --fields=git_host,git_port', $this->siteName)
+            sprintf('connection:info %s.%s --fields=git_host,git_port', $this->siteName, self::DEV_ENV)
         );
         $this->assertIsArray($gitInfo);
         $this->assertNotEmpty($gitInfo);
