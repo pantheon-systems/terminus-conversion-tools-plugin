@@ -3,6 +3,7 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -45,7 +46,7 @@ class Composer
      * @param array $options
      *   Additional options.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     public function require(string $package, ?string $version = null, ...$options): void
     {
@@ -61,7 +62,7 @@ class Composer
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     public function install(...$options): void
     {
@@ -73,7 +74,7 @@ class Composer
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     public function update(...$options): void
     {
@@ -85,7 +86,7 @@ class Composer
      *
      * @param array $command
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function execute(array $command): void
     {
@@ -93,7 +94,7 @@ class Composer
             $process = new Process($command, $this->workingDirectory, null, null, 180);
             $process->mustRun();
         } catch (Throwable $t) {
-            throw new TerminusException(
+            throw new ComposerException(
                 sprintf('Failed executing Composer command: %s', $t->getMessage())
             );
         }
