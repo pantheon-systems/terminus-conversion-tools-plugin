@@ -260,6 +260,21 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     }
 
     /**
+     * Returns the list of contrib JavaScript libraries to test.
+     *
+     * @return string[]
+     */
+    protected function getLibraries(): array
+    {
+        return [
+            'blazy' => 'blazy.js',
+            'font' => 'plugin.js',
+            'rtseo.js' => 'dist/rtseo.js',
+            'superfish' => 'superfish.js',
+        ];
+    }
+
+    /**
      * Sets up (installs) projects (modules and themes).
      */
     private function setUpProjects(): void
@@ -314,17 +329,10 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    protected function assertLibrariesExists(string $env): void
+    private function assertLibrariesExists(string $env): void
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
-        $libraries = [
-            'blazy' => 'blazy.js',
-            'font' => 'plugin.js',
-            'rtseo.js' => 'dist/rtseo.js',
-            'superfish' => 'superfish.js',
-        ];
-
-        foreach ($libraries as $directory => $file) {
+        foreach ($this->getLibraries() as $directory => $file) {
             $url = sprintf('%s/libraries/%s/%s', $baseUrl, $directory, $file);
             $this->assertEquals(
                 200,

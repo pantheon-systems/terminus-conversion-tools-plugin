@@ -90,7 +90,8 @@ EOD;
     /**
      * @inheritdoc
      */
-    protected function assertLibrariesExists(string $env): void
+    protected function getLibraries(): array
     {
+        return [];
     }
 }
