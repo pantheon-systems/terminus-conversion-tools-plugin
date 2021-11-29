@@ -267,21 +267,19 @@ EOD
             $this->git->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
             $this->git->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
 
-            $diffOptions = [
-                '--diff-filter=M',
-                sprintf(
-                    '%s/%s..%s/%s',
-                    self::DRUPAL_PROJECT_UPSTREAM_ID,
-                    Git::DEFAULT_BRANCH,
-                    Git::DEFAULT_REMOTE,
-                    Git::DEFAULT_BRANCH
-                ),
-                '--',
-                ':!composer.json',
-            ];
-
             try {
-                $this->git->apply($diffOptions);
+                $this->git->apply([
+                    '--diff-filter=M',
+                    sprintf(
+                        '%s/%s..%s/%s',
+                        self::DRUPAL_PROJECT_UPSTREAM_ID,
+                        Git::DEFAULT_BRANCH,
+                        Git::DEFAULT_REMOTE,
+                        Git::DEFAULT_BRANCH
+                    ),
+                    '--',
+                    ':!composer.json',
+                ]);
             } catch (GitNoDiffException $e) {
                 $this->log()->notice(
                     'No differences between the site code and its upstream ("drupal-project") are detected'
