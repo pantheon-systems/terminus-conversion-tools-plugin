@@ -162,7 +162,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     /**
      * Copies the site-specific files.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function copySiteSpecificFiles(): void
     {
@@ -259,7 +259,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     {
         $this->log()->notice(
             <<<EOD
-Detecting the differences between the site code and its upstream ("drupal-project") that need to be applied...
+Detecting and applying the differences between the site code and its upstream ("drupal-project")...
 EOD
         );
 
@@ -279,29 +279,16 @@ EOD
                 '--',
                 ':!composer.json',
             ];
-            $diffFilesList = $this->git->diffFileList(...$diffOptions);
-            if (!$diffFilesList) {
+
+            try {
+                $this->git->apply($diffOptions);
+            } catch (GitNoDiffException $e) {
                 $this->log()->notice(
                     'No differences between the site code and its upstream ("drupal-project") are detected'
                 );
 
                 return;
-            }
-
-            $this->log()->warning(
-                sprintf(
-                    'The code differences detected in the following files: %s',
-                    implode(', ', $diffFilesList)
-                )
-            );
-
-            $this->log()->notice(sprintf('Copying the code differences onto %s branch...', self::TARGET_GIT_BRANCH));
-            $patch = $this->git->diff(...$diffOptions);
-            try {
-                // Try to apply the patch.
-                $this->git->apply($patch, '-3');
-            } catch (TerminusException $e) {
-                // Merge conflicts found, aks user to resolve merge conflicts manually.
+            } catch (GitMergeConflictException $e) {
                 $this->log()->warning(
                     sprintf(
                         <<<EOD
@@ -313,18 +300,22 @@ The next step in the site conversion process is to resolve the code merge confli
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $this->localPath,
-                        implode(', ', $this->git->diffFileList('--diff-filter=U')),
+                        implode(', ', $e->getUnmergedFiles()),
                         $this->site->getName()
                     )
                 );
+
                 exit;
             }
 
             $this->git->commit('Copy site-specific code related to "drupal-project" upstream');
+            $this->log()->notice(
+                sprintf('The code differences have been copied onto %s branch...', self::TARGET_GIT_BRANCH)
+            );
         } catch (Throwable $t) {
             $this->log()->error(
                 sprintf(
-                    'Failed detecting the differences between the site code and its upstream: %s',
+                    'Failed detecting/applying differences between the site code and its upstream: %s',
                     $t->getMessage()
                 )
             );
