@@ -220,22 +220,24 @@ trait ConversionCommandsTrait
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
         } catch (TerminusNotFoundException $e) {
-            if ($this->git->isRemoteBranchExists($branch)) {
-                if (!$this->input()->getOption('yes')
-                    && !$this->io()->confirm(
-                        sprintf(
-                            'The git branch "%s" already exists. Are you sure you want to delete it?',
-                            $branch
-                        )
-                    )
-                ) {
-                    throw new TerminusCancelOperationException(
-                        sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
-                    );
-                }
-
-                $this->git->deleteRemoteBranch($branch);
+            if (!$this->git->isRemoteBranchExists($branch)) {
+                return;
             }
+
+            if (!$this->input()->getOption('yes')
+                && !$this->io()->confirm(
+                    sprintf(
+                        'The git branch "%s" already exists. Are you sure you want to delete it?',
+                        $branch
+                    )
+                )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->git->deleteRemoteBranch($branch);
         }
     }
 
