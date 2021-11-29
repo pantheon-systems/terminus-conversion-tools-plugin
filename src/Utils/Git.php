@@ -3,6 +3,9 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -48,7 +51,7 @@ class Git
      * @param null|array $files
      *   The files to stage.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function commit(string $commitMessage, ?array $files = null): void
     {
@@ -78,7 +81,9 @@ class Git
     /**
      * Returns TRUE is there is anything to commit.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function isAnythingToCommit(): bool
     {
@@ -92,7 +97,7 @@ class Git
      *   The branch name.
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function push(string $branchName, ...$options): void
     {
@@ -107,7 +112,7 @@ class Git
      *
      * @return bool
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function isRemoteBranchExists(string $branch): bool
     {
@@ -120,7 +125,7 @@ class Git
      * @param string $remote
      * @param string $name
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function addRemote(string $remote, string $name)
     {
@@ -132,7 +137,7 @@ class Git
      *
      * @param string $remoteName
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function fetch(string $remoteName)
     {
@@ -144,7 +149,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function checkout(...$options)
     {
@@ -156,7 +161,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function move(...$options)
     {
@@ -168,7 +173,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function remove(...$options)
     {
@@ -180,7 +185,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function reset(...$options)
     {
@@ -192,7 +197,9 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function diff(...$options): string
     {
@@ -202,9 +209,11 @@ class Git
     /**
      * Returns the result of `git diff` command as a list of files affected.
      *
-     * @param string $options
+     * @param mixed ...$options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @return array
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function diffFileList(...$options): array
     {
@@ -218,7 +227,7 @@ class Git
      *
      * @param string $branch
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function deleteRemoteBranch(string $branch)
     {
@@ -232,7 +241,7 @@ class Git
      *
      * @return string
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function getHeadCommitHash(string $branch): string
     {
@@ -243,7 +252,7 @@ class Git
             return $hash;
         }
 
-        throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
+        throw new GitException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
     }
 
     /**
@@ -253,7 +262,7 @@ class Git
      *
      * @return array
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function getCommitHashes(string $branch): array
     {
@@ -270,7 +279,7 @@ class Git
      *
      * @return string
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function execute($command, ?string $input = null): string
     {
@@ -282,7 +291,7 @@ class Git
             }
             $process->mustRun();
         } catch (Throwable $t) {
-            throw new TerminusException(
+            throw new GitException(
                 sprintf('Failed executing Git command: %s', $t->getMessage())
             );
         }

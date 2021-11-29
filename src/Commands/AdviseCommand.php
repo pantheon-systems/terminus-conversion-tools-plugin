@@ -35,6 +35,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @param string $site_id
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -75,6 +76,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Prints advice related to "drops-8" upstream.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -136,6 +138,7 @@ EOD
     /**
      * Prints advice related to "empty" upstream.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */

@@ -125,6 +125,7 @@ trait ConversionCommandsTrait
      *
      * @return string
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function getBackupBranchName(): string
@@ -192,8 +193,8 @@ trait ConversionCommandsTrait
      *
      * @param string $branch
      *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
      */
     private function deleteMultidevIfExists(string $branch): void
     {
@@ -241,7 +242,7 @@ trait ConversionCommandsTrait
     /**
      * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function createLocalGitBranch(): void
     {

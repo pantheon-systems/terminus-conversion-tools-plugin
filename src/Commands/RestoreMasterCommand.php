@@ -25,7 +25,9 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @param string $site_id
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function restoreMaster(string $site_id): void

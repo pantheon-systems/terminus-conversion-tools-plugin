@@ -66,7 +66,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @param string $site_id
      * @param array $options
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function convert(
@@ -322,7 +324,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copies pantheon.yml file and sets the "build_step" flag.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function copyPantheonYml(): void
     {
@@ -493,7 +495,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copies settings.php file.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function copySettingsPhp(): void
     {
@@ -518,7 +520,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Adds a commit to trigger a Pantheon's Integrated Composer build.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function addCommitToTriggerBuild(): void
     {
