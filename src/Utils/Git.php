@@ -65,17 +65,39 @@ class Git
     }
 
     /**
-     * Returns the result of `git apply` command.
+     * Applies the patch provided in a form of `git diff` options using 3-way merge technique.
      *
-     * @param string $patch
+     * @param array $diffOptions
      * @param string ...$options
      *
-     * @return string
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException
      */
-    public function apply(string $patch, ...$options): string
+    public function apply(array $diffOptions, ...$options): void
     {
-        return $this->execute(['apply', ...$options], $patch);
+        if (!$this->diffFileList(...$diffOptions)) {
+            throw new GitNoDiffException(
+                sprintf('No diff returned by `git diff %s`', implode(' ', $diffOptions))
+            );
+        }
+
+        $patch = $this->diff(...$diffOptions);
+        try {
+            $this->execute(['apply', '--3way', ...$options], $patch);
+        } catch (GitException $e) {
+            if (1 !== preg_match('/Applied patch to \'(.+)\' with conflicts/', $e->getMessage())) {
+                throw $e;
+            }
+
+            $unmergedFiles = $this->diffFileList('--diff-filter=U');
+            throw new GitMergeConflictException(
+                sprintf('Merge conflicts in files: %s', implode(', ', $unmergedFiles)),
+                0,
+                null,
+                $unmergedFiles
+            );
+        }
     }
 
     /**
