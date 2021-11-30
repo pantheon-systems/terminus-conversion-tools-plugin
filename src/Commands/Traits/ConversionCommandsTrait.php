@@ -28,6 +28,11 @@ trait ConversionCommandsTrait
     private $site;
 
     /**
+     * @var string
+     */
+    private string $branch;
+
+    /**
      * @var \Pantheon\TerminusConversionTools\Utils\Git
      */
     private Git $git;
@@ -258,6 +263,42 @@ trait ConversionCommandsTrait
             '-b',
             $this->branch,
             self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
+        );
+    }
+
+    /**
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function validateBranch(): void
+    {
+        if (strlen($this->branch) > 11) {
+            throw new TerminusException(
+                'The target git branch name for multidev env must not exceed 11 characters limit'
+            );
+        }
+    }
+
+    /**
+     * Pushes the target branch to the site repository.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    private function pushTargetBranch(): void
+    {
+        try {
+            $this->deleteMultidevIfExists($this->branch);
+        } catch (TerminusCancelOperationException $e) {
+            return;
+        }
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
+        $mdEnv = $this->createMultidev($this->branch);
+
+        $this->log()->notice(
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
     }
 }
