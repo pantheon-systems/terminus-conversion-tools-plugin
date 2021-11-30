@@ -10,14 +10,14 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
- * Class ReleaseComposerifyToMasterCommand.
+ * Class ReleaseToMasterCommand.
  */
-class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteAwareInterface
+class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
     use ConversionCommandsTrait;
 
-    private const COMPOSERIFY_GIT_BRANCH = 'composerify';
+    private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_ID = 'drupal-recommended';
     private const EMPTY_UPSTREAM_ID = 'empty';
 
@@ -39,7 +39,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function releaseToMaster(string $site_id, array $options = ['branch' => self::COMPOSERIFY_GIT_BRANCH]): void
+    public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
         $this->site = $this->getSite($site_id);
         $sourceBranch = $options['branch'];
@@ -50,9 +50,9 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
             throw new TerminusException(sprintf('The source branch "%s" does not exist', $sourceBranch));
         }
 
-        $composerifyCommitHash = $this->git->getHeadCommitHash($sourceBranch);
+        $targetCommitHash = $this->git->getHeadCommitHash($sourceBranch);
         $masterCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
-        if ($composerifyCommitHash === $masterCommitHash) {
+        if ($targetCommitHash === $masterCommitHash) {
             $this->log()->warning(
                 sprintf(
                     'Abort: already released to "%s" (the "%s" git branch matches "%s")',
@@ -107,7 +107,7 @@ class ReleaseComposerifyToMasterCommand extends TerminusCommand implements SiteA
 
         $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', Git::DEFAULT_BRANCH, $sourceBranch));
         $this->git->checkout(Git::DEFAULT_BRANCH);
-        $this->git->reset('--hard', $composerifyCommitHash);
+        $this->git->reset('--hard', $targetCommitHash);
         $this->git->push(Git::DEFAULT_BRANCH, '--force');
 
         if (self::EMPTY_UPSTREAM_ID !== $this->site->getUpstream()->get('machine_name')
