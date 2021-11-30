@@ -99,11 +99,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         }
 
         $this->branch = $options['branch'];
-        if (strlen($this->branch) > 11) {
-            throw new TerminusException(
-                'The target git branch name for multidev env must not exceed 11 characters limit'
-            );
-        }
+        $this->validateBranch();
 
         $this->localPath = $this->cloneSiteGitRepository();
 
