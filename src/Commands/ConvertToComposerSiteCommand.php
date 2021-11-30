@@ -7,7 +7,6 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -128,24 +127,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->addComposerPackages($libraryProjects);
 
         if (!$options['dry-run']) {
-            try {
-                $this->deleteMultidevIfExists($this->branch);
-            } catch (TerminusCancelOperationException $e) {
-                return;
-            }
-
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-            $mdEnv = $this->createMultidev($this->branch);
-
+            $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-
-            $this->log()->notice(
-                sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
-            );
+        } else {
+            $this->log()->warning('Push to multidev has skipped');
         }
+
+        $this->log()->notice('Done!');
     }
 
     /**
@@ -520,6 +508,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $pantheonYml = fopen($path, 'a');
         fwrite($pantheonYml, PHP_EOL . '# comment to trigger a Pantheon IC build');
         fclose($pantheonYml);
+
         $this->git->commit('Trigger Pantheon build');
+        $this->git->push($this->branch);
+
+        $this->log()->notice('Comment is added');
     }
 }
