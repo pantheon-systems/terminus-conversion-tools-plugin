@@ -36,11 +36,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private string $localPath;
 
     /**
-     * @var string
-     */
-    private string $branch;
-
-    /**
      * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
      */
     private Drupal8Projects $drupal8ComponentsDetector;

@@ -36,11 +36,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     private string $localPath;
 
     /**
-     * @var string
-     */
-    private string $branch;
-
-    /**
      * Converts a "drupal-project" upstream-based site into "drupal-recommended" upstream-based one.
      *
      * @command conversion:drupal-recommended
