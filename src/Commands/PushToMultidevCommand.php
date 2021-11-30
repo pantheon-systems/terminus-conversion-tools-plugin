@@ -42,5 +42,7 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
         $this->git = new Git($localPath);
 
         $this->pushTargetBranch();
+
+        $this->log()->notice('Done!');
     }
 }

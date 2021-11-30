@@ -127,5 +127,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
+
+        $this->log()->notice('Done!');
     }
 }

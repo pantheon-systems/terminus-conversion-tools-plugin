@@ -116,6 +116,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }
+
+        $this->log()->notice('Done!');
     }
 
     /**
