@@ -52,8 +52,8 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      * @group restore_master_command
      * @group advise_command
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
-        parent::testConversionComposerCommands();
+        parent::testConversionCommands();
     }
 }

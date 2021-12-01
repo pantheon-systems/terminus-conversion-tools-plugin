@@ -80,7 +80,7 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
         // Scenario #1: empty upstream on top of drupal-recommended.
         $this->scenario = self::SCENARIO_ON_TOP_OF_DRUPAL_RECOMMENDED;

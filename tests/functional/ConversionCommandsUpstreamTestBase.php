@@ -132,10 +132,12 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      * @covers \Pantheon\TerminusConversionTools\Commands\ConvertToComposerSiteCommand
      * @covers \Pantheon\TerminusConversionTools\Commands\ReleaseToMasterCommand
      * @covers \Pantheon\TerminusConversionTools\Commands\RestoreMasterCommand
+     * @covers \Pantheon\TerminusConversionTools\Commands\AdviseCommand
+     * @covers \Pantheon\TerminusConversionTools\Commands\PushToMultidevCommand
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
         $this->assertPagesExists(self::DEV_ENV);
 

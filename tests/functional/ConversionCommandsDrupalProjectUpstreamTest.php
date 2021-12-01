@@ -9,7 +9,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpstreamTestBase
+class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpstreamTestBase
 {
     /**
      * @inheritdoc
@@ -55,9 +55,9 @@ EOD;
      * @group restore_master_command
      * @group advise_command
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
-        parent::testConversionComposerCommands();
+        parent::testConversionCommands();
     }
 
     /**
