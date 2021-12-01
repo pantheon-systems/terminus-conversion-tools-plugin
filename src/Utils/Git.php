@@ -3,6 +3,9 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -45,19 +48,64 @@ class Git
      *
      * @param string $commitMessage
      *   The commit message.
+     * @param null|array $files
+     *   The files to stage.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function commit(string $commitMessage): void
+    public function commit(string $commitMessage, ?array $files = null): void
     {
-        $this->execute(['add', '-A']);
+        if (null === $files) {
+            $this->execute(['add', '-A']);
+        } else {
+            $this->execute(['add', ...$files]);
+        }
+
         $this->execute(['commit', '-m', $commitMessage]);
+    }
+
+    /**
+     * Applies the patch provided in a form of `git diff` options using 3-way merge technique.
+     *
+     * @param array $diffOptions
+     * @param string ...$options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException
+     */
+    public function apply(array $diffOptions, ...$options): void
+    {
+        if (!$this->diffFileList(...$diffOptions)) {
+            throw new GitNoDiffException(
+                sprintf('No diff returned by `git diff %s`', implode(' ', $diffOptions))
+            );
+        }
+
+        $patch = $this->diff(...$diffOptions);
+        try {
+            $this->execute(['apply', '--3way', ...$options], $patch);
+        } catch (GitException $e) {
+            if (1 !== preg_match('/Applied patch to \'(.+)\' with conflicts/', $e->getMessage())) {
+                throw $e;
+            }
+
+            $unmergedFiles = $this->diffFileList('--diff-filter=U');
+            throw new GitMergeConflictException(
+                sprintf('Merge conflicts in files: %s', implode(', ', $unmergedFiles)),
+                0,
+                null,
+                $unmergedFiles
+            );
+        }
     }
 
     /**
      * Returns TRUE is there is anything to commit.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function isAnythingToCommit(): bool
     {
@@ -71,7 +119,7 @@ class Git
      *   The branch name.
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function push(string $branchName, ...$options): void
     {
@@ -86,7 +134,7 @@ class Git
      *
      * @return bool
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function isRemoteBranchExists(string $branch): bool
     {
@@ -99,7 +147,7 @@ class Git
      * @param string $remote
      * @param string $name
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function addRemote(string $remote, string $name)
     {
@@ -111,7 +159,7 @@ class Git
      *
      * @param string $remoteName
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function fetch(string $remoteName)
     {
@@ -123,7 +171,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function checkout(...$options)
     {
@@ -135,7 +183,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function move(...$options)
     {
@@ -147,7 +195,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function remove(...$options)
     {
@@ -159,7 +207,7 @@ class Git
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function reset(...$options)
     {
@@ -167,15 +215,33 @@ class Git
     }
 
     /**
-     * Performs diff operation.
+     * Returns the result of `git diff` command.
      *
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function diff(...$options)
+    public function diff(...$options): string
     {
         return $this->execute(['diff', ...$options]);
+    }
+
+    /**
+     * Returns the result of `git diff` command as a list of files affected.
+     *
+     * @param mixed ...$options
+     *
+     * @return array
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function diffFileList(...$options): array
+    {
+        return array_filter(
+            explode(PHP_EOL, $this->diff('--name-only', ...$options))
+        );
     }
 
     /**
@@ -183,7 +249,7 @@ class Git
      *
      * @param string $branch
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function deleteRemoteBranch(string $branch)
     {
@@ -197,7 +263,7 @@ class Git
      *
      * @return string
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function getHeadCommitHash(string $branch): string
     {
@@ -208,7 +274,7 @@ class Git
             return $hash;
         }
 
-        throw new TerminusException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
+        throw new GitException(sprintf('"%s" is not a valid sha1 commit hash value', $hash));
     }
 
     /**
@@ -218,7 +284,7 @@ class Git
      *
      * @return array
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function getCommitHashes(string $branch): array
     {
@@ -231,22 +297,23 @@ class Git
      * Executes the Git command.
      *
      * @param array|string $command
+     * @param null|string $input
      *
      * @return string
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    private function execute($command): string
+    private function execute($command, ?string $input = null): string
     {
         try {
             if (is_string($command)) {
                 $process = Process::fromShellCommandline($command, $this->workingDirectory);
             } else {
-                $process = new Process(['git', ...$command], $this->workingDirectory, null, null, 180);
+                $process = new Process(['git', ...$command], $this->workingDirectory, null, $input, 180);
             }
             $process->mustRun();
         } catch (Throwable $t) {
-            throw new TerminusException(
+            throw new GitException(
                 sprintf('Failed executing Git command: %s', $t->getMessage())
             );
         }

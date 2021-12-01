@@ -4,8 +4,10 @@ namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
 use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
+use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\TerminusModel;
+use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -24,6 +26,11 @@ trait ConversionCommandsTrait
      * @var \Pantheon\Terminus\Models\Site
      */
     private $site;
+
+    /**
+     * @var string
+     */
+    private string $branch;
 
     /**
      * @var \Pantheon\TerminusConversionTools\Utils\Git
@@ -123,6 +130,7 @@ trait ConversionCommandsTrait
      *
      * @return string
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function getBackupBranchName(): string
@@ -159,6 +167,7 @@ trait ConversionCommandsTrait
         return [
             'd8' => 'drupal8',
             'em' => 'empty',
+            'd9' => 'drupal9',
         ];
     }
 
@@ -182,5 +191,114 @@ trait ConversionCommandsTrait
         }
 
         return $this->getSupportedSourceUpstreamIds()[$upstreamAlias];
+    }
+
+    /**
+     * Deletes the target multidev environment and associated git branch if exists.
+     *
+     * @param string $branch
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
+     */
+    private function deleteMultidevIfExists(string $branch): void
+    {
+        try {
+            /** @var \Pantheon\Terminus\Models\Environment $multidev */
+            $multidev = $this->site->getEnvironments()->get($branch);
+            if (!$this->input()->getOption('yes') && !$this->io()
+                ->confirm(
+                    sprintf(
+                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                        $branch
+                    )
+                )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete multidev "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->log()->notice(
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $branch)
+            );
+            $workflow = $multidev->delete(['delete_branch' => true]);
+            $this->processWorkflow($workflow);
+        } catch (TerminusNotFoundException $e) {
+            if (!$this->git->isRemoteBranchExists($branch)) {
+                return;
+            }
+
+            if (!$this->input()->getOption('yes')
+                && !$this->io()->confirm(
+                    sprintf(
+                        'The git branch "%s" already exists. Are you sure you want to delete it?',
+                        $branch
+                    )
+                )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->git->deleteRemoteBranch($branch);
+        }
+    }
+
+    /**
+     * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function createLocalGitBranch(): void
+    {
+        $this->log()->notice(
+            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
+        );
+        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
+        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
+        $this->git->checkout(
+            '--no-track',
+            '-b',
+            $this->branch,
+            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
+        );
+    }
+
+    /**
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function validateBranch(): void
+    {
+        if (strlen($this->branch) > 11) {
+            throw new TerminusException(
+                'The target git branch name for multidev env must not exceed 11 characters limit'
+            );
+        }
+    }
+
+    /**
+     * Pushes the target branch to the site repository.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    private function pushTargetBranch(): void
+    {
+        try {
+            $this->deleteMultidevIfExists($this->branch);
+        } catch (TerminusCancelOperationException $e) {
+            return;
+        }
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
+        $this->git->push($this->branch);
+        $mdEnv = $this->createMultidev($this->branch);
+
+        $this->log()->notice(
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
+        );
     }
 }

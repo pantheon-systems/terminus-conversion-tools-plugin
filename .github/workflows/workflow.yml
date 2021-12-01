@@ -37,8 +37,10 @@ jobs:
             group: upstream_empty
           - name: on drupal-project upstream
             group: upstream_drupal_project
-          - name: advise command scenarios on empty upstream
+          - name: conversion:advise command scenarios on empty upstream
             group: advise_scenarios_empty_upstream
+          - name: conversion:push-to-multidev command
+            group: push_to_md_command
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
@@ -46,6 +48,7 @@ jobs:
       TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:

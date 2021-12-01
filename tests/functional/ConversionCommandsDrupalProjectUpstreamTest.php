@@ -5,26 +5,18 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 /**
  * Class ConversionCommandsDrupalProjectUpstreamTest.
  *
- * Uses a site fixture based on https://github.com/pantheon-fixtures/site-example-drops-8-non-composer custom upstream.
+ * Uses a site fixture based on https://github.com/pantheon-fixtures/site-drupal9 custom upstream.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpstreamTestBase
+class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpstreamTestBase
 {
-    /**
-     * @inheritdoc
-     */
-    protected function setUp(): void
-    {
-        $this->setUpFixtureSite();
-    }
-
     /**
      * @inheritdoc
      */
     protected function getUpstreamIdEnvName(): string
     {
-        return 'TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID';
+        return 'TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID';
     }
 
     /**
@@ -40,7 +32,10 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to use "drupal-recommended" Pantheon Upstream';
+        return
+            <<<EOD
+convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
+EOD;
     }
 
     /**
@@ -48,17 +43,55 @@ final class ConversionCommandsDrupalProjectUpstreamTest extends ConversionComman
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return '';
+        return 'Sorry, no advice is available.';
     }
 
     /**
      * @inheritdoc
      *
      * @group upstream_drupal_project
+     * @group drupal_recommended_command
+     * @group release_to_master_command
+     * @group restore_master_command
      * @group advise_command
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
-        $this->assertAdviseBeforeCommand();
+        parent::testConversionCommands();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function executeConvertCommand(): void
+    {
+        $this->assertCommand(
+            sprintf('conversion:drupal-recommended %s --branch=%s', $this->siteName, $this->branch),
+            $this->branch
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getProjects(): array
+    {
+        return [
+            'webform',
+            'examples',
+            'entity',
+            'ctools',
+            'custom1',
+            'custom2',
+            'custom3',
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getLibraries(): array
+    {
+        return [];
     }
 }

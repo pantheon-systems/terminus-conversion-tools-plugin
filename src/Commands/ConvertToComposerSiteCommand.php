@@ -3,13 +3,10 @@
 namespace Pantheon\TerminusConversionTools\Commands;
 
 use Pantheon\Terminus\Commands\TerminusCommand;
-use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
-use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -23,10 +20,9 @@ use Throwable;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use SiteAwareTrait;
-    use WorkflowProcessingTrait;
     use ConversionCommandsTrait;
 
-    private const TARGET_GIT_BRANCH = 'composerify';
+    private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_NAME = 'target-upstream';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
     private const MODULES_SUBDIR = 'modules';
@@ -37,11 +33,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @var string
      */
     private string $localPath;
-
-    /**
-     * @var string
-     */
-    private string $branch;
 
     /**
      * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
@@ -69,7 +60,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @param string $site_id
      * @param array $options
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function convert(
@@ -100,11 +93,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         }
 
         $this->branch = $options['branch'];
-        if (strlen($this->branch) > 11) {
-            throw new TerminusException(
-                'The target git branch name for multidev env must not exceed 11 characters limit'
-            );
-        }
+        $this->validateBranch();
 
         $this->localPath = $this->cloneSiteGitRepository();
 
@@ -138,24 +127,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->addComposerPackages($libraryProjects);
 
         if (!$options['dry-run']) {
-            try {
-                $this->deleteMultidevIfExists();
-            } catch (TerminusCancelOperationException $e) {
-                return;
-            }
-
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-            $mdEnv = $this->createMultidev($this->branch);
-
+            $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
-            $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-            $this->git->push($this->branch);
-
-            $this->log()->notice(
-                sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
-            );
+        } else {
+            $this->log()->warning('Push to multidev has skipped');
         }
+
+        $this->log()->notice('Done!');
     }
 
     /**
@@ -297,26 +275,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Creates the target local git branch based on Pantheon's "drupal-project" upstream.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function createLocalGitBranch(): void
-    {
-        $this->log()->notice(
-            sprintf('Creating "%s" git branch based on "drupal-project" upstream...', $this->branch)
-        );
-        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->checkout(
-            '--no-track',
-            '-b',
-            $this->branch,
-            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
-        );
-    }
-
-    /**
      * Copies configuration files.
      */
     private function copyConfigurationFiles(): void
@@ -345,7 +303,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copies pantheon.yml file and sets the "build_step" flag.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function copyPantheonYml(): void
     {
@@ -365,55 +323,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         fclose($pantheonYmlFile);
 
         $this->git->commit('Add build_step:true to pantheon.yml');
-    }
-
-    /**
-     * Deletes the target multidev environment and associated git branch if exists.
-     *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function deleteMultidevIfExists()
-    {
-        try {
-            /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $this->site->getEnvironments()->get($this->branch);
-            if (!$this->input()->getOption('yes') && !$this->io()
-                ->confirm(
-                    sprintf(
-                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
-                        $this->branch
-                    )
-                )
-            ) {
-                throw new TerminusCancelOperationException(
-                    sprintf('Delete multidev "%s" operation has not been confirmed.', $this->branch)
-                );
-            }
-
-            $this->log()->notice(
-                sprintf('Deleting "%s" multidev environment and associated git branch...', $this->branch)
-            );
-            $workflow = $multidev->delete(['delete_branch' => true]);
-            $this->processWorkflow($workflow);
-        } catch (TerminusNotFoundException $e) {
-            if ($this->git->isRemoteBranchExists($this->branch)) {
-                if (!$this->input()->getOption('yes')
-                    && !$this->io()->confirm(
-                        sprintf(
-                            'The git branch "%s" already exists. Are you sure you want to delete it?',
-                            $this->branch
-                        )
-                    )
-                ) {
-                    throw new TerminusCancelOperationException(
-                        sprintf('Delete git branch "%s" operation has not been confirmed.', $this->branch)
-                    );
-                }
-
-                $this->git->deleteRemoteBranch($this->branch);
-            }
-        }
     }
 
     /**
@@ -565,7 +474,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copies settings.php file.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function copySettingsPhp(): void
     {
@@ -590,7 +499,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Adds a commit to trigger a Pantheon's Integrated Composer build.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function addCommitToTriggerBuild(): void
     {
@@ -599,6 +508,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $pantheonYml = fopen($path, 'a');
         fwrite($pantheonYml, PHP_EOL . '# comment to trigger a Pantheon IC build');
         fclose($pantheonYml);
+
         $this->git->commit('Trigger Pantheon build');
+        $this->git->push($this->branch);
+
+        $this->log()->notice('Comment is added');
     }
 }

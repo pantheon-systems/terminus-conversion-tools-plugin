@@ -25,7 +25,9 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @param string $site_id
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function restoreMaster(string $site_id): void
@@ -79,5 +81,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
+
+        $this->log()->notice('Done!');
     }
 }

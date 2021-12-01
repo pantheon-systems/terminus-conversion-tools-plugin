@@ -27,7 +27,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     /**
      * @var string
      */
-    private string $branch;
+    protected string $branch;
 
     /**
      * @var \Symfony\Contracts\HttpClient\HttpClientInterface
@@ -100,11 +100,11 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
             [sprintf('--org=%s', $this->getOrg())]
         );
         $this->terminus(
-            sprintf('drush %s.dev -- site-install demo_umami', $this->siteName),
+            sprintf('drush %s.%s -- site-install demo_umami', $this->siteName, self::DEV_ENV),
             ['-y']
         );
 
-        $this->terminus(sprintf('connection:set %s.dev %s', $this->siteName, 'git'));
+        $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, self::DEV_ENV, 'git'));
 
         $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
@@ -113,39 +113,6 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
 
         if ($this->isCiEnv()) {
             $this->addGitHostToKnownHosts();
-        }
-    }
-
-    /**
-     * Sets up (installs) projects (modules and themes).
-     */
-    private function setUpProjects(): void
-    {
-        $contribProjects = [
-            'webform',
-            'metatag',
-            'token',
-            'entity',
-            'imce',
-            'field_group',
-            'ctools',
-            'date',
-            'pathauto',
-            'google_analytics',
-            'adminimal_theme',
-            'bootstrap',
-            'omega',
-        ];
-        $customProjects = [
-            'custom1',
-            'custom2',
-            'custom3',
-        ];
-        foreach (array_merge($contribProjects, $customProjects) as $name) {
-            $this->terminus(
-                sprintf('drush %s.dev -- en %s', $this->siteName, $name),
-                ['-y']
-            );
         }
     }
 
@@ -163,19 +130,19 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
 
     /**
      * @covers \Pantheon\TerminusConversionTools\Commands\ConvertToComposerSiteCommand
-     * @covers \Pantheon\TerminusConversionTools\Commands\ReleaseComposerifyToMasterCommand
+     * @covers \Pantheon\TerminusConversionTools\Commands\ReleaseToMasterCommand
      * @covers \Pantheon\TerminusConversionTools\Commands\RestoreMasterCommand
+     * @covers \Pantheon\TerminusConversionTools\Commands\AdviseCommand
+     * @covers \Pantheon\TerminusConversionTools\Commands\PushToMultidevCommand
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    public function testConversionComposerCommands(): void
+    public function testConversionCommands(): void
     {
-        $this->assertAdviseBeforeCommand();
+        $this->assertPagesExists(self::DEV_ENV);
 
-        $this->assertCommand(
-            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
-            $this->branch
-        );
+        $this->assertAdviseBeforeCommand();
+        $this->executeConvertCommand();
 
         $this->assertCommand(
             sprintf('conversion:release-to-master %s --branch=%s', $this->siteName, $this->branch),
@@ -194,6 +161,19 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         );
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
         $this->assertEquals($this->expectedSiteInfoUpstream, $siteInfoUpstream);
+    }
+
+    /**
+     * Executes the conversion Terminus command.
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    protected function executeConvertCommand(): void
+    {
+        $this->assertCommand(
+            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
+            $this->branch
+        );
     }
 
     /**
@@ -237,14 +217,76 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function assertCommand(string $command, string $env): void
+    protected function assertCommand(string $command, string $env): void
     {
         $this->terminus($command);
-        sleep(60);
+        sleep(30);
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
-        sleep(10);
+
+        $drushCrCommand = sprintf('drush %s.%s -- cache-rebuild', $this->siteName, $env);
+        $this->assertEqualsInAttempts(
+            fn() => static::callTerminus($drushCrCommand)[1],
+            0,
+            sprintf('Execution of `%s` has failed', $drushCrCommand)
+        );
+
         $this->assertPagesExists($env);
         $this->assertLibrariesExists($env);
+    }
+
+    /**
+     * Returns the list of contrib and custom projects to install.
+     *
+     * @return string[]
+     */
+    protected function getProjects(): array
+    {
+        return [
+            'webform',
+            'metatag',
+            'token',
+            'entity',
+            'imce',
+            'field_group',
+            'ctools',
+            'date',
+            'pathauto',
+            'google_analytics',
+            'adminimal_theme',
+            'bootstrap',
+            'omega',
+            'custom1',
+            'custom2',
+            'custom3',
+        ];
+    }
+
+    /**
+     * Returns the list of contrib JavaScript libraries to test.
+     *
+     * @return string[]
+     */
+    protected function getLibraries(): array
+    {
+        return [
+            'blazy' => 'blazy.js',
+            'font' => 'plugin.js',
+            'rtseo.js' => 'dist/rtseo.js',
+            'superfish' => 'superfish.js',
+        ];
+    }
+
+    /**
+     * Sets up (installs) projects (modules and themes).
+     */
+    private function setUpProjects(): void
+    {
+        foreach ($this->getProjects() as $name) {
+            $this->terminus(
+                sprintf('drush %s.%s -- en %s', $this->siteName, self::DEV_ENV, $name),
+                ['-y']
+            );
+        }
     }
 
     /**
@@ -258,7 +300,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
         $this->assertEqualsInAttempts(
-            fn () => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
+            fn() => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
             200,
             sprintf(
                 'Front page "%s" must return HTTP status code 200',
@@ -274,9 +316,9 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
         ];
         foreach ($pathsToTest as $module => $path) {
             $url = sprintf('%s/%s', $baseUrl, $path);
-            $this->assertEquals(
+            $this->assertEqualsInAttempts(
+                fn() => $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 200,
-                $this->httpClient->request('HEAD', $url)->getStatusCode(),
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
             );
         }
@@ -292,14 +334,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     private function assertLibrariesExists(string $env): void
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
-        $libraries = [
-            'blazy' => 'blazy.js',
-            'font' => 'plugin.js',
-            'rtseo.js' => 'dist/rtseo.js',
-            'superfish' => 'superfish.js',
-        ];
-
-        foreach ($libraries as $directory => $file) {
+        foreach ($this->getLibraries() as $directory => $file) {
             $url = sprintf('%s/libraries/%s/%s', $baseUrl, $directory, $file);
             $this->assertEquals(
                 200,
@@ -331,7 +366,7 @@ abstract class ConversionCommandsUpstreamTestBase extends TestCase
     private function addGitHostToKnownHosts(): void
     {
         $gitInfo = $this->terminusJsonResponse(
-            sprintf('connection:info %s.dev --fields=git_host,git_port', $this->siteName)
+            sprintf('connection:info %s.%s --fields=git_host,git_port', $this->siteName, self::DEV_ENV)
         );
         $this->assertIsArray($gitInfo);
         $this->assertNotEmpty($gitInfo);
