@@ -155,7 +155,7 @@ EOD
 
                 $this->git = new Git($localPath);
                 $this->git->addRemote(self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-                if ($this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL)) {
+                if ($this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID)) {
                     $this->output()->writeln(
                         <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus -

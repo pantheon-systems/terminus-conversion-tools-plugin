@@ -308,13 +308,13 @@ trait ConversionCommandsTrait
      * Returns TRUE if two repositories' branches have a common history.
      *
      * @param string $repo1Remote
-     *   Repository #1 remote.
+     *   Repository #1 remote name.
      * @param string $repo2Remote
-     *   Repository #2 remoted. Defaults to "origin".
+     *   Repository #2 remote name. Defaults to "origin".
      * @param string $repo1Branch
-     *   Repository #1 branch. Defaults to "master".
+     *   Repository #1 branch name. Defaults to "master".
      * @param string $repo2Branch
-     *   Repository #2 branch. Defaults to "master".
+     *   Repository #2 branch name. Defaults to "master".
      *
      * @return bool
      *
