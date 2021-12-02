@@ -73,6 +73,12 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composer = new Composer($this->localPath);
 
         $this->createLocalGitBranch();
+        if (!$this->areGitReposWithCommonCommits(self::TARGET_UPSTREAM_GIT_REMOTE_NAME)) {
+            throw new TerminusException(
+                'The site repository and "drupal-recommended" upstream repository have unrelated histories.'
+            );
+        }
+
         $drupalRecommendedComposerDependencies = $this->getComposerDependencies();
 
         $this->copySiteSpecificFiles();
