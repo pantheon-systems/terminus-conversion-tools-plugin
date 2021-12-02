@@ -267,6 +267,8 @@ trait ConversionCommandsTrait
     }
 
     /**
+     * Validates the git branch (multidev) name.
+     *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function validateBranch(): void
@@ -300,5 +302,42 @@ trait ConversionCommandsTrait
         $this->log()->notice(
             sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
+    }
+
+    /**
+     * Returns TRUE if two repositories' branches have a common history.
+     *
+     * @param string $repo1Remote
+     *   Repository #1 remote.
+     * @param string $repo2Remote
+     *   Repository #2 remoted. Defaults to "origin".
+     * @param string $repo1Branch
+     *   Repository #1 branch. Defaults to "master".
+     * @param string $repo2Branch
+     *   Repository #2 branch. Defaults to "master".
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function areGitReposWithCommonCommits(
+        string $repo1Remote,
+        string $repo2Remote = Git::DEFAULT_REMOTE,
+        string $repo1Branch = Git::DEFAULT_BRANCH,
+        string $repo2Branch = Git::DEFAULT_BRANCH
+    ): bool {
+        $this->git->fetch($repo1Remote);
+        $repo1CommitHashes = $this->git->getCommitHashes(
+            sprintf('%s/%s', $repo1Remote, $repo1Branch)
+        );
+
+        $this->git->fetch($repo2Remote);
+        $repo2CommitHashes = $this->git->getCommitHashes(
+            sprintf('%s/%s', $repo2Remote, $repo2Branch)
+        );
+
+        $identicalCommitHashes = array_intersect($repo2CommitHashes, $repo1CommitHashes);
+
+        return 0 < count($identicalCommitHashes);
     }
 }
