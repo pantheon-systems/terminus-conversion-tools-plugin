@@ -23,7 +23,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const TARGET_UPSTREAM_GIT_REMOTE_NAME = 'target-upstream';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
@@ -108,7 +107,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
 
-        $this->createLocalGitBranch();
+        $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL);
         if ($isDefaultConfigFilesExist) {
             $this->copyConfigurationFiles();
         } else {

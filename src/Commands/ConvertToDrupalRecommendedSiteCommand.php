@@ -23,7 +23,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const TARGET_UPSTREAM_GIT_REMOTE_NAME = 'target-upstream';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
     private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
@@ -41,6 +40,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.
+     * @option target-upstream-git-url URL of the Git repository URL of the target upstream.
      *
      * @param string $site_id
      * @param array $options
@@ -52,10 +52,16 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      */
     public function convert(
         string $site_id,
-        array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
+        array $options = [
+            'branch' => self::TARGET_GIT_BRANCH,
+            'dry-run' => false,
+            'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
+        ]
     ): void {
-        $this->site = $this->getSite($site_id);
+        $this->branch = $options['branch'];
+        $this->validateBranch();
 
+        $this->site = $this->getSite($site_id);
         $upstream_id = $this->site->getUpstream()->get('machine_name');
         if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id) {
             throw new TerminusException(
@@ -64,16 +70,13 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $this->branch = $options['branch'];
-        $this->validateBranch();
-
         $this->localPath = $this->cloneSiteGitRepository(!$options['continue']);
 
         $this->git = new Git($this->localPath);
         $composer = new Composer($this->localPath);
 
-        $this->createLocalGitBranch();
-        if (!$this->areGitReposWithCommonCommits(self::TARGET_UPSTREAM_GIT_REMOTE_NAME)) {
+        $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url']);
+        if (!$this->areGitReposWithCommonCommits($targetGitRemoteName)) {
             throw new TerminusException(
                 'The site repository and "drupal-recommended" upstream repository have unrelated histories.'
             );
