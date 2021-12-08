@@ -247,26 +247,36 @@ trait ConversionCommandsTrait
     }
 
     /**
-     * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream.
+     * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream and returns the name of
+     * the git remote.
+     *
+     * @param string $remoteUrl
+     *
+     * @return string
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    private function createLocalGitBranch(): void
+    private function createLocalGitBranchFromRemote(string $remoteUrl): string
     {
+        $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
             sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
         );
-        $this->git->addRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
-        $this->git->fetch(self::TARGET_UPSTREAM_GIT_REMOTE_NAME);
+        $this->git->addRemote($remoteUrl, $targetGitRemoteName);
+        $this->git->fetch($targetGitRemoteName);
         $this->git->checkout(
             '--no-track',
             '-b',
             $this->branch,
-            self::TARGET_UPSTREAM_GIT_REMOTE_NAME . '/' . Git::DEFAULT_BRANCH
+            $targetGitRemoteName . '/' . Git::DEFAULT_BRANCH
         );
+
+        return $targetGitRemoteName;
     }
 
     /**
+     * Validates the git branch (multidev) name.
+     *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function validateBranch(): void
@@ -300,5 +310,42 @@ trait ConversionCommandsTrait
         $this->log()->notice(
             sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
         );
+    }
+
+    /**
+     * Returns TRUE if two repositories' branches have a common history.
+     *
+     * @param string $repo1Remote
+     *   Repository #1 remote name.
+     * @param string $repo2Remote
+     *   Repository #2 remote name. Defaults to "origin".
+     * @param string $repo1Branch
+     *   Repository #1 branch name. Defaults to "master".
+     * @param string $repo2Branch
+     *   Repository #2 branch name. Defaults to "master".
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function areGitReposWithCommonCommits(
+        string $repo1Remote,
+        string $repo2Remote = Git::DEFAULT_REMOTE,
+        string $repo1Branch = Git::DEFAULT_BRANCH,
+        string $repo2Branch = Git::DEFAULT_BRANCH
+    ): bool {
+        $this->git->fetch($repo1Remote);
+        $repo1CommitHashes = $this->git->getCommitHashes(
+            sprintf('%s/%s', $repo1Remote, $repo1Branch)
+        );
+
+        $this->git->fetch($repo2Remote);
+        $repo2CommitHashes = $this->git->getCommitHashes(
+            sprintf('%s/%s', $repo2Remote, $repo2Branch)
+        );
+
+        $identicalCommitHashes = array_intersect($repo2CommitHashes, $repo1CommitHashes);
+
+        return 0 < count($identicalCommitHashes);
     }
 }
