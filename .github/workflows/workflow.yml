@@ -78,9 +78,9 @@ jobs:
       - name: Install plugin from local path
         working-directory: ..
         run: |
-          ./terminus self:plugin:install terminus-conversion-tools-plugin
-          ./terminus self:plugin:list
-          ./terminus conversion:composer -h
+          ./terminus.phar self:plugin:install terminus-conversion-tools-plugin
+          ./terminus.phar self:plugin:list
+          ./terminus.phar conversion:composer -h
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
