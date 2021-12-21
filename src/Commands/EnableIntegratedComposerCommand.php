@@ -19,6 +19,8 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
     use SiteAwareTrait;
     use ConversionCommandsTrait;
 
+    private const TARGET_GIT_BRANCH = 'conversion';
+
     /**
      * Enable Pantheon Integrated Composer for the site.
      *
@@ -28,13 +30,15 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function enableIntegratedComposer(string $site_id): void
     {
         $this->site = $this->getSite($site_id);
-        $this->git = new Git($this->getLocalSitePath());
+        $localSitePath = $this->getLocalSitePath(true);
+        $git = new Git($localSitePath);
 
-        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
 
         if (true === ($pantheonYmlContent['build_step'] ?? false)) {
             // The site already uses Pantheon Integrated Composer feature.
@@ -46,10 +50,18 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             );
         }
 
+        $git->checkout(
+            '-b',
+            self::TARGET_GIT_BRANCH,
+            Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
+        );
+
         $this->log()->notice('Adding paths to .gitignore file...');
         $pathsToIgnore = array_diff($this->getPathsToIgnore(), $this->getGitignorePaths());
         if (count($pathsToIgnore) > 0) {
             $this->addGitignorePaths($pathsToIgnore);
+            $git->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
+
             $this->log()->notice(
                 sprintf(
                     'The following paths have been added to .gitignore file: "%s".',
