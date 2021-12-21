@@ -37,7 +37,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
 
         if (true === ($pantheonYmlContent['build_step'] ?? false)) {
-            // Already uses Pantheon Integrated Composer.
+            // The site already uses Pantheon Integrated Composer feature.
             throw new TerminusException(
                 'Pantheon Integrated Composer feature is already enabled on the site {site_name}.',
                 [
