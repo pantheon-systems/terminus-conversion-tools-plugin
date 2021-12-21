@@ -92,7 +92,7 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
         $composerJsonPath = Files::buildPath(
             getenv('HOME'),
             'pantheon-local-copies',
-            $this->siteName . '_composer_conversion',
+            $this->siteName . '_terminus_conversion_plugin',
             'upstream-configuration',
             'composer.json'
         );

@@ -49,7 +49,7 @@ trait ConversionCommandsTrait
      */
     private function cloneSiteGitRepository(bool $force = true): string
     {
-        $siteDirName = sprintf('%s_composer_conversion', $this->site->getName());
+        $siteDirName = sprintf('%s_terminus_conversion_plugin', $this->site->getName());
         $path = $this->site->getLocalCopyDir($siteDirName);
         if (!$force && 2 < count(scandir($path))) {
             return $path;
