@@ -29,11 +29,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     private const DRUPAL_PROJECT_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
 
     /**
-     * @var string
-     */
-    private string $localPath;
-
-    /**
      * Converts a "drupal-project" upstream-based site into "drupal-recommended" upstream-based one.
      *
      * @command conversion:drupal-recommended
@@ -70,10 +65,10 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $this->localPath = $this->cloneSiteGitRepository(!$options['continue']);
+        $localPath = $this->getLocalSitePath(!$options['continue']);
 
-        $this->git = new Git($this->localPath);
-        $composer = new Composer($this->localPath);
+        $this->git = new Git($localPath);
+        $composer = new Composer($localPath);
 
         $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url']);
         if (!$this->areGitReposWithCommonCommits($targetGitRemoteName)) {
@@ -82,7 +77,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $drupalRecommendedComposerDependencies = $this->getComposerDependencies();
+        $drupalRecommendedComposerDependencies = $this->getComposerDependencies($localPath);
 
         $this->copySiteSpecificFiles();
 
@@ -91,7 +86,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             $this->git->checkout(Git::DEFAULT_BRANCH, 'composer.json');
             $this->git->commit('Update composer.json to include site-specific changes', ['composer.json']);
 
-            $this->updateComposerJsonMeta();
+            $this->updateComposerJsonMeta($localPath);
             foreach ($drupalRecommendedComposerDependencies as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
                 if ($dependency['is_dev']) {
@@ -118,7 +113,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
         }
 
-        $this->detectDrupalProjectDiff();
+        $this->detectDrupalProjectDiff($localPath);
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
@@ -156,10 +151,12 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *  - ["installer-paths"]
      *  - ["minimum-stability"]
      *  - ["require"]["pantheon-upstreams/upstream-configuration"]
+     *
+     * @param string $localPath
      */
-    private function updateComposerJsonMeta(): void
+    private function updateComposerJsonMeta(string $localPath): void
     {
-        $composerJson = file_get_contents(Files::buildPath($this->localPath, 'composer.json'));
+        $composerJson = file_get_contents(Files::buildPath($localPath, 'composer.json'));
         $composerJson = json_decode($composerJson, true);
 
         $composerJson['require']['pantheon-upstreams/upstream-configuration'] = 'self.version';
@@ -178,7 +175,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composerJson['extra']['installer-paths']['web/profiles/custom/{$name}'] = ['type:drupal-custom-profile'];
         $composerJson['extra']['installer-paths']['web/themes/custom/{$name}'] = ['type:drupal-custom-theme'];
 
-        $file = fopen(Files::buildPath($this->localPath, 'composer.json'), 'w');
+        $file = fopen(Files::buildPath($localPath, 'composer.json'), 'w');
         fwrite($file, json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         fclose($file);
     }
@@ -186,15 +183,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     /**
      * Returns the list of composer dependencies.
      *
+     * @param string $localPath
+     *
      * @return array[]
      *   Each dependency is an array that consists of the following keys:
      *     "package" - a package name;
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
      */
-    private function getComposerDependencies(): array
+    private function getComposerDependencies(string $localPath): array
     {
-        $composerJson = file_get_contents(Files::buildPath($this->localPath, 'composer.json'));
+        $composerJson = file_get_contents(Files::buildPath($localPath, 'composer.json'));
         $composerJson = json_decode($composerJson, true);
 
         $dependencies = [];
@@ -224,8 +223,10 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *
      * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
      * Otherwise - apply the patch and commit the changes.
+     *
+     * @param string $localPath
      */
-    private function detectDrupalProjectDiff(): void
+    private function detectDrupalProjectDiff(string $localPath): void
     {
         $this->log()->notice(
             <<<EOD
@@ -267,7 +268,7 @@ The next step in the site conversion process is to resolve the code merge confli
 3. run `terminus conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
                         self::TARGET_GIT_BRANCH,
-                        $this->localPath,
+                        $localPath,
                         implode(', ', $e->getUnmergedFiles()),
                         $this->site->getName()
                     )

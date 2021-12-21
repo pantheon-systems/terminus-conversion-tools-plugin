@@ -29,11 +29,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private const WEB_ROOT = 'web';
 
     /**
-     * @var string
-     */
-    private string $localPath;
-
-    /**
      * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
      */
     private Drupal8Projects $drupal8ComponentsDetector;
@@ -94,14 +89,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->branch = $options['branch'];
         $this->validateBranch();
 
-        $this->localPath = $this->cloneSiteGitRepository();
-
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalAbsolutePath());
-        $this->git = new Git($this->localPath);
-        $this->composer = new Composer($this->localPath);
+        $this->git = new Git($this->getLocalSitePath());
+        $this->composer = new Composer($this->getLocalSitePath());
 
         $contribProjects = $this->getContribDrupal8Projects();
         $libraryProjects = $this->getLibraries();
@@ -139,6 +132,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Returns TRUE if the site is a webroot-based site.
      *
      * @return bool
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function isWebRootSite(): bool
     {
@@ -146,7 +142,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             return $this->isWebRootSite;
         }
 
-        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->localPath, 'pantheon.yml'));
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
         $this->isWebRootSite = $pantheonYmlContent['web_docroot'] ?? false;
 
         return $this->isWebRootSite;
@@ -156,12 +152,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Returns the absolute site's Drupal core installation directory.
      *
      * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getDrupalAbsolutePath(): string
     {
         return $this->isWebRootSite()
-            ? Files::buildPath($this->localPath, self::WEB_ROOT)
-            : $this->localPath;
+            ? Files::buildPath($this->getLocalSitePath(), self::WEB_ROOT)
+            : $this->getLocalSitePath();
     }
 
     /**
@@ -170,6 +169,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @param string ...$parts
      *
      * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getWebRootAwareRelativePath(string ...$parts): string
     {
@@ -183,6 +185,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @return array
      *   The list of Composer package names.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getLibraries(): array
     {
@@ -217,6 +222,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *   The list of contrib modules and themes where:
      *     "name" is a module/theme name;
      *     "version" is a module/theme version.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getContribDrupal8Projects(): array
     {
@@ -251,6 +259,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Returns the list directories of custom projects.
      *
      * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function getCustomProjectsDirectories(): array
     {
@@ -303,6 +314,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Copies pantheon.yml file and sets the "build_step" flag.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function copyPantheonYml(): void
     {
@@ -310,7 +323,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->git->checkout(Git::DEFAULT_BRANCH, 'pantheon.yml');
         $this->git->commit('Copy pantheon.yml');
 
-        $path = Files::buildPath($this->localPath, 'pantheon.yml');
+        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYmlContent = Yaml::parseFile($path);
         if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
             return;
@@ -432,6 +445,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Copies custom projects (modules and themes).
      *
      * @param array $customProjectsDirs
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function copyCustomProjects(array $customProjectsDirs): void
     {
@@ -449,8 +465,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     $this->git->checkout(Git::DEFAULT_BRANCH, $relativePath);
                     $targetPath = Files::buildPath(self::WEB_ROOT, $subDir, 'custom');
 
-                    if (!is_dir(Files::buildPath($this->localPath, $targetPath))) {
-                        mkdir(Files::buildPath($this->localPath, $targetPath), 0755, true);
+                    if (!is_dir(Files::buildPath($this->getLocalSitePath(), $targetPath))) {
+                        mkdir(Files::buildPath($this->getLocalSitePath(), $targetPath), 0755, true);
                     }
 
                     if (!$this->isWebRootSite()) {
@@ -474,6 +490,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Copies settings.php file.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function copySettingsPhp(): void
     {
@@ -499,11 +517,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * Adds a commit to trigger a Pantheon's Integrated Composer build.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function addCommitToTriggerBuild(): void
     {
         $this->log()->notice('Adding comment to pantheon.yml to trigger a build...');
-        $path = Files::buildPath($this->localPath, 'pantheon.yml');
+        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYml = fopen($path, 'a');
         fwrite($pantheonYml, PHP_EOL . '# comment to trigger a Pantheon IC build');
         fclose($pantheonYml);

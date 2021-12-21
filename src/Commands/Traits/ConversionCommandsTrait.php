@@ -76,20 +76,22 @@ trait ConversionCommandsTrait
     /**
      * Clones the site and return the path to the local site copy.
      *
-     * @todo: add support for $force arg for cloneSiteGitRepository().
+     * @param null|bool $force
      *
      * @return string
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function getLocalSitePath()
+    private function getLocalSitePath(?bool $force = null)
     {
-        if (isset($this->localSitePath)) {
+        if (true !== $force && isset($this->localSitePath)) {
             return $this->localSitePath;
         }
 
-        $this->localSitePath = $this->cloneSiteGitRepository();
+        $this->localSitePath = null === $force
+            ? $this->cloneSiteGitRepository()
+            : $this->cloneSiteGitRepository($force);
 
         return $this->localSitePath;
     }

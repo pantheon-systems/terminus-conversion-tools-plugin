@@ -34,7 +34,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
     {
         $this->site = $this->getSite($site_id);
 
-        $localPath = $this->cloneSiteGitRepository();
+        $localPath = $this->getLocalSitePath();
 
         $this->git = new Git($localPath);
         $backupBranchName = $this->getBackupBranchName();
