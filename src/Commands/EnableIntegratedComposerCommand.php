@@ -138,7 +138,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
         return array_filter(
             explode(PHP_EOL, $content),
-            fn ($path) => !empty($path) && false === strpos($path, '#')
+            fn ($path) => !empty($path) && 0 !== strpos(trim($path), '#')
         );
     }
 }
