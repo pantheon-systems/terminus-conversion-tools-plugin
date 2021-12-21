@@ -9,6 +9,8 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -36,7 +38,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
     {
         $this->site = $this->getSite($site_id);
         $localSitePath = $this->getLocalSitePath(true);
-        $git = new Git($localSitePath);
+        $this->git = new Git($localSitePath);
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
 
@@ -50,7 +52,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             );
         }
 
-        $git->checkout(
+        $this->git->checkout(
             '-b',
             self::TARGET_GIT_BRANCH,
             Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
@@ -60,14 +62,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $pathsToIgnore = array_diff($this->getPathsToIgnore(), $this->getGitignorePaths());
         if (count($pathsToIgnore) > 0) {
             $this->addGitignorePaths($pathsToIgnore);
-            $git->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
-
-            $this->log()->notice(
-                sprintf(
-                    'The following paths have been added to .gitignore file: "%s".',
-                    implode('", "', $pathsToIgnore)
-                )
-            );
+            $this->deletePaths($pathsToIgnore);
         } else {
             $this->log()->notice('No paths to add to .gitignore file.');
         }
@@ -114,6 +109,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      *
      * @param array $paths
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -123,12 +119,19 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             return;
         }
 
-        $gitignoreFilePath = Files::buildPath($this->getLocalSitePath(), '.gitignore');
-        $f = fopen($gitignoreFilePath, 'a+');
+        $f = fopen(Files::buildPath($this->getLocalSitePath(), '.gitignore'), 'a+');
+        fwrite($f, '# Ignored paths added by Terminus Conversion Tools Plugin `conversion:enable-ic`' . PHP_EOL);
         fwrite($f, implode(PHP_EOL, $paths));
         fwrite($f, PHP_EOL);
-
         fclose($f);
+
+        $this->git->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
+        $this->log()->notice(
+            sprintf(
+                'The following paths have been added to .gitignore file: "%s".',
+                implode('", "', $paths)
+            )
+        );
     }
 
     /**
@@ -152,5 +155,38 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             explode(PHP_EOL, $content),
             fn ($path) => !empty($path) && 0 !== strpos(trim($path), '#')
         );
+    }
+
+    /**
+     * Deletes paths (dirs or files) and commits the outcome.
+     *
+     * @param array $paths
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function deletePaths(array $paths): void
+    {
+        $filesystem = new Filesystem();
+        foreach ($paths as $pathToDelete) {
+            $pathToDelete = trim($pathToDelete, '/\\');
+            $absolutePathToDelete = Files::buildPath($this->getLocalSitePath(), $pathToDelete);
+            if (!file_exists($absolutePathToDelete)) {
+                continue;
+            }
+
+            $this->log()->notice(sprintf('Deleting Composer-generated directory "%s"...', $pathToDelete));
+            try {
+                $filesystem->remove($absolutePathToDelete);
+            } catch (IOException $e) {
+                $this->log()->warning(sprintf('Failed deleting directory %s.', $pathToDelete));
+                continue;
+            }
+
+            $this->git->commit(sprintf('Delete Composer-generated path %s', $pathToDelete), [$pathToDelete]);
+
+            $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
+        }
     }
 }
