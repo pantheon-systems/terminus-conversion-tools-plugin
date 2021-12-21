@@ -38,6 +38,11 @@ trait ConversionCommandsTrait
     private Git $git;
 
     /**
+     * @var string
+     */
+    private string $localSitePath;
+
+    /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
      * @param bool $force
@@ -66,6 +71,27 @@ trait ConversionCommandsTrait
         $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
 
         return $path;
+    }
+
+    /**
+     * Clones the site and return the path to the local site copy.
+     *
+     * @todo: add support for $force arg for cloneSiteGitRepository().
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function getLocalSitePath()
+    {
+        if (isset($this->localSitePath)) {
+            return $this->localSitePath;
+        }
+
+        $this->localSitePath = $this->cloneSiteGitRepository();
+
+        return $this->localSitePath;
     }
 
     /**
