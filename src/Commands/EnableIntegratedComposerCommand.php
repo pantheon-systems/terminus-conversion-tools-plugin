@@ -59,12 +59,12 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         );
 
         $this->log()->notice('Adding paths to .gitignore file...');
-        $pathsToIgnore = array_diff($this->getPathsToIgnore(), $this->getGitignorePaths());
+        $pathsToIgnore = $this->getPathsToIgnore();
         if (count($pathsToIgnore) > 0) {
             $this->addGitignorePaths($pathsToIgnore);
             $this->deletePaths($pathsToIgnore);
         } else {
-            $this->log()->notice('No paths to add to .gitignore file.');
+            $this->log()->notice('No paths detected to add to .gitignore file.');
         }
     }
 
@@ -101,7 +101,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             }
         }
 
-        return $ignorePaths;
+        return array_diff($ignorePaths, $this->getGitignorePaths());
     }
 
     /**
@@ -119,11 +119,17 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             return;
         }
 
-        $f = fopen(Files::buildPath($this->getLocalSitePath(), '.gitignore'), 'a+');
-        fwrite($f, '# Ignored paths added by Terminus Conversion Tools Plugin `conversion:enable-ic`' . PHP_EOL);
-        fwrite($f, implode(PHP_EOL, $paths));
-        fwrite($f, PHP_EOL);
-        fclose($f);
+        $gitignoreFile = fopen(Files::buildPath($this->getLocalSitePath(), '.gitignore'), 'a+');
+        if (false === $gitignoreFile) {
+            throw new TerminusException('Failed to open .gitignore file for writing');
+        }
+        fwrite(
+            $gitignoreFile,
+            '# Ignored paths added by Terminus Conversion Tools Plugin `conversion:enable-ic`' . PHP_EOL
+        );
+        fwrite($gitignoreFile, implode(PHP_EOL, $paths));
+        fwrite($gitignoreFile, PHP_EOL);
+        fclose($gitignoreFile);
 
         $this->git->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
         $this->log()->notice(
