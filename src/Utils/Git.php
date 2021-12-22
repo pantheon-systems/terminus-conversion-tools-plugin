@@ -127,6 +127,18 @@ class Git
     }
 
     /**
+     * Performs merge operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function merge(...$options): void
+    {
+        $this->execute(['merge', ...$options]);
+    }
+
+    /**
      * Returns TRUE if the branch exists in the remote.
      *
      * @param string $branch
