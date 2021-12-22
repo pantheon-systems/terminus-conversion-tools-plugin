@@ -331,7 +331,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $pantheonYmlContent['build_step'] = true;
         $pantheonYmlFile = fopen($path, 'wa+');
-        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent));
+        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
         fclose($pantheonYmlFile);
 
         $this->git->commit('Add build_step:true to pantheon.yml');
