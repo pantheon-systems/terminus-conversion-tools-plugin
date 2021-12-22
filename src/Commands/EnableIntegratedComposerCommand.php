@@ -70,8 +70,9 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         }
 
         $this->updatePantheonYmlConfig();
-
         $this->pushTargetBranch();
+        $this->addCommitToTriggerBuild();
+
         // @todo: merge md into dev
     }
 
@@ -227,5 +228,28 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
         $this->git->commit('Add build_step:true to pantheon.yml', ['pantheon.yml']);
         $this->log()->notice('pantheon.yml config file has been updated.');
+    }
+
+    /**
+     * Adds a commit to trigger a Pantheon's Integrated Composer build.
+     *
+     * @todo: move into ConversionCommandsTrait
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function addCommitToTriggerBuild(): void
+    {
+        $this->log()->notice('Adding a comment to pantheon.yml to trigger a build...');
+
+        $pantheonYmlFile = fopen(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'), 'a');
+        fwrite($pantheonYmlFile, PHP_EOL . '# comment to trigger a Pantheon IC build');
+        fclose($pantheonYmlFile);
+
+        $this->git->commit('Trigger Pantheon build');
+        $this->git->push($this->branch);
+
+        $this->log()->notice('A comment has been added.');
     }
 }
