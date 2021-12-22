@@ -43,11 +43,12 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         array $options = ['branch' => self::TARGET_GIT_BRANCH]
     ): void {
         $this->site = $this->getSite($site_id);
+        $this->branch = $options['branch'];
+
         $localSitePath = $this->getLocalSitePath(true);
         $this->git = new Git($localSitePath);
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
-
         if (true === ($pantheonYmlContent['build_step'] ?? false)) {
             // The site already uses Pantheon Integrated Composer feature.
             throw new TerminusException(
@@ -59,7 +60,6 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         }
 
         // @todo: consider refactoring ->branch and self::TARGET_GIT_BRANCH.
-        $this->branch = $options['branch'];
         $this->git->checkout(
             '-b',
             $this->branch,
