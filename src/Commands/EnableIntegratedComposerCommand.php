@@ -228,7 +228,7 @@ EOD,
     }
 
     /**
-     * Sets "build_step" config value to TRUE in pantheon.yml.
+     * Sets "build_step" config value to TRUE in pantheon.yml file.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
