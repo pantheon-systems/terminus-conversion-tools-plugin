@@ -6,7 +6,9 @@ use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
+use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Models\TerminusModel;
+use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
@@ -16,6 +18,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 trait ConversionCommandsTrait
 {
+    use SiteAwareTrait;
     use WorkflowProcessingTrait;
 
     /**
@@ -33,6 +36,7 @@ trait ConversionCommandsTrait
      */
     private string $branch;
 
+    // @todo: consider creating getter/setter pair
     /**
      * @var \Pantheon\TerminusConversionTools\Utils\Git
      */
@@ -304,20 +308,6 @@ trait ConversionCommandsTrait
     }
 
     /**
-     * Validates the git branch (multidev) name.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function validateBranch(): void
-    {
-        if (strlen($this->branch) > 11) {
-            throw new TerminusException(
-                'The target git branch name for multidev env must not exceed 11 characters limit'
-            );
-        }
-    }
-
-    /**
      * Pushes the target branch to the site repository.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -397,5 +387,55 @@ trait ConversionCommandsTrait
         $this->git->push($this->branch);
 
         $this->log()->notice('A comment has been added.');
+    }
+
+    /**
+     * Sets the Site object by the site ID.
+     *
+     * @param string $siteId
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function setSite(string $siteId): void
+    {
+        $this->site = $this->getSite($siteId);
+    }
+
+    /**
+     * Returns the Site object.
+     *
+     * @return \Pantheon\Terminus\Models\Site
+     */
+    public function site(): Site
+    {
+        return $this->site;
+    }
+
+    /**
+     * Sets the target git branch.
+     *
+     * @param string $branch
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    private function setBranch(string $branch): void
+    {
+        if (strlen($branch) > 11) {
+            throw new TerminusException(
+                'The target git branch name for multidev env must not exceed 11 characters limit'
+            );
+        }
+
+        $this->branch = $branch;
+    }
+
+    /**
+     * Returns the target git branch.
+     *
+     * @return string
+     */
+    private function getBranch(): string
+    {
+        return $this->branch;
     }
 }

@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
@@ -19,7 +18,6 @@ use Throwable;
  */
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
@@ -63,31 +61,29 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
     ): void {
-        $this->site = $this->getSite($site_id);
+        $this->setSite($site_id);
+        $this->setBranch($options['branch']);
 
-        if (!$this->site->getFramework()->isDrupal8Framework()) {
+        if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
                 'The site {site_name} is not a Drupal 8 based site.',
-                ['site_name' => $this->site->getName()]
+                ['site_name' => $this->site()->getName()]
             );
         }
 
         if (!in_array(
-            $this->site->getUpstream()->get('machine_name'),
+            $this->site()->getUpstream()->get('machine_name'),
             $this->getSupportedSourceUpstreamIds(),
             true
         )) {
             throw new TerminusException(
                 'Unsupported upstream {upstream}. Supported upstreams are: {supported_upstreams}.',
                 [
-                    'upstream' => $this->site->getUpstream()->get('machine_name'),
+                    'upstream' => $this->site()->getUpstream()->get('machine_name'),
                     'supported_upstreams' => implode(', ', $this->getSupportedSourceUpstreamIds())
                 ]
             );
         }
-
-        $this->branch = $options['branch'];
-        $this->validateBranch();
 
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);

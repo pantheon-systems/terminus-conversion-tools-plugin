@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
@@ -14,7 +13,6 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
@@ -41,7 +39,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      */
     public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
-        $this->site = $this->getSite($site_id);
+        $this->setSite($site_id);
         $sourceBranch = $options['branch'];
         $localPath = $this->getLocalSitePath();
 
@@ -110,7 +108,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $this->git->reset('--hard', $targetCommitHash);
         $this->git->push(Git::DEFAULT_BRANCH, '--force');
 
-        if (self::EMPTY_UPSTREAM_ID !== $this->site->getUpstream()->get('machine_name')
+        if (self::EMPTY_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')
             || $this->input()->getOption('yes')
             || $this->io()->confirm(
                 sprintf(
@@ -125,7 +123,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         }
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $this->site->getEnvironments()->get('dev');
+        $devEnv = $this->site()->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
         $this->log()->notice('Done!');

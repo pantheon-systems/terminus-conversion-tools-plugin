@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
@@ -19,7 +18,6 @@ use Throwable;
  */
 class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
@@ -53,15 +51,14 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
         ]
     ): void {
-        $this->branch = $options['branch'];
-        $this->validateBranch();
+        $this->setSite($site_id);
+        $this->setBranch($options['branch']);
 
-        $this->site = $this->getSite($site_id);
-        $upstream_id = $this->site->getUpstream()->get('machine_name');
+        $upstream_id = $this->site()->getUpstream()->get('machine_name');
         if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id) {
             throw new TerminusException(
                 'The site {site_name} is not a "drupal-project" upstream-based site.',
-                ['site_name' => $this->site->getName()]
+                ['site_name' => $this->site()->getName()]
             );
         }
 
@@ -270,7 +267,7 @@ EOD,
                         self::TARGET_GIT_BRANCH,
                         $localPath,
                         implode(', ', $e->getUnmergedFiles()),
-                        $this->site->getName()
+                        $this->site()->getName()
                     )
                 );
 

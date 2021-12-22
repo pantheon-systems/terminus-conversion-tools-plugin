@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
@@ -14,7 +13,6 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     /**
@@ -32,7 +30,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function restoreMaster(string $site_id): void
     {
-        $this->site = $this->getSite($site_id);
+        $this->setSite($site_id);
 
         $localPath = $this->getLocalSitePath();
 
@@ -79,7 +77,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $this->switchUpstream($this->getSourceUpstreamIdByBackupBranchName($backupBranchName));
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $this->site->getEnvironments()->get('dev');
+        $devEnv = $this->site()->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
         $this->log()->notice('Done!');

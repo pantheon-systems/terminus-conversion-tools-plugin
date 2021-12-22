@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
@@ -18,7 +17,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
@@ -42,8 +40,8 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH]
     ): void {
-        $this->site = $this->getSite($site_id);
-        $this->branch = $options['branch'];
+        $this->setSite($site_id);
+        $this->setBranch($options['branch']);
 
         $localSitePath = $this->getLocalSitePath(true);
         $this->git = new Git($localSitePath);
@@ -54,15 +52,14 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             throw new TerminusException(
                 'Pantheon Integrated Composer feature is already enabled on the site {site_name}.',
                 [
-                    'site_name' => $this->site->getName(),
+                    'site_name' => $this->site()->getName(),
                 ]
             );
         }
 
-        // @todo: consider refactoring ->branch and self::TARGET_GIT_BRANCH.
         $this->git->checkout(
             '-b',
-            $this->branch,
+            $this->getBranch(),
             Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
         );
 
@@ -79,19 +76,19 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->pushTargetBranch();
         $this->addCommitToTriggerBuild();
 
-        $dashboardUrl = $this->site->getEnvironments()->get($this->branch)->dashboardUrl();
+        $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
         if ($this->input()->getOption('yes') || 'push' === $this->io()->choice(
             <<<EOD
-Pantheon Integrated Composer has been enabled for "$this->branch" environment ($dashboardUrl).
+Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
 You can push the changes to "master" branch immediately or do it later by executing
-`terminus multidev:merge-to-dev {$this->site->getName()}.$this->branch` command.
+`terminus multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
 EOD,
             ['cancel' => 'Cancel', 'push' => 'Push to master'],
             'cancel'
         )) {
             $this->log()->notice('Pushing changes to "master" branch...');
             $this->git->checkout(Git::DEFAULT_BRANCH);
-            $this->git->merge($this->branch);
+            $this->git->merge($this->getBranch());
             $this->git->push(Git::DEFAULT_BRANCH);
             $this->log()->notice('Pantheon Integrated Composer has been enabled for "master".');
         }
