@@ -52,9 +52,11 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             );
         }
 
+        // @todo: consider refactoring ->branch and self::TARGET_GIT_BRANCH.
+        $this->branch = self::TARGET_GIT_BRANCH;
         $this->git->checkout(
             '-b',
-            self::TARGET_GIT_BRANCH,
+            $this->branch,
             Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
         );
 
@@ -66,6 +68,11 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         } else {
             $this->log()->notice('No paths detected to add to .gitignore file.');
         }
+
+        $this->updatePantheonYmlConfig();
+
+        $this->pushTargetBranch();
+        // @todo: merge md into dev
     }
 
     /**
@@ -164,7 +171,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
     }
 
     /**
-     * Deletes paths (dirs or files) and commits the outcome.
+     * Deletes paths (directories or files) and commits the outcome.
      *
      * @param array $paths
      *
@@ -194,5 +201,31 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
             $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
         }
+    }
+
+    /**
+     * Sets "build_step" config value to TRUE in pantheon.yml.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function updatePantheonYmlConfig(): void
+    {
+        $this->log()->notice('Setting "build_step" to "true" in pantheon.yml config file...');
+        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
+
+        $pantheonYmlContent = Yaml::parseFile($path);
+        $pantheonYmlContent['build_step'] = true;
+
+        $pantheonYmlFile = fopen($path, 'wa+');
+        if (false === $pantheonYmlFile) {
+            throw new TerminusException('Failed to open pantheon.yml file for writing');
+        }
+        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+        fclose($pantheonYmlFile);
+
+        $this->git->commit('Add build_step:true to pantheon.yml', ['pantheon.yml']);
+        $this->log()->notice('pantheon.yml config file has been updated.');
     }
 }
