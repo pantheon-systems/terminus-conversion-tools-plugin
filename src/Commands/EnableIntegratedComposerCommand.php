@@ -198,7 +198,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
                 continue;
             }
 
-            $this->git->commit(sprintf('Delete Composer-generated path %s', $pathToDelete), [$pathToDelete]);
+            $this->git->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
 
             $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
         }
