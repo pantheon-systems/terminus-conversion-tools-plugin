@@ -512,25 +512,4 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->log()->notice('settings.php file has been copied.');
         }
     }
-
-    /**
-     * Adds a commit to trigger a Pantheon's Integrated Composer build.
-     *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     */
-    private function addCommitToTriggerBuild(): void
-    {
-        $this->log()->notice('Adding comment to pantheon.yml to trigger a build...');
-        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
-        $pantheonYml = fopen($path, 'a');
-        fwrite($pantheonYml, PHP_EOL . '# comment to trigger a Pantheon IC build');
-        fclose($pantheonYml);
-
-        $this->git->commit('Trigger Pantheon build');
-        $this->git->push($this->branch);
-
-        $this->log()->notice('Comment is added');
-    }
 }

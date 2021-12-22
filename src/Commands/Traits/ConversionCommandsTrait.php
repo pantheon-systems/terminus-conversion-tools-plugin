@@ -8,6 +8,7 @@ use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
 use Pantheon\Terminus\Models\TerminusModel;
 use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -375,5 +376,26 @@ trait ConversionCommandsTrait
         $identicalCommitHashes = array_intersect($repo2CommitHashes, $repo1CommitHashes);
 
         return 0 < count($identicalCommitHashes);
+    }
+
+    /**
+     * Adds a commit to trigger a Pantheon's Integrated Composer build.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function addCommitToTriggerBuild(): void
+    {
+        $this->log()->notice('Adding a comment to pantheon.yml to trigger a build...');
+
+        $pantheonYmlFile = fopen(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'), 'a');
+        fwrite($pantheonYmlFile, PHP_EOL . '# comment to trigger a Pantheon IC build');
+        fclose($pantheonYmlFile);
+
+        $this->git->commit('Trigger Pantheon build');
+        $this->git->push($this->branch);
+
+        $this->log()->notice('A comment has been added.');
     }
 }
