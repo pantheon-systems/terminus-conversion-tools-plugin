@@ -28,14 +28,20 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      *
      * @command conversion:enable-ic
      *
-     * @param string $site_id
+     * @option branch The target branch name for multidev env.
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Psr\Container\ContainerExceptionInterface
+     * @param string $site_id
+     * @param array $options
+     *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function enableIntegratedComposer(string $site_id): void
-    {
+    public function enableIntegratedComposer(
+        string $site_id,
+        array $options = ['branch' => self::TARGET_GIT_BRANCH]
+    ): void {
         $this->site = $this->getSite($site_id);
         $localSitePath = $this->getLocalSitePath(true);
         $this->git = new Git($localSitePath);
@@ -53,7 +59,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         }
 
         // @todo: consider refactoring ->branch and self::TARGET_GIT_BRANCH.
-        $this->branch = self::TARGET_GIT_BRANCH;
+        $this->branch = $options['branch'];
         $this->git->checkout(
             '-b',
             $this->branch,
