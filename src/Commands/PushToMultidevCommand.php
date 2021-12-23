@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
  * Class PushToMultidevCommand.
@@ -35,7 +34,7 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
         $this->setBranch($options['branch']);
 
         $localPath = $this->cloneSiteGitRepository(false);
-        $this->git = new Git($localPath);
+        $this->setGit($localPath);
 
         $this->pushTargetBranch();
 

@@ -151,8 +151,11 @@ EOD
             if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
                 // Repository contents matches "drupal-recommended" upstream.
 
-                $this->git = new Git($localPath);
-                $this->git->addRemote(self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
+                $this->setGit($localPath);
+                $this->getGit()->addRemote(
+                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
+                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
+                );
                 if ($this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID)) {
                     $this->output()->writeln(
                         <<<EOD

@@ -34,14 +34,14 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 
         $localPath = $this->getLocalSitePath();
 
-        $this->git = new Git($localPath);
+        $this->setGit($localPath);
         $backupBranchName = $this->getBackupBranchName();
-        if (!$this->git->isRemoteBranchExists($backupBranchName)) {
+        if (!$this->getGit()->isRemoteBranchExists($backupBranchName)) {
             throw new TerminusException(sprintf('The backup git branch "%s" does not exist', $backupBranchName));
         }
 
-        $backupMasterCommitHash = $this->git->getHeadCommitHash($backupBranchName);
-        $masterCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
+        $backupMasterCommitHash = $this->getGit()->getHeadCommitHash($backupBranchName);
+        $masterCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($backupMasterCommitHash === $masterCommitHash) {
             $this->log()->warning(
                 sprintf(
@@ -70,9 +70,9 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $this->log()->notice(
             sprintf('Restoring "%s" git branch to "%s"...', Git::DEFAULT_BRANCH, $backupMasterCommitHash)
         );
-        $this->git->checkout(Git::DEFAULT_BRANCH);
-        $this->git->reset('--hard', $backupMasterCommitHash);
-        $this->git->push(Git::DEFAULT_BRANCH, '--force');
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH);
+        $this->getGit()->reset('--hard', $backupMasterCommitHash);
+        $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
         $this->switchUpstream($this->getSourceUpstreamIdByBackupBranchName($backupBranchName));
 

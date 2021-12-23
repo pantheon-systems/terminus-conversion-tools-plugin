@@ -43,13 +43,13 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $sourceBranch = $options['branch'];
         $localPath = $this->getLocalSitePath();
 
-        $this->git = new Git($localPath);
-        if (!$this->git->isRemoteBranchExists($sourceBranch)) {
+        $this->setGit($localPath);
+        if (!$this->getGit()->isRemoteBranchExists($sourceBranch)) {
             throw new TerminusException(sprintf('The source branch "%s" does not exist', $sourceBranch));
         }
 
-        $targetCommitHash = $this->git->getHeadCommitHash($sourceBranch);
-        $masterCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
+        $targetCommitHash = $this->getGit()->getHeadCommitHash($sourceBranch);
+        $masterCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($targetCommitHash === $masterCommitHash) {
             $this->log()->warning(
                 sprintf(
@@ -64,8 +64,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         }
 
         $backupBranchName = $this->getBackupBranchName();
-        if (!$this->git->isRemoteBranchExists($backupBranchName)) {
-            $masterBranchHeadCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
+        if (!$this->getGit()->isRemoteBranchExists($backupBranchName)) {
+            $masterBranchHeadCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
             $this->log()->notice(
                 sprintf(
                     'Creating backup of "%s" ("%s" commit)...',
@@ -73,13 +73,13 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
                     $masterBranchHeadCommitHash
                 )
             );
-            $this->git->checkout(
+            $this->getGit()->checkout(
                 '--no-track',
                 '-b',
                 $backupBranchName,
                 sprintf('%s/%s', Git::DEFAULT_REMOTE, Git::DEFAULT_BRANCH)
             );
-            $this->git->push($backupBranchName);
+            $this->getGit()->push($backupBranchName);
             $this->createMultidev($backupBranchName);
         } else {
             $this->log()->notice(
@@ -104,9 +104,9 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         }
 
         $this->log()->notice(sprintf('Replacing "%s" with "%s" git branch...', Git::DEFAULT_BRANCH, $sourceBranch));
-        $this->git->checkout(Git::DEFAULT_BRANCH);
-        $this->git->reset('--hard', $targetCommitHash);
-        $this->git->push(Git::DEFAULT_BRANCH, '--force');
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH);
+        $this->getGit()->reset('--hard', $targetCommitHash);
+        $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
         if (self::EMPTY_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')
             || $this->input()->getOption('yes')

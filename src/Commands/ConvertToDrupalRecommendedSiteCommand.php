@@ -64,7 +64,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         $localPath = $this->getLocalSitePath(!$options['continue']);
 
-        $this->git = new Git($localPath);
+        $this->setGit($localPath);
         $composer = new Composer($localPath);
 
         $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url']);
@@ -80,8 +80,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         $this->log()->notice('Updating composer.json to match "drupal-recommended" upstream...');
         try {
-            $this->git->checkout(Git::DEFAULT_BRANCH, 'composer.json');
-            $this->git->commit('Update composer.json to include site-specific changes', ['composer.json']);
+            $this->getGit()->checkout(Git::DEFAULT_BRANCH, 'composer.json');
+            $this->getGit()->commit('Update composer.json to include site-specific changes', ['composer.json']);
 
             $this->updateComposerJsonMeta($localPath);
             foreach ($drupalRecommendedComposerDependencies as $dependency) {
@@ -96,7 +96,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
             $this->log()->notice('Updating composer dependencies...');
             $composer->update();
-            $this->git->commit(
+            $this->getGit()->commit(
                 'Update composer.json to match "drupal-recommended" upstream and install dependencies',
                 ['composer.json', 'composer.lock']
             );
@@ -128,17 +128,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      */
     private function copySiteSpecificFiles(): void
     {
-        $this->git->checkout(Git::DEFAULT_BRANCH, '.');
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH, '.');
 
-        $siteSpecificFiles = $this->git->diffFileList('--cached', '--diff-filter=A');
+        $siteSpecificFiles = $this->getGit()->diffFileList('--cached', '--diff-filter=A');
         if ($siteSpecificFiles) {
             $this->log()->notice('Copying site-specific files...');
-            $this->git->reset();
-            $this->git->commit('Copy site-specific files', $siteSpecificFiles);
+            $this->getGit()->reset();
+            $this->getGit()->commit('Copy site-specific files', $siteSpecificFiles);
             $this->log()->notice('Site-specific files have been copied');
         }
 
-        $this->git->reset('HEAD', '--hard');
+        $this->getGit()->reset('HEAD', '--hard');
     }
 
     /**
@@ -232,11 +232,11 @@ EOD
         );
 
         try {
-            $this->git->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
-            $this->git->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
+            $this->getGit()->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
+            $this->getGit()->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
 
             try {
-                $this->git->apply([
+                $this->getGit()->apply([
                     '--diff-filter=M',
                     sprintf(
                         '%s/%s..%s/%s',
@@ -274,7 +274,7 @@ EOD,
                 exit;
             }
 
-            $this->git->commit('Copy site-specific code related to "drupal-project" upstream');
+            $this->getGit()->commit('Copy site-specific code related to "drupal-project" upstream');
             $this->log()->notice(
                 sprintf('The code differences have been copied onto %s branch...', self::TARGET_GIT_BRANCH)
             );

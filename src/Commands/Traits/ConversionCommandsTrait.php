@@ -18,6 +18,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 trait ConversionCommandsTrait
 {
+    use GitAwareTrait;
     use SiteAwareTrait;
     use WorkflowProcessingTrait;
 
@@ -35,13 +36,6 @@ trait ConversionCommandsTrait
      * @var string
      */
     private string $branch;
-
-    // @todo: consider creating getter/setter pair
-    /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Git
-     */
-    private Git $git;
-
     /**
      * @var string
      */
@@ -173,7 +167,7 @@ trait ConversionCommandsTrait
         // Check if the backup branch already exists.
         foreach (array_keys($this->getSupportedSourceUpstreamIds()) as $upstreamAlias) {
             $backupBranchName = $backupBranchNamePrefix . $upstreamAlias;
-            if ($this->git->isRemoteBranchExists($backupBranchName)) {
+            if ($this->getGit()->isRemoteBranchExists($backupBranchName)) {
                 return $backupBranchName;
             }
         }
@@ -258,7 +252,7 @@ trait ConversionCommandsTrait
             $workflow = $multidev->delete(['delete_branch' => true]);
             $this->processWorkflow($workflow);
         } catch (TerminusNotFoundException $e) {
-            if (!$this->git->isRemoteBranchExists($branch)) {
+            if (!$this->getGit()->isRemoteBranchExists($branch)) {
                 return;
             }
 
@@ -275,7 +269,7 @@ trait ConversionCommandsTrait
                 );
             }
 
-            $this->git->deleteRemoteBranch($branch);
+            $this->getGit()->deleteRemoteBranch($branch);
         }
     }
 
@@ -295,9 +289,9 @@ trait ConversionCommandsTrait
         $this->log()->notice(
             sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
         );
-        $this->git->addRemote($remoteUrl, $targetGitRemoteName);
-        $this->git->fetch($targetGitRemoteName);
-        $this->git->checkout(
+        $this->getGit()->addRemote($remoteUrl, $targetGitRemoteName);
+        $this->getGit()->fetch($targetGitRemoteName);
+        $this->getGit()->checkout(
             '--no-track',
             '-b',
             $this->branch,
@@ -323,7 +317,7 @@ trait ConversionCommandsTrait
         }
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-        $this->git->push($this->branch);
+        $this->getGit()->push($this->branch);
         $mdEnv = $this->createMultidev($this->branch);
 
         $this->log()->notice(
@@ -353,13 +347,13 @@ trait ConversionCommandsTrait
         string $repo1Branch = Git::DEFAULT_BRANCH,
         string $repo2Branch = Git::DEFAULT_BRANCH
     ): bool {
-        $this->git->fetch($repo1Remote);
-        $repo1CommitHashes = $this->git->getCommitHashes(
+        $this->getGit()->fetch($repo1Remote);
+        $repo1CommitHashes = $this->getGit()->getCommitHashes(
             sprintf('%s/%s', $repo1Remote, $repo1Branch)
         );
 
-        $this->git->fetch($repo2Remote);
-        $repo2CommitHashes = $this->git->getCommitHashes(
+        $this->getGit()->fetch($repo2Remote);
+        $repo2CommitHashes = $this->getGit()->getCommitHashes(
             sprintf('%s/%s', $repo2Remote, $repo2Branch)
         );
 
@@ -383,8 +377,8 @@ trait ConversionCommandsTrait
         fwrite($pantheonYmlFile, PHP_EOL . '# comment to trigger a Pantheon IC build');
         fclose($pantheonYmlFile);
 
-        $this->git->commit('Trigger Pantheon build');
-        $this->git->push($this->branch);
+        $this->getGit()->commit('Trigger Pantheon build');
+        $this->getGit()->push($this->branch);
 
         $this->log()->notice('A comment has been added.');
     }

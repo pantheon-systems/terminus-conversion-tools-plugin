@@ -89,7 +89,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
         $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalAbsolutePath());
-        $this->git = new Git($this->getLocalSitePath());
+        $this->setGit($this->getLocalSitePath());
         $this->composer = new Composer($this->getLocalSitePath());
 
         $contribProjects = $this->getContribDrupal8Projects();
@@ -288,16 +288,16 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Copying configuration files...');
         try {
             $sourceRelativePath = $this->getWebRootAwareRelativePath('sites', 'default', 'config');
-            $this->git->checkout(Git::DEFAULT_BRANCH, $sourceRelativePath);
+            $this->getGit()->checkout(Git::DEFAULT_BRANCH, $sourceRelativePath);
             $sourceAbsolutePath = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
             $destinationPath = Files::buildPath($this->getDrupalAbsolutePath(), 'config');
-            $this->git->move(sprintf('%s%s*', $sourceAbsolutePath, DIRECTORY_SEPARATOR), $destinationPath);
+            $this->getGit()->move(sprintf('%s%s*', $sourceAbsolutePath, DIRECTORY_SEPARATOR), $destinationPath);
 
             $htaccessFile = $this->getWebRootAwareRelativePath('sites', 'default', 'config', '.htaccess');
-            $this->git->remove('-f', $htaccessFile);
+            $this->getGit()->remove('-f', $htaccessFile);
 
-            if ($this->git->isAnythingToCommit()) {
-                $this->git->commit('Pull in configuration from default git branch');
+            if ($this->getGit()->isAnythingToCommit()) {
+                $this->getGit()->commit('Pull in configuration from default git branch');
             } else {
                 $this->log()->notice('No configuration files found');
             }
@@ -316,8 +316,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyPantheonYml(): void
     {
         $this->log()->notice('Copying pantheon.yml file...');
-        $this->git->checkout(Git::DEFAULT_BRANCH, 'pantheon.yml');
-        $this->git->commit('Copy pantheon.yml');
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH, 'pantheon.yml');
+        $this->getGit()->commit('Copy pantheon.yml');
 
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYmlContent = Yaml::parseFile($path);
@@ -330,7 +330,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
         fclose($pantheonYmlFile);
 
-        $this->git->commit('Add build_step:true to pantheon.yml');
+        $this->getGit()->commit('Add build_step:true to pantheon.yml');
     }
 
     /**
@@ -349,14 +349,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 }
 
                 $this->composer->require(...$arguments);
-                $this->git->commit(
+                $this->getGit()->commit(
                     sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
                 );
                 $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
             }
 
             $this->composer->install('--no-dev');
-            $this->git->commit('Install composer packages');
+            $this->getGit()->commit('Install composer packages');
         } catch (Throwable $t) {
             $this->log()->warning(
                 sprintf(
@@ -371,7 +371,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $packageVersion = sprintf('^%s', $project['version']);
             try {
                 $this->composer->require($packageName, $packageVersion);
-                $this->git->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
+                $this->getGit()->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
                 $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
             } catch (Throwable $t) {
                 $this->log()->warning(
@@ -427,7 +427,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         foreach ($packages as $project) {
             try {
                 $this->composer->require($project);
-                $this->git->commit(sprintf('Add %s project to Composer', $project));
+                $this->getGit()->commit(sprintf('Add %s project to Composer', $project));
                 $this->log()->notice(sprintf('%s is added', $project));
             } catch (Throwable $t) {
                 $this->log()->warning(
@@ -458,7 +458,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             foreach ($dirs as $relativePath) {
                 $relativePath = $this->getWebRootAwareRelativePath($relativePath);
                 try {
-                    $this->git->checkout(Git::DEFAULT_BRANCH, $relativePath);
+                    $this->getGit()->checkout(Git::DEFAULT_BRANCH, $relativePath);
                     $targetPath = Files::buildPath(self::WEB_ROOT, $subDir, 'custom');
 
                     if (!is_dir(Files::buildPath($this->getLocalSitePath(), $targetPath))) {
@@ -466,11 +466,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     }
 
                     if (!$this->isWebRootSite()) {
-                        $this->git->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
+                        $this->getGit()->move(sprintf('%s%s*', $relativePath, DIRECTORY_SEPARATOR), $targetPath);
                     }
 
-                    if ($this->git->isAnythingToCommit()) {
-                        $this->git->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
+                    if ($this->getGit()->isAnythingToCommit()) {
+                        $this->getGit()->commit(sprintf('Copy custom %s from %s', $subDir, $relativePath));
                         $this->log()->notice(sprintf('Copied custom %s from %s', $subDir, $relativePath));
                     }
                 } catch (Throwable $t) {
@@ -493,18 +493,18 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Copying settings.php file...');
         $settingsPhpFilePath = $this->getWebRootAwareRelativePath('sites', 'default', 'settings.php');
-        $this->git->checkout(Git::DEFAULT_BRANCH, $settingsPhpFilePath);
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH, $settingsPhpFilePath);
 
         if (!$this->isWebRootSite()) {
-            $this->git->move(
+            $this->getGit()->move(
                 $settingsPhpFilePath,
                 Files::buildPath(self::WEB_ROOT, 'sites', 'default', 'settings.php'),
                 '-f',
             );
         }
 
-        if ($this->git->isAnythingToCommit()) {
-            $this->git->commit('Copy settings.php');
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Copy settings.php');
             $this->log()->notice('settings.php file has been copied.');
         }
     }

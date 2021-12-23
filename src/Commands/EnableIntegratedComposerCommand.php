@@ -44,7 +44,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->setBranch($options['branch']);
 
         $localSitePath = $this->getLocalSitePath(true);
-        $this->git = new Git($localSitePath);
+        $this->setGit($localSitePath);
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
         if (true === ($pantheonYmlContent['build_step'] ?? false)) {
@@ -57,7 +57,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             );
         }
 
-        $this->git->checkout(
+        $this->getGit()->checkout(
             '-b',
             $this->getBranch(),
             Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
@@ -87,9 +87,9 @@ EOD,
             'cancel'
         )) {
             $this->log()->notice('Pushing changes to "master" branch...');
-            $this->git->checkout(Git::DEFAULT_BRANCH);
-            $this->git->merge($this->getBranch());
-            $this->git->push(Git::DEFAULT_BRANCH);
+            $this->getGit()->checkout(Git::DEFAULT_BRANCH);
+            $this->getGit()->merge($this->getBranch());
+            $this->getGit()->push(Git::DEFAULT_BRANCH);
             $this->log()->notice('Pantheon Integrated Composer has been enabled for "master".');
         }
 
@@ -159,7 +159,7 @@ EOD,
         fwrite($gitignoreFile, PHP_EOL);
         fclose($gitignoreFile);
 
-        $this->git->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
+        $this->getGit()->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
         $this->log()->notice(
             sprintf(
                 'The following paths have been added to .gitignore file: "%s".',
@@ -218,7 +218,7 @@ EOD,
                 continue;
             }
 
-            $this->git->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
+            $this->getGit()->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
 
             $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
         }
@@ -246,7 +246,7 @@ EOD,
         fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
         fclose($pantheonYmlFile);
 
-        $this->git->commit('Add build_step:true to pantheon.yml', ['pantheon.yml']);
+        $this->getGit()->commit('Add build_step:true to pantheon.yml', ['pantheon.yml']);
         $this->log()->notice('pantheon.yml config file has been updated.');
     }
 }
