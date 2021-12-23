@@ -42,7 +42,7 @@ jobs:
             group: advise_scenarios_empty_upstream
           - name: conversion:push-to-multidev command
             group: push_to_md_command
-          - name: conversion:enalbe-ic command
+          - name: conversion:enable-ic command
             group: enable_integrated_composer_command
       fail-fast: false
     runs-on: ubuntu-latest
