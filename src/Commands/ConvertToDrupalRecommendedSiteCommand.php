@@ -5,10 +5,10 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
+use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
-use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Throwable;
@@ -19,6 +19,7 @@ use Throwable;
 class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use ComposerAwareTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -65,7 +66,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $localPath = $this->getLocalSitePath(!$options['continue']);
 
         $this->setGit($localPath);
-        $composer = new Composer($localPath);
+        $this->setComposer($localPath);
 
         $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url']);
         if (!$this->areGitReposWithCommonCommits($targetGitRemoteName)) {
@@ -90,12 +91,12 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                     $arguments[] = '--dev';
                 }
 
-                $composer->require(...$arguments);
+                $this->getComposer()->require(...$arguments);
                 $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
             }
 
             $this->log()->notice('Updating composer dependencies...');
-            $composer->update();
+            $this->getComposer()->update();
             $this->getGit()->commit(
                 'Update composer.json to match "drupal-recommended" upstream and install dependencies',
                 ['composer.json', 'composer.lock']
