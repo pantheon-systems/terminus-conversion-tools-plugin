@@ -28,11 +28,11 @@ final class ConversionCommandsEnableIntegratedComposerTest extends ConversionCom
     {
         $this->assertCommand(
             sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
-            $this->branch
+            self::DEV_ENV
         );
 
         [$stdout, $exitCode, $stderr] = $this->callTerminus(
-            sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
+            sprintf('conversion:enable-ic %s', $this->siteName),
         );
         $this->assertNotEquals(
             0,
