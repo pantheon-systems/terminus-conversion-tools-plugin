@@ -6,7 +6,6 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
-use Pantheon\TerminusConversionTools\Utils\Git;
 use Throwable;
 
 /**
@@ -81,9 +80,9 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     private function adviseOnDrops8(): void
     {
         $localPath = $this->getLocalSitePath(false);
-        $git = new Git($localPath);
-        $git->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
-        $git->fetch(self::DROPS_8_UPSTREAM_ID);
+        $this->setGit($localPath);
+        $this->getGit()->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
+        $this->getGit()->fetch(self::DROPS_8_UPSTREAM_ID);
 
         try {
             $composerJsonRequireExtraPackages = [];
