@@ -9,7 +9,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsTestBase
+final class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsTestBase
 {
     /**
      * @inheritdoc
@@ -34,7 +34,6 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
         [$stdout, $exitCode, $stderr] = $this->callTerminus(
             sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
         );
-
         $this->assertNotEquals(
             0,
             $exitCode,
