@@ -190,42 +190,22 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @return string[]
      */
-    protected function getProjects(): array
-    {
-        return [
-            'webform',
-            'metatag',
-            'token',
-            'entity',
-            'imce',
-            'field_group',
-            'ctools',
-            'date',
-            'pathauto',
-            'google_analytics',
-            'adminimal_theme',
-            'bootstrap',
-            'omega',
-            'custom1',
-            'custom2',
-            'custom3',
-        ];
-    }
+    abstract protected function getProjects(): array;
 
     /**
      * Returns the list of contrib JavaScript libraries to test.
      *
      * @return string[]
      */
-    protected function getLibraries(): array
-    {
-        return [
-            'blazy' => 'blazy.js',
-            'font' => 'plugin.js',
-            'rtseo.js' => 'dist/rtseo.js',
-            'superfish' => 'superfish.js',
-        ];
-    }
+    abstract protected function getLibraries(): array;
+
+    /**
+     * Returns page URLs to test.
+     *
+     * @return array
+     *   Key is a module name, value is a page absolute URL.
+     */
+    abstract protected function getUrlsToTestByModule(): array;
 
     /**
      * Sets up (installs) projects (modules and themes).
@@ -259,13 +239,7 @@ abstract class ConversionCommandsTestBase extends TestCase
             )
         );
 
-        $pathsToTest = [
-            'webform' => 'form/contact',
-            'custom1' => 'custom1/page',
-            'custom2' => 'custom2/page',
-            'custom3' => 'custom3/page',
-        ];
-        foreach ($pathsToTest as $module => $path) {
+        foreach ($this->getUrlsToTestByModule() as $module => $path) {
             $url = sprintf('%s/%s', $baseUrl, $path);
             $this->assertEqualsInAttempts(
                 fn() => $this->httpClient->request('HEAD', $url)->getStatusCode(),
