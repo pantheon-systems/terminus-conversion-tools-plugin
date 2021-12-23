@@ -39,7 +39,16 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
             $this->branch
         );
 
-        // @todo: run command again and expect to receive "[error]  Pantheon Integrated Composer feature is already enabled on the site non-ic-site."
+        $output = $this->terminus(
+            sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
+            [],
+            false
+        );
+        $this->assertStringContainsString(
+            'Pantheon Integrated Composer feature is already enabled on the site',
+            $output,
+            'Command conversion:enable-ic must return error for a non-ic site.'
+        );
     }
 
     /**
