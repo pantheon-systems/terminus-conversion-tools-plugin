@@ -21,14 +21,6 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
 
     /**
      * @inheritdoc
-     */
-    protected function getRealUpstreamId(): string
-    {
-        return 'empty';
-    }
-
-    /**
-     * @inheritdoc
      *
      * @group enable_integrated_composer_command
      */
@@ -49,29 +41,5 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
             $output,
             'Command conversion:enable-ic must return error for a non-ic site.'
         );
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getProjects(): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getLibraries(): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getUrlsToTestByModule(): array
-    {
-        return [];
     }
 }
