@@ -17,7 +17,7 @@ abstract class ConversionCommandsTestBase extends TestCase
 {
     use TerminusTestTrait;
 
-    private const DEV_ENV = 'dev';
+    protected const DEV_ENV = 'dev';
 
     /**
      * @var string
@@ -37,7 +37,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     /**
      * @var string
      */
-    private string $expectedSiteInfoUpstream;
+    protected string $expectedSiteInfoUpstream;
 
     /**
      * Returns env variable name for the fixture Upstream ID.
@@ -51,7 +51,10 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @return string
      */
-    abstract protected function getRealUpstreamId(): string;
+    protected function getRealUpstreamId(): string
+    {
+        return 'empty';
+    }
 
     /**
      * @inheritdoc
@@ -190,14 +193,20 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @return string[]
      */
-    abstract protected function getProjects(): array;
+    protected function getProjects(): array
+    {
+        return [];
+    }
 
     /**
      * Returns the list of contrib JavaScript libraries to test.
      *
      * @return string[]
      */
-    abstract protected function getLibraries(): array;
+    protected function getLibraries(): array
+    {
+        return [];
+    }
 
     /**
      * Returns page URLs to test.
@@ -205,7 +214,10 @@ abstract class ConversionCommandsTestBase extends TestCase
      * @return array
      *   Key is a module name, value is a page absolute URL.
      */
-    abstract protected function getUrlsToTestByModule(): array;
+    protected function getUrlsToTestByModule(): array
+    {
+        return [];
+    }
 
     /**
      * Sets up (installs) projects (modules and themes).
@@ -227,7 +239,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function assertPagesExists(string $env): void
+    protected function assertPagesExists(string $env): void
     {
         $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
         $this->assertEqualsInAttempts(
