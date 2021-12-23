@@ -42,8 +42,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
-
-        $localSitePath = $this->getLocalSitePath(true);
+        $localSitePath = $this->getLocalSitePath();
         $this->setGit($localSitePath);
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
