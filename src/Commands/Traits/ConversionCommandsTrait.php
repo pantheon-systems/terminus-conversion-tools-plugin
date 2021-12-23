@@ -70,7 +70,7 @@ trait ConversionCommandsTrait
     }
 
     /**
-     * Clones the site and return the path to the local site copy.
+     * Clones the site and returns the path to the local site copy.
      *
      * @param null|bool $force
      *
