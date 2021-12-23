@@ -9,7 +9,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
-class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsUpstreamTestBase
+class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsTestBase
 {
     /**
      * @inheritdoc
@@ -29,22 +29,6 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsU
 
     /**
      * @inheritdoc
-     */
-    protected function getExpectedAdviceBeforeConversion(): string
-    {
-        return 'n/a';
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getExpectedAdviceAfterConversion(): string
-    {
-        return 'n/a';
-    }
-
-    /**
-     * @inheritdoc
      *
      * @group enable_integrated_composer_command
      */
@@ -54,6 +38,8 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsU
             sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
+
+        // @todo: run command again and expect to receive "[error]  Pantheon Integrated Composer feature is already enabled on the site non-ic-site."
     }
 
     /**
