@@ -57,4 +57,12 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
     {
         return [];
     }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getUrlsToTestByModule(): array
+    {
+        return [];
+    }
 }
