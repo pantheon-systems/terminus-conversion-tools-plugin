@@ -129,7 +129,7 @@ EOD,
     }
 
     /**
-     * Add paths to .gitignore file.
+     * Adds paths to .gitignore file.
      *
      * @param array $paths
      *
@@ -179,11 +179,11 @@ EOD,
             return [];
         }
 
-        $content = file_get_contents($gitignoreFilePath);
+        $gitignoreFileContent = file_get_contents($gitignoreFilePath);
 
         return array_filter(
-            explode(PHP_EOL, $content),
-            fn ($path) => !empty($path) && 0 !== strpos(trim($path), '#')
+            explode(PHP_EOL, $gitignoreFileContent),
+            fn($path) => !empty($path) && 0 !== strpos(trim($path), '#')
         );
     }
 
