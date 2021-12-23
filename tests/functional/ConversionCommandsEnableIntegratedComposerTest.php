@@ -41,7 +41,7 @@ final class ConversionCommandsEnableIntegratedComposerTest extends ConversionCom
         );
         $this->assertStringContainsString(
             'Pantheon Integrated Composer feature is already enabled on the site',
-            $stdout,
+            $stderr,
             'Command `conversion:enable-ic` must return error message for an Integrated Composer enabled site.'
         );
     }
