@@ -5,9 +5,9 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
+use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Utils\Composer;
-use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
+use Pantheon\TerminusConversionTools\Commands\Traits\Drupal8ProjectsAwareTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
@@ -19,22 +19,14 @@ use Throwable;
 class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use ComposerAwareTrait;
+    use Drupal8ProjectsAwareTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
     private const WEB_ROOT = 'web';
-
-    /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
-     */
-    private Drupal8Projects $drupal8ComponentsDetector;
-
-    /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Composer
-     */
-    private Composer $composer;
 
     /**
      * @var bool
@@ -88,9 +80,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
-        $this->drupal8ComponentsDetector = new Drupal8Projects($this->getDrupalAbsolutePath());
+        $this->setDrupal8Projects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
-        $this->composer = new Composer($this->getLocalSitePath());
+        $this->setComposer($this->getLocalSitePath());
 
         $contribProjects = $this->getContribDrupal8Projects();
         $libraryProjects = $this->getLibraries();
@@ -188,7 +180,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getLibraries(): array
     {
         $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
-        $projects = $this->drupal8ComponentsDetector->getLibraries();
+        $projects = $this->getDrupal8Projects()->getLibraries();
 
         if (0 === count($projects)) {
             $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
@@ -227,7 +219,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $projects = $this->drupal8ComponentsDetector->getContribProjects();
+        $projects = $this->getDrupal8Projects()->getContribProjects();
         if (0 === count($projects)) {
             $this->log()->notice(
                 sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
@@ -264,12 +256,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $customModuleDirs = $this->drupal8ComponentsDetector->getCustomModuleDirectories();
+        $customModuleDirs = $this->getDrupal8Projects()->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
 
-        $customThemeDirs = $this->drupal8ComponentsDetector->getCustomThemeDirectories();
+        $customThemeDirs = $this->getDrupal8Projects()->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
         }
@@ -348,14 +340,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     $arguments[] = '--dev';
                 }
 
-                $this->composer->require(...$arguments);
+                $this->getComposer()->require(...$arguments);
                 $this->getGit()->commit(
                     sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
                 );
                 $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
             }
 
-            $this->composer->install('--no-dev');
+            $this->getComposer()->install('--no-dev');
             $this->getGit()->commit('Install composer packages');
         } catch (Throwable $t) {
             $this->log()->warning(
@@ -370,7 +362,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
             try {
-                $this->composer->require($packageName, $packageVersion);
+                $this->getComposer()->require($packageName, $packageVersion);
                 $this->getGit()->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
                 $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
             } catch (Throwable $t) {
@@ -426,7 +418,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
             try {
-                $this->composer->require($project);
+                $this->getComposer()->require($project);
                 $this->getGit()->commit(sprintf('Add %s project to Composer', $project));
                 $this->log()->notice(sprintf('%s is added', $project));
             } catch (Throwable $t) {
