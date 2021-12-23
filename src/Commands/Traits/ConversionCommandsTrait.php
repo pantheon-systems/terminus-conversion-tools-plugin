@@ -19,6 +19,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 trait ConversionCommandsTrait
 {
     use GitAwareTrait;
+    use MultidevBranchAwareTrait;
     use SiteAwareTrait;
     use WorkflowProcessingTrait;
 
@@ -32,10 +33,6 @@ trait ConversionCommandsTrait
      */
     private $site;
 
-    /**
-     * @var string
-     */
-    private string $branch;
     /**
      * @var string
      */
@@ -287,14 +284,14 @@ trait ConversionCommandsTrait
     {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
-            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
+            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->getBranch())
         );
         $this->getGit()->addRemote($remoteUrl, $targetGitRemoteName);
         $this->getGit()->fetch($targetGitRemoteName);
         $this->getGit()->checkout(
             '--no-track',
             '-b',
-            $this->branch,
+            $this->getBranch(),
             $targetGitRemoteName . '/' . Git::DEFAULT_BRANCH
         );
 
@@ -311,17 +308,17 @@ trait ConversionCommandsTrait
     private function pushTargetBranch(): void
     {
         try {
-            $this->deleteMultidevIfExists($this->branch);
+            $this->deleteMultidevIfExists($this->getBranch());
         } catch (TerminusCancelOperationException $e) {
             return;
         }
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-        $this->getGit()->push($this->branch);
-        $mdEnv = $this->createMultidev($this->branch);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
+        $this->getGit()->push($this->getBranch());
+        $mdEnv = $this->createMultidev($this->getBranch());
 
         $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
         );
     }
 
@@ -378,7 +375,7 @@ trait ConversionCommandsTrait
         fclose($pantheonYmlFile);
 
         $this->getGit()->commit('Trigger Pantheon build');
-        $this->getGit()->push($this->branch);
+        $this->getGit()->push($this->getBranch());
 
         $this->log()->notice('A comment has been added.');
     }
@@ -403,33 +400,5 @@ trait ConversionCommandsTrait
     public function site(): Site
     {
         return $this->site;
-    }
-
-    /**
-     * Sets the target git branch.
-     *
-     * @param string $branch
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function setBranch(string $branch): void
-    {
-        if (strlen($branch) > 11) {
-            throw new TerminusException(
-                'The target git branch name for multidev env must not exceed 11 characters limit'
-            );
-        }
-
-        $this->branch = $branch;
-    }
-
-    /**
-     * Returns the target git branch.
-     *
-     * @return string
-     */
-    private function getBranch(): string
-    {
-        return $this->branch;
     }
 }
