@@ -31,15 +31,19 @@ class ConversionCommandsEnableIntegratedComposerTest extends ConversionCommandsT
             $this->branch
         );
 
-        $output = $this->terminus(
+        [$stdout, $exitCode, $stderr] = $this->callTerminus(
             sprintf('conversion:enable-ic %s --branch=%s', $this->siteName, $this->branch),
-            [],
-            false
+        );
+
+        $this->assertNotEquals(
+            0,
+            $exitCode,
+            'Command `conversion:enable-ic` must return non-zero exit code for an Integrated Composer enabled site.'
         );
         $this->assertStringContainsString(
             'Pantheon Integrated Composer feature is already enabled on the site',
-            $output,
-            'Command conversion:enable-ic must return error for a non-ic site.'
+            $stdout,
+            'Command `conversion:enable-ic` must return error message for an Integrated Composer enabled site.'
         );
     }
 }
