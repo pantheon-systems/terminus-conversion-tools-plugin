@@ -40,14 +40,6 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
     /**
      * @inheritdoc
      */
-    protected function getRealUpstreamId(): string
-    {
-        return 'empty';
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function getExpectedAdviceBeforeConversion(): string
     {
         switch ($this->scenario) {

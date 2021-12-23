@@ -22,14 +22,6 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
     /**
      * @inheritdoc
      */
-    protected function getRealUpstreamId(): string
-    {
-        return 'empty';
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function getExpectedAdviceBeforeConversion(): string
     {
         return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
