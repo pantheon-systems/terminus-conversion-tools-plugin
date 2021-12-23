@@ -57,11 +57,8 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             );
         }
 
-        $this->getGit()->checkout(
-            '-b',
-            $this->getBranch(),
-            Git::DEFAULT_REMOTE . '/' . Git::DEFAULT_BRANCH
-        );
+        $masterBranch = Git::DEFAULT_BRANCH;
+        $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
 
         $this->log()->notice('Adding paths to .gitignore file...');
         $pathsToIgnore = $this->getPathsToIgnore();
@@ -80,17 +77,17 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         if ($this->input()->getOption('yes') || 'push' === $this->io()->choice(
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
-You can push the changes to "master" branch immediately or do it later by executing
+You can push the changes to "$masterBranch" branch immediately or do it later by executing
 `terminus multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
 EOD,
-            ['cancel' => 'Cancel', 'push' => 'Push to master'],
+            ['cancel' => 'Cancel', 'push' => sprintf('Push to %s', $masterBranch)],
             'cancel'
         )) {
-            $this->log()->notice('Pushing changes to "master" branch...');
+            $this->log()->notice(sprintf('Pushing changes to "%s" branch...', $masterBranch));
             $this->getGit()->checkout(Git::DEFAULT_BRANCH);
             $this->getGit()->merge($this->getBranch());
             $this->getGit()->push(Git::DEFAULT_BRANCH);
-            $this->log()->notice('Pantheon Integrated Composer has been enabled for "master".');
+            $this->log()->notice(sprintf('Pantheon Integrated Composer has been enabled for "%s".', $masterBranch));
         }
 
         $this->log()->notice('Done!');
