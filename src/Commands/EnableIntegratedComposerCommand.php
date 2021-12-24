@@ -139,7 +139,7 @@ EOD,
      */
     private function addGitignorePaths(array $paths): void
     {
-        if (0 === count($paths)) {
+        if (!count($paths)) {
             return;
         }
 
