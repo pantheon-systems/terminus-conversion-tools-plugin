@@ -7,7 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Commands\Traits\Drupal8ProjectsAwareTrait;
+use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
@@ -20,7 +20,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 {
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
-    use Drupal8ProjectsAwareTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -32,6 +31,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @var bool
      */
     private bool $isWebRootSite;
+
+    /**
+     * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
+     */
+    private Drupal8Projects $drupal8Projects;
 
     /**
      * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
@@ -80,7 +84,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
-        $this->setDrupal8Projects($this->getDrupalAbsolutePath());
+        $this->drupal8Projects = new Drupal8Projects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
         $this->setComposer($this->getLocalSitePath());
 
@@ -180,7 +184,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getLibraries(): array
     {
         $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
-        $projects = $this->getDrupal8Projects()->getLibraries();
+        $projects = $this->drupal8Projects->getLibraries();
 
         if (0 === count($projects)) {
             $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
@@ -219,7 +223,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $projects = $this->getDrupal8Projects()->getContribProjects();
+        $projects = $this->drupal8Projects->getContribProjects();
         if (0 === count($projects)) {
             $this->log()->notice(
                 sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
@@ -256,12 +260,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $customModuleDirs = $this->getDrupal8Projects()->getCustomModuleDirectories();
+        $customModuleDirs = $this->drupal8Projects->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
 
-        $customThemeDirs = $this->getDrupal8Projects()->getCustomThemeDirectories();
+        $customThemeDirs = $this->drupal8Projects->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
         }
