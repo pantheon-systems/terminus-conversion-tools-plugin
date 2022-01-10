@@ -45,16 +45,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $localSitePath = $this->getLocalSitePath();
         $this->setGit($localSitePath);
 
-        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($localSitePath, 'pantheon.yml'));
-        if (true === ($pantheonYmlContent['build_step'] ?? false)) {
-            // The site already uses Pantheon Integrated Composer feature.
-            throw new TerminusException(
-                'Pantheon Integrated Composer feature is already enabled on the site {site_name}.',
-                [
-                    'site_name' => $this->site()->getName(),
-                ]
-            );
-        }
+        $this->isValidSite();
 
         $masterBranch = Git::DEFAULT_BRANCH;
         $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
@@ -82,6 +73,59 @@ EOD
         );
 
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Returns TRUE if the Site is valid for enabling Pantheon Integrated Composer feature, otherwise throws exception.
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function isValidSite(): bool
+    {
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
+        if (true === ($pantheonYmlContent['build_step'] ?? false)) {
+            // The site already uses Pantheon Integrated Composer feature.
+            throw new TerminusException(
+                'Pantheon Integrated Composer feature is already enabled on the site {site_name}.',
+                [
+                    'site_name' => $this->site()->getName(),
+                ]
+            );
+        }
+
+        $composerJsonContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'composer.json'));
+        foreach ($composerJsonContent['require'] as $package => $versionConstraint) {
+            if (in_array($package, $this->getIcCompatibleComposerPackages(), true)) {
+                return true;
+            }
+        }
+        throw new TerminusException(
+            <<<EOD
+The site {site_name} is not compatible with Pantheon Integrated Composer feature.
+One of the following Composer packages is required: {packages}.
+EOD,
+            [
+                'site_name' => $this->site()->getName(),
+                'packages' => implode(', ', $this->getIcCompatibleComposerPackages()),
+            ]
+        );
+    }
+
+    /**
+     * Returns the list of Composer packages compatible with Pantheon Integrated Composer feature.
+     *
+     * @return string[]
+     */
+    private function getIcCompatibleComposerPackages(): array
+    {
+        return [
+            'drupal/core',
+            'drupal/core-recommended',
+            'pantheon-systems/wordpress-composer',
+        ];
     }
 
     /**
