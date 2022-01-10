@@ -17,13 +17,13 @@ trait ComposerAwareTrait
     /**
      * Instantiates and sets the Composer object.
      *
-     * @param string $path
+     * @param string $projectPath
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function setComposer(string $path): void
+    private function setComposer(string $projectPath): void
     {
-        $this->composer = new Composer($path);
+        $this->composer = new Composer($projectPath);
     }
 
     /**

@@ -15,25 +15,25 @@ class Composer
     /**
      * @var string
      */
-    private string $workingDirectory;
+    private string $projectPath;
 
     /**
      * Composer constructor.
      *
-     * @param string $workingDirectory
+     * @param string $projectPath
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function __construct(string $workingDirectory)
+    public function __construct(string $projectPath)
     {
-        if (!is_file(Files::buildPath($workingDirectory, 'composer.json'))) {
+        if (!is_file(Files::buildPath($projectPath, 'composer.json'))) {
             throw new TerminusException(
-                'composer.json file not found in {working_directory}.',
-                ['working_directory' => $workingDirectory]
+                'composer.json file not found in {project_path}.',
+                ['project_path' => $projectPath]
             );
         }
 
-        $this->workingDirectory = $workingDirectory;
+        $this->projectPath = $projectPath;
     }
 
     /**
@@ -91,7 +91,7 @@ class Composer
     private function execute(array $command): void
     {
         try {
-            $process = new Process($command, $this->workingDirectory, null, null, 180);
+            $process = new Process($command, $this->projectPath, null, null, 180);
             $process->mustRun();
         } catch (Throwable $t) {
             throw new ComposerException(
