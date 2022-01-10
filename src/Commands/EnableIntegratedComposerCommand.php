@@ -73,21 +73,13 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->addCommitToTriggerBuild();
 
         $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
-        if ($this->input()->getOption('yes') || 'push' === $this->io()->choice(
+        $this->log()->notice(
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
-You can push the changes to "$masterBranch" branch immediately or do it later by executing
+You can push the changes to "$masterBranch" branch by executing
 `terminus multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
-EOD,
-            ['cancel' => 'Cancel', 'push' => sprintf('Push to %s', $masterBranch)],
-            'cancel'
-        )) {
-            $this->log()->notice(sprintf('Pushing changes to "%s" branch...', $masterBranch));
-            $this->getGit()->checkout(Git::DEFAULT_BRANCH);
-            $this->getGit()->merge($this->getBranch());
-            $this->getGit()->push(Git::DEFAULT_BRANCH);
-            $this->log()->notice(sprintf('Pantheon Integrated Composer has been enabled for "%s".', $masterBranch));
-        }
+EOD
+        );
 
         $this->log()->notice('Done!');
     }
