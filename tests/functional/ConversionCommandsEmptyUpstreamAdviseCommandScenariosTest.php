@@ -40,14 +40,6 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
     /**
      * @inheritdoc
      */
-    protected function getRealUpstreamId(): string
-    {
-        return 'empty';
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function getExpectedAdviceBeforeConversion(): string
     {
         switch ($this->scenario) {
@@ -92,7 +84,7 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
         $composerJsonPath = Files::buildPath(
             getenv('HOME'),
             'pantheon-local-copies',
-            $this->siteName . '_composer_conversion',
+            $this->siteName . '_terminus_conversion_plugin',
             'upstream-configuration',
             'composer.json'
         );

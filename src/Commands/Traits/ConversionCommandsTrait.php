@@ -6,8 +6,11 @@ use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Helpers\LocalMachineHelper;
+use Pantheon\Terminus\Models\Site;
 use Pantheon\Terminus\Models\TerminusModel;
+use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -15,6 +18,9 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 trait ConversionCommandsTrait
 {
+    use GitAwareTrait;
+    use MultidevBranchAwareTrait;
+    use SiteAwareTrait;
     use WorkflowProcessingTrait;
 
     /**
@@ -30,12 +36,7 @@ trait ConversionCommandsTrait
     /**
      * @var string
      */
-    private string $branch;
-
-    /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Git
-     */
-    private Git $git;
+    private string $localSitePath;
 
     /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
@@ -47,9 +48,9 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function cloneSiteGitRepository(bool $force = true): string
+    protected function cloneSiteGitRepository(bool $force = true): string
     {
-        $siteDirName = sprintf('%s_composer_conversion', $this->site->getName());
+        $siteDirName = sprintf('%s_terminus_conversion_plugin', $this->site->getName());
         $path = $this->site->getLocalCopyDir($siteDirName);
         if (!$force && 2 < count(scandir($path))) {
             return $path;
@@ -69,21 +70,26 @@ trait ConversionCommandsTrait
     }
 
     /**
-     * Returns the LocalMachineHelper.
+     * Clones the site and returns the path to the local site copy.
      *
-     * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
+     * @param null|bool $force
      *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function getLocalMachineHelper(): LocalMachineHelper
+    protected function getLocalSitePath(?bool $force = null)
     {
-        if (isset($this->localMachineHelper)) {
-            return $this->localMachineHelper;
+        if (true !== $force && isset($this->localSitePath)) {
+            return $this->localSitePath;
         }
 
-        $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
+        $this->localSitePath = null === $force
+            ? $this->cloneSiteGitRepository()
+            : $this->cloneSiteGitRepository($force);
 
-        return $this->localMachineHelper;
+        return $this->localSitePath;
     }
 
     /**
@@ -96,7 +102,7 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function createMultidev(string $branch): TerminusModel
+    protected function createMultidev(string $branch): TerminusModel
     {
         $this->log()->notice(sprintf('Creating "%s" multidev environment...', $branch));
 
@@ -118,7 +124,7 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function switchUpstream(string $upstreamId): void
+    protected function switchUpstream(string $upstreamId): void
     {
         $this->log()->notice(sprintf('Changing the upstream to "%s"...', $upstreamId));
         $upstream = $this->session()->getUser()->getUpstreams()->get($upstreamId);
@@ -133,14 +139,14 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function getBackupBranchName(): string
+    protected function getBackupBranchName(): string
     {
         $backupBranchNamePrefix = 'mstr-bkp-';
 
         // Check if the backup branch already exists.
         foreach (array_keys($this->getSupportedSourceUpstreamIds()) as $upstreamAlias) {
             $backupBranchName = $backupBranchNamePrefix . $upstreamAlias;
-            if ($this->git->isRemoteBranchExists($backupBranchName)) {
+            if ($this->getGit()->isRemoteBranchExists($backupBranchName)) {
                 return $backupBranchName;
             }
         }
@@ -162,7 +168,7 @@ trait ConversionCommandsTrait
      *   Key is the two letters short alias of the upstream;
      *   Value is the ID of the upstream.
      */
-    private function getSupportedSourceUpstreamIds(): array
+    protected function getSupportedSourceUpstreamIds(): array
     {
         return [
             'd8' => 'drupal8',
@@ -180,7 +186,7 @@ trait ConversionCommandsTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function getSourceUpstreamIdByBackupBranchName(string $backupBranchName): string
+    protected function getSourceUpstreamIdByBackupBranchName(string $backupBranchName): string
     {
         $upstreamAlias = substr($backupBranchName, -2);
         if (!isset($this->getSupportedSourceUpstreamIds()[$upstreamAlias])) {
@@ -194,59 +200,6 @@ trait ConversionCommandsTrait
     }
 
     /**
-     * Deletes the target multidev environment and associated git branch if exists.
-     *
-     * @param string $branch
-     *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
-     */
-    private function deleteMultidevIfExists(string $branch): void
-    {
-        try {
-            /** @var \Pantheon\Terminus\Models\Environment $multidev */
-            $multidev = $this->site->getEnvironments()->get($branch);
-            if (!$this->input()->getOption('yes') && !$this->io()
-                ->confirm(
-                    sprintf(
-                        'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
-                        $branch
-                    )
-                )
-            ) {
-                throw new TerminusCancelOperationException(
-                    sprintf('Delete multidev "%s" operation has not been confirmed.', $branch)
-                );
-            }
-
-            $this->log()->notice(
-                sprintf('Deleting "%s" multidev environment and associated git branch...', $branch)
-            );
-            $workflow = $multidev->delete(['delete_branch' => true]);
-            $this->processWorkflow($workflow);
-        } catch (TerminusNotFoundException $e) {
-            if (!$this->git->isRemoteBranchExists($branch)) {
-                return;
-            }
-
-            if (!$this->input()->getOption('yes')
-                && !$this->io()->confirm(
-                    sprintf(
-                        'The git branch "%s" already exists. Are you sure you want to delete it?',
-                        $branch
-                    )
-                )
-            ) {
-                throw new TerminusCancelOperationException(
-                    sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
-                );
-            }
-
-            $this->git->deleteRemoteBranch($branch);
-        }
-    }
-
-    /**
      * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream and returns the name of
      * the git remote.
      *
@@ -256,36 +209,22 @@ trait ConversionCommandsTrait
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    private function createLocalGitBranchFromRemote(string $remoteUrl): string
+    protected function createLocalGitBranchFromRemote(string $remoteUrl): string
     {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
-            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->branch)
+            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->getBranch())
         );
-        $this->git->addRemote($remoteUrl, $targetGitRemoteName);
-        $this->git->fetch($targetGitRemoteName);
-        $this->git->checkout(
+        $this->getGit()->addRemote($remoteUrl, $targetGitRemoteName);
+        $this->getGit()->fetch($targetGitRemoteName);
+        $this->getGit()->checkout(
             '--no-track',
             '-b',
-            $this->branch,
+            $this->getBranch(),
             $targetGitRemoteName . '/' . Git::DEFAULT_BRANCH
         );
 
         return $targetGitRemoteName;
-    }
-
-    /**
-     * Validates the git branch (multidev) name.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function validateBranch(): void
-    {
-        if (strlen($this->branch) > 11) {
-            throw new TerminusException(
-                'The target git branch name for multidev env must not exceed 11 characters limit'
-            );
-        }
     }
 
     /**
@@ -295,20 +234,20 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function pushTargetBranch(): void
+    protected function pushTargetBranch(): void
     {
         try {
-            $this->deleteMultidevIfExists($this->branch);
+            $this->deleteMultidevIfExists($this->getBranch());
         } catch (TerminusCancelOperationException $e) {
             return;
         }
 
-        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->branch));
-        $this->git->push($this->branch);
-        $mdEnv = $this->createMultidev($this->branch);
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
+        $this->getGit()->push($this->getBranch());
+        $mdEnv = $this->createMultidev($this->getBranch());
 
         $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', $this->branch, $mdEnv->dashboardUrl())
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
         );
     }
 
@@ -328,24 +267,138 @@ trait ConversionCommandsTrait
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    private function areGitReposWithCommonCommits(
+    protected function areGitReposWithCommonCommits(
         string $repo1Remote,
         string $repo2Remote = Git::DEFAULT_REMOTE,
         string $repo1Branch = Git::DEFAULT_BRANCH,
         string $repo2Branch = Git::DEFAULT_BRANCH
     ): bool {
-        $this->git->fetch($repo1Remote);
-        $repo1CommitHashes = $this->git->getCommitHashes(
+        $this->getGit()->fetch($repo1Remote);
+        $repo1CommitHashes = $this->getGit()->getCommitHashes(
             sprintf('%s/%s', $repo1Remote, $repo1Branch)
         );
 
-        $this->git->fetch($repo2Remote);
-        $repo2CommitHashes = $this->git->getCommitHashes(
+        $this->getGit()->fetch($repo2Remote);
+        $repo2CommitHashes = $this->getGit()->getCommitHashes(
             sprintf('%s/%s', $repo2Remote, $repo2Branch)
         );
 
         $identicalCommitHashes = array_intersect($repo2CommitHashes, $repo1CommitHashes);
 
         return 0 < count($identicalCommitHashes);
+    }
+
+    /**
+     * Adds a commit to trigger a Pantheon's Integrated Composer build.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    protected function addCommitToTriggerBuild(): void
+    {
+        $this->log()->notice('Adding a comment to pantheon.yml to trigger a build...');
+
+        $pantheonYmlFile = fopen(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'), 'a');
+        fwrite($pantheonYmlFile, PHP_EOL . '# comment to trigger a Pantheon IC build');
+        fclose($pantheonYmlFile);
+
+        $this->getGit()->commit('Trigger Pantheon build');
+        $this->getGit()->push($this->getBranch());
+
+        $this->log()->notice('A comment has been added.');
+    }
+
+    /**
+     * Sets the Site object by the site ID.
+     *
+     * @param string $siteId
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    protected function setSite(string $siteId): void
+    {
+        $this->site = $this->getSite($siteId);
+    }
+
+    /**
+     * Returns the Site object.
+     *
+     * @return \Pantheon\Terminus\Models\Site
+     */
+    protected function site(): Site
+    {
+        return $this->site;
+    }
+
+    /**
+     * Returns the LocalMachineHelper.
+     *
+     * @return \Pantheon\Terminus\Helpers\LocalMachineHelper
+     *
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function getLocalMachineHelper(): LocalMachineHelper
+    {
+        if (isset($this->localMachineHelper)) {
+            return $this->localMachineHelper;
+        }
+
+        $this->localMachineHelper = $this->getContainer()->get(LocalMachineHelper::class);
+
+        return $this->localMachineHelper;
+    }
+
+    /**
+     * Deletes the target multidev environment and associated git branch if exists.
+     *
+     * @param string $branch
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
+     */
+    private function deleteMultidevIfExists(string $branch): void
+    {
+        try {
+            /** @var \Pantheon\Terminus\Models\Environment $multidev */
+            $multidev = $this->site->getEnvironments()->get($branch);
+            if (!$this->input()->getOption('yes') && !$this->io()
+                    ->confirm(
+                        sprintf(
+                            'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                            $branch
+                        )
+                    )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete multidev "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->log()->notice(
+                sprintf('Deleting "%s" multidev environment and associated git branch...', $branch)
+            );
+            $workflow = $multidev->delete(['delete_branch' => true]);
+            $this->processWorkflow($workflow);
+        } catch (TerminusNotFoundException $e) {
+            if (!$this->getGit()->isRemoteBranchExists($branch)) {
+                return;
+            }
+
+            if (!$this->input()->getOption('yes')
+                && !$this->io()->confirm(
+                    sprintf(
+                        'The git branch "%s" already exists. Are you sure you want to delete it?',
+                        $branch
+                    )
+                )
+            ) {
+                throw new TerminusCancelOperationException(
+                    sprintf('Delete git branch "%s" operation has not been confirmed.', $branch)
+                );
+            }
+
+            $this->getGit()->deleteRemoteBranch($branch);
+        }
     }
 }

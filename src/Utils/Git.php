@@ -17,7 +17,7 @@ class Git
     /**
      * @var string
      */
-    private string $workingDirectory;
+    private string $repoPath;
 
     public const DEFAULT_REMOTE = 'origin';
     public const DEFAULT_BRANCH = 'master';
@@ -25,20 +25,20 @@ class Git
     /**
      * Git constructor.
      *
-     * @param string $workingDirectory
+     * @param string $repoPath
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function __construct(string $workingDirectory)
+    public function __construct(string $repoPath)
     {
-        $this->workingDirectory = $workingDirectory;
+        $this->repoPath = $repoPath;
 
         try {
             $this->execute(['status']);
         } catch (Throwable $t) {
             throw new TerminusException(
-                'Failed verify that {working_directory} is a valid Git repository: {error_message}',
-                ['working_directory' => $workingDirectory, 'error_message' => $t->getMessage()]
+                'Failed verify that {repo_path} is a valid Git repository: {error_message}',
+                ['repo_path' => $repoPath, 'error_message' => $t->getMessage()]
             );
         }
     }
@@ -124,6 +124,18 @@ class Git
     public function push(string $branchName, ...$options): void
     {
         $this->execute(['push', self::DEFAULT_REMOTE, $branchName, ...$options]);
+    }
+
+    /**
+     * Performs merge operation.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function merge(...$options): void
+    {
+        $this->execute(['merge', ...$options]);
     }
 
     /**
@@ -307,9 +319,9 @@ class Git
     {
         try {
             if (is_string($command)) {
-                $process = Process::fromShellCommandline($command, $this->workingDirectory);
+                $process = Process::fromShellCommandline($command, $this->repoPath);
             } else {
-                $process = new Process(['git', ...$command], $this->workingDirectory, null, $input, 180);
+                $process = new Process(['git', ...$command], $this->repoPath, null, $input, 180);
             }
             $process->mustRun();
         } catch (Throwable $t) {

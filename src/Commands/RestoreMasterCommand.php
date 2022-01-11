@@ -5,7 +5,6 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
@@ -14,7 +13,6 @@ use Pantheon\TerminusConversionTools\Utils\Git;
  */
 class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     /**
@@ -32,18 +30,18 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function restoreMaster(string $site_id): void
     {
-        $this->site = $this->getSite($site_id);
+        $this->setSite($site_id);
 
-        $localPath = $this->cloneSiteGitRepository();
+        $localPath = $this->getLocalSitePath();
 
-        $this->git = new Git($localPath);
+        $this->setGit($localPath);
         $backupBranchName = $this->getBackupBranchName();
-        if (!$this->git->isRemoteBranchExists($backupBranchName)) {
+        if (!$this->getGit()->isRemoteBranchExists($backupBranchName)) {
             throw new TerminusException(sprintf('The backup git branch "%s" does not exist', $backupBranchName));
         }
 
-        $backupMasterCommitHash = $this->git->getHeadCommitHash($backupBranchName);
-        $masterCommitHash = $this->git->getHeadCommitHash(Git::DEFAULT_BRANCH);
+        $backupMasterCommitHash = $this->getGit()->getHeadCommitHash($backupBranchName);
+        $masterCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($backupMasterCommitHash === $masterCommitHash) {
             $this->log()->warning(
                 sprintf(
@@ -72,14 +70,14 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $this->log()->notice(
             sprintf('Restoring "%s" git branch to "%s"...', Git::DEFAULT_BRANCH, $backupMasterCommitHash)
         );
-        $this->git->checkout(Git::DEFAULT_BRANCH);
-        $this->git->reset('--hard', $backupMasterCommitHash);
-        $this->git->push(Git::DEFAULT_BRANCH, '--force');
+        $this->getGit()->checkout(Git::DEFAULT_BRANCH);
+        $this->getGit()->reset('--hard', $backupMasterCommitHash);
+        $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
         $this->switchUpstream($this->getSourceUpstreamIdByBackupBranchName($backupBranchName));
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $this->site->getEnvironments()->get('dev');
+        $devEnv = $this->site()->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
         $this->log()->notice('Done!');

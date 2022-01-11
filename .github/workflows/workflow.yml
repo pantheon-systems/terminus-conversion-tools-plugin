@@ -42,6 +42,8 @@ jobs:
             group: advise_scenarios_empty_upstream
           - name: conversion:push-to-multidev command
             group: push_to_md_command
+          - name: conversion:enable-ic command
+            group: enable_integrated_composer_command
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
@@ -50,6 +52,7 @@ jobs:
       TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:

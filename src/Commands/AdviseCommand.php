@@ -4,10 +4,8 @@ namespace Pantheon\TerminusConversionTools\Commands;
 
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
-use Pantheon\TerminusConversionTools\Utils\Git;
 use Throwable;
 
 /**
@@ -15,7 +13,6 @@ use Throwable;
  */
 class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
     use ConversionCommandsTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
@@ -41,13 +38,13 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function advise(string $site_id): void
     {
-        $this->site = $this->getSite($site_id);
-        $upstreamId = $this->site->getUpstream()->get('machine_name');
+        $this->setSite($site_id);
+        $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
                 'The site %s uses "%s" (%s) upstream.',
-                $this->site->getName(),
-                $this->site->getUpstream()->get('label'),
+                $this->site()->getName(),
+                $this->site()->getUpstream()->get('label'),
                 $upstreamId
             )
         );
@@ -82,10 +79,10 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function adviseOnDrops8(): void
     {
-        $localPath = $this->cloneSiteGitRepository(false);
-        $git = new Git($localPath);
-        $git->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
-        $git->fetch(self::DROPS_8_UPSTREAM_ID);
+        $localPath = $this->getLocalSitePath(false);
+        $this->setGit($localPath);
+        $this->getGit()->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
+        $this->getGit()->fetch(self::DROPS_8_UPSTREAM_ID);
 
         try {
             $composerJsonRequireExtraPackages = [];
@@ -116,7 +113,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `terminus conversion:composer {$this->site->getName()}`) or manually according to the following
+(i.e. `terminus conversion:composer {$this->site()->getName()}`) or manually according to the following
 guide - https://pantheon.io/docs/guides/composer-convert
 EOD
         );
@@ -144,7 +141,7 @@ EOD
      */
     private function adviseOnEmpty(): void
     {
-        $localPath = $this->cloneSiteGitRepository(false);
+        $localPath = $this->getLocalSitePath(false);
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
         if (is_file($upstreamConfComposerJsonPath)) {
             // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
@@ -153,13 +150,16 @@ EOD
             if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
                 // Repository contents matches "drupal-recommended" upstream.
 
-                $this->git = new Git($localPath);
-                $this->git->addRemote(self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
+                $this->setGit($localPath);
+                $this->getGit()->addRemote(
+                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
+                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
+                );
                 if ($this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID)) {
                     $this->output()->writeln(
                         <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus -
-`terminus site:upstream:set {$this->site->getName()} drupal-recommended`.
+`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`.
 EOD
                     );
 
@@ -170,7 +170,7 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream and then switch the upstream with Terminus to
-"drupal-recommended" accordingly (`terminus site:upstream:set {$this->site->getName()} drupal-recommended`).
+"drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
             );
 
@@ -192,7 +192,7 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `terminus conversion:composer {$this->site->getName()}`), but stay on "empty" upstream.
+(i.e. `terminus conversion:composer {$this->site()->getName()}`), but stay on "empty" upstream.
 EOD
         );
     }
