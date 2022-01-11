@@ -21,7 +21,7 @@ trait MultidevBranchAwareTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function setBranch(string $branch): void
+    protected function setBranch(string $branch): void
     {
         if (strlen($branch) > 11) {
             throw new TerminusException('The git branch name for a multidev env must not exceed 11 characters limit.');
@@ -35,7 +35,7 @@ trait MultidevBranchAwareTrait
      *
      * @return string
      */
-    private function getBranch(): string
+    protected function getBranch(): string
     {
         return $this->branch;
     }

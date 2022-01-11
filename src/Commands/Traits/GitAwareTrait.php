@@ -21,7 +21,7 @@ trait GitAwareTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function setGit(string $path): void
+    protected function setGit(string $path): void
     {
         $this->git = new Git($path);
     }
@@ -31,7 +31,7 @@ trait GitAwareTrait
      *
      * @return \Pantheon\TerminusConversionTools\Utils\Git
      */
-    private function getGit(): Git
+    protected function getGit(): Git
     {
         return $this->git;
     }

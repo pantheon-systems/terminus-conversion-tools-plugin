@@ -21,7 +21,7 @@ trait ComposerAwareTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function setComposer(string $projectPath): void
+    protected function setComposer(string $projectPath): void
     {
         $this->composer = new Composer($projectPath);
     }
@@ -29,7 +29,7 @@ trait ComposerAwareTrait
     /**
      * Returns the Composer object.
      */
-    private function getComposer(): Composer
+    protected function getComposer(): Composer
     {
         return $this->composer;
     }
