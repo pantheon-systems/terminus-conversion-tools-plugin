@@ -157,7 +157,8 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
-Terminus command.
+Terminus command. Once done you can switch the upstream with Terminus to "drupal-recommended" accordingly
+(`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
         );
     }
