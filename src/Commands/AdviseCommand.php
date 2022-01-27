@@ -42,10 +42,11 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
-                'The site %s uses "%s" (%s) upstream.',
+                "The site %s uses \"%s\" (%s) upstream. %s\n",
                 $this->site()->getName(),
                 $this->site()->getUpstream()->get('label'),
-                $upstreamId
+                $upstreamId,
+                $this->getUpstreamExtraAdvice($upstreamId)
             )
         );
 
@@ -68,6 +69,28 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         $this->output()->writeln('Sorry, no advice is available.');
+    }
+
+    /**
+     * Returns extra advice based on the current upstream.
+     */
+    private function getUpstreamExtraAdvice(string $upstream_id): string
+    {
+        if (self::EMPTY_UPSTREAM_ID === $upstream_id) {
+            return 'This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).';
+        }
+
+        if (self::DROPS_8_UPSTREAM_ID === $upstream_id) {
+            return 'This site was created from the dashboard on Drupal 8.';
+        }
+
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstream_id) {
+            return 'This site was created from the dashboard prior to November 30, 2021.';
+        }
+
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstream_id) {
+            return 'This site was created from the dashboard after November 30, 2021 and is using the recommended upstream.';
+        }
     }
 
     /**
