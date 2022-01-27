@@ -124,11 +124,17 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         if (0 < count($composerJsonRequireExtraPackages)) {
             $this->log()->notice(
                 sprintf(
-                    'Extra packages found in composer.json: %s.',
+                    "The packages you installed are: %s.\n",
                     implode(', ', $composerJsonRequireExtraPackages)
                 )
             );
-            $this->output()->writeln('Composer used incorrectly.');
+            $this->output()->writeln(
+                <<<EOD
+This site was created from the Pantheon Drupal 8 upstream, which is not a
+Composer-managed upstream; however, Composer was used to add modules to the site. Doing this
+results in a working site, but might cause difficulties when applying upstream updates in the future.\n
+EOD
+            );
         } else {
             $this->output()->writeln('Standard drops-8 site.');
         }
@@ -137,7 +143,8 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
 (i.e. `terminus conversion:composer {$this->site()->getName()}`) or manually according to the following
-guide - https://pantheon.io/docs/guides/composer-convert
+guide - https://pantheon.io/docs/guides/composer-convert. Once done you can switch the upstream with
+Terminus to "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
         );
     }
