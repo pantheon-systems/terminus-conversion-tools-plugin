@@ -163,7 +163,13 @@ class Git
      */
     public function addRemote(string $remote, string $name)
     {
-        $this->execute(['remote', 'add', $name, $remote]);
+        try {
+            $this->execute(['remote', 'show', $name]);
+        } catch (GitException $e) {
+            // If remote show fails is because it does not exist. Add it.
+            $this->execute(['remote', 'add', $name, $remote]);
+        }
+        $this->execute(['remote', 'set-url', $name, $remote]);
     }
 
     /**
