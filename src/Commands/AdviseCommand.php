@@ -200,8 +200,10 @@ EOD
 
             $this->output()->writeln(
                 <<<EOD
-Advice: convert the site to use "drupal-recommended" Pantheon Upstream and then switch the upstream with Terminus to
-"drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
+Advice: convert the site to use "drupal-recommended" Pantheon Upstream
+(`terminus conversion:drupal-recommended {$this->site()->getName()}`) and then switch
+the upstream with Terminus to "drupal-recommended" accordingly
+(`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
             );
 
@@ -213,7 +215,8 @@ EOD
 
             $this->output()->writeln(
                 <<<EOD
-Advice: stay on "empty" upstream.
+Advice: stay on "empty" upstream because it seems you are actively using Terminus Build Tools
+(https://pantheon.io/docs/guides/build-tools/).
 EOD
             );
 
@@ -223,7 +226,8 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `terminus conversion:composer {$this->site()->getName()}`), but stay on "empty" upstream.
+(i.e. `terminus conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
+Terminus to "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
         );
     }
