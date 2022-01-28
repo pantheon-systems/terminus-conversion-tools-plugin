@@ -30,15 +30,15 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command conversion:advise
      *
-     * @param string $site_id
+     * @param string $siteId
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function advise(string $site_id): void
+    public function advise(string $siteId): void
     {
-        $this->setSite($site_id);
+        $this->setSite($siteId);
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
@@ -74,21 +74,21 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     /**
      * Returns extra advice based on the current upstream.
      */
-    private function getUpstreamExtraAdvice(string $upstream_id): string
+    private function getUpstreamExtraAdvice(string $upstreamId): string
     {
-        if (self::EMPTY_UPSTREAM_ID === $upstream_id) {
+        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
             return 'This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).';
         }
 
-        if (self::DROPS_8_UPSTREAM_ID === $upstream_id) {
+        if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             return 'This site was created from the dashboard on Drupal 8.';
         }
 
-        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstream_id) {
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
             return 'This site was created from the dashboard prior to November 30, 2021.';
         }
 
-        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstream_id) {
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
             return 'This site was created from the dashboard after November 30, 2021 and is using the recommended upstream.';
         }
     }
