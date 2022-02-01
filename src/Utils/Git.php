@@ -163,10 +163,10 @@ class Git
      */
     public function addRemote(string $remote, string $name)
     {
-        try {
-            $this->execute(['remote', 'show', $name]);
-        } catch (GitException $e) {
-            // If remote show fails is because it does not exist. Add it.
+        $process = $this->executeAndReturnProcess(['remote', 'show', $name]);
+        if (0 === $process->getExitCode()) {
+            $this->execute(['remote', 'set-url', $name, $remote]);
+        } else {
             $this->execute(['remote', 'add', $name, $remote]);
         }
         $this->execute(['remote', 'set-url', $name, $remote]);
@@ -324,12 +324,10 @@ class Git
     private function execute($command, ?string $input = null): string
     {
         try {
-            if (is_string($command)) {
-                $process = Process::fromShellCommandline($command, $this->repoPath);
-            } else {
-                $process = new Process(['git', ...$command], $this->repoPath, null, $input, 180);
+            $process = $this->executeAndReturnProcess($command, $input);
+            if (0 !== $process->getExitCode()) {
+                throw new GitException(sprintf('Git command failed with exit code %d and message %s', $process->getExitCode(), $process->getErrorOutput()));
             }
-            $process->mustRun();
         } catch (Throwable $t) {
             throw new GitException(
                 sprintf('Failed executing Git command: %s', $t->getMessage())
@@ -337,5 +335,24 @@ class Git
         }
 
         return $process->getOutput();
+    }
+
+    /**
+     * Executes the Git command and return the process object.
+     *
+     * @param array|string $command
+     * @param null|string $input
+     *
+     * @return Symfony\Component\Process\Process
+     */
+    private function executeAndReturnProcess($command, ?string $input = null): Process
+    {
+        if (is_string($command)) {
+            $process = Process::fromShellCommandline($command, $this->repoPath);
+        } else {
+            $process = new Process(['git', ...$command], $this->repoPath, null, $input, 180);
+        }
+        $process->run();
+        return $process;
     }
 }
