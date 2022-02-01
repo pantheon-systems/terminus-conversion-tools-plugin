@@ -156,9 +156,13 @@ EOD
      */
     private function adviseOnEmpty(): void
     {
-        // @todo: Split this according to https://github.com/pantheon-systems/terminus-conversion-tools-plugin/pull/15/files#r796141932.
-        $this->writeln('This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
         $localPath = $this->getLocalSitePath(false);
+        $this->setGit($localPath);
+        $isBuildTools = $this->isBuildToolsSite();
+        if ($isBuildTools) {
+            $this->writeln('This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
+        }
+
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
         if (is_file($upstreamConfComposerJsonPath)) {
             // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
@@ -167,7 +171,6 @@ EOD
             if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
                 // Repository contents matches "drupal-recommended" upstream.
 
-                $this->setGit($localPath);
                 $this->getGit()->addRemote(
                     self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
                     self::DRUPAL_RECOMMENDED_UPSTREAM_ID
@@ -196,9 +199,8 @@ EOD
             return;
         }
 
-        if (is_file(Files::buildPath($localPath, 'build-metadata.json'))) {
+        if ($isBuildTools) {
             // Build artifact created by Terminus Build Tools plugin is present.
-
             $this->output()->writeln(
                 <<<EOD
 Advice: stay on "empty" upstream because it seems you are actively using Terminus Build Tools
