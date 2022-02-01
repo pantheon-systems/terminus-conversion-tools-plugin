@@ -67,7 +67,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
-        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
             $this->writeln('No conversion is necessary.');
         }
     }
