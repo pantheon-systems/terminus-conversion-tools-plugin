@@ -42,11 +42,10 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
-                "The site %s uses \"%s\" (%s) upstream. %s\n",
+                "The site %s uses \"%s\" (%s) upstream.",
                 $this->site()->getName(),
                 $this->site()->getUpstream()->get('label'),
                 $upstreamId,
-                $this->getUpstreamExtraAdvice($upstreamId)
             )
         );
 
@@ -68,29 +67,11 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
-        $this->output()->writeln('Sorry, no advice is available.');
-    }
-
-    /**
-     * Returns extra advice based on the current upstream.
-     */
-    private function getUpstreamExtraAdvice(string $upstreamId): string
-    {
-        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
-            return 'This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).';
-        }
-
-        if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
-            return 'This site was created from the dashboard on Drupal 8.';
-        }
-
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
-            return 'This site was created from the dashboard prior to November 30, 2021.';
+            $this->writeln('This site was created from the dashboard after November 30, 2021 and is using the recommended upstream.');
         }
 
-        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
-            return 'This site was created from the dashboard after November 30, 2021 and is using the recommended upstream.';
-        }
+        $this->output()->writeln('Sorry, no advice is available.');
     }
 
     /**
@@ -102,6 +83,8 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function adviseOnDrops8(): void
     {
+        $this->writeln('This site was created from the dashboard on Drupal 8.');
+
         $localPath = $this->getLocalSitePath(false);
         $this->setGit($localPath);
         $this->getGit()->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
@@ -154,6 +137,7 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
+        $this->writeln('This site was created from the dashboard prior to November 30, 2021.');
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
@@ -172,6 +156,8 @@ EOD
      */
     private function adviseOnEmpty(): void
     {
+        // @todo: Split this according to https://github.com/pantheon-systems/terminus-conversion-tools-plugin/pull/15/files#r796141932.
+        $this->writeln('This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
         $localPath = $this->getLocalSitePath(false);
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
         if (is_file($upstreamConfComposerJsonPath)) {
