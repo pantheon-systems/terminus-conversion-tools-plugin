@@ -68,10 +68,8 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
-            $this->writeln('This site was created from the dashboard after November 30, 2021 and is using the recommended upstream.');
+            $this->writeln('No conversion is necessary.');
         }
-
-        $this->output()->writeln('Sorry, no advice is available.');
     }
 
     /**
@@ -137,7 +135,7 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
-        $this->writeln('This site was created from the dashboard prior to November 30, 2021.');
+        $this->writeln('This site is using the upstream pantheon-systems/drupal-project, which was the default upstream prior to November 30, 2021.');
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
@@ -203,8 +201,12 @@ EOD
             // Build artifact created by Terminus Build Tools plugin is present.
             $this->output()->writeln(
                 <<<EOD
-Advice: stay on "empty" upstream because it seems you are actively using Terminus Build Tools
-(https://pantheon.io/docs/guides/build-tools/).
+Advice: you might want to convert to drupal-recommended if you are not using Continuous Integration (e.g. running tests, compiling css, etc).
+Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
+
+If you wish to convert to drupal-recommended, you could do so by using `conversion:composer` Terminus command
+(i.e. `terminus conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
+Terminus to "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
             );
 
@@ -216,6 +218,7 @@ EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
 (i.e. `terminus conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
 Terminus to "drupal-recommended" accordingly (`terminus site:upstream:set {$this->site()->getName()} drupal-recommended`).
+You could also stay in the current upstream if you prefer so.
 EOD
         );
     }
