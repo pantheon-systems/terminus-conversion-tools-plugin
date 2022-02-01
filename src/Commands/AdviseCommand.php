@@ -164,7 +164,7 @@ EOD
         }
 
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-        if (is_file($upstreamConfComposerJsonPath)) {
+        if (is_file($upstreamConfComposerJsonPath) && !$isBuildTools) {
             // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
 
             $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
