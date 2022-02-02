@@ -91,6 +91,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $contribProjects = $this->getContribDrupal8Projects();
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
+        $originalRootComposerJson = $this->getRootComposerJson();
 
         $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL);
         if ($isDefaultConfigFilesExist) {
@@ -109,6 +110,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
+
+        $currentComposerJson = $this->getComposer()->toArray();
+
+        $missingPackages = $this->getMissingComposerPackages($originalRootComposerJson, $currentComposerJson);
+        $this->addComposerPackages($missingPackages);
+
+        $this->log()->notice('Composer require and require-dev sections have been migrated. Look at the logs for any errors in the process.');
+        $this->log()->notice('Please note that other composer.json sections: repositories, config, extra, etc should be manually migrated if needed.');
+
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
@@ -170,6 +180,43 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         return $this->isWebRootSite()
             ? Files::buildPath(self::WEB_ROOT, ...$parts)
             : Files::buildPath(...$parts);
+    }
+
+    /**
+     * Returns root composer.json file contents.
+     */
+    private function getRootComposerJson(): array
+    {
+        $filePath = Files::buildPath($this->getLocalSitePath(), 'composer.json');
+        if (file_exists($filePath)) {
+            return json_decode(file_get_contents($filePath), true);
+        }
+        return [];
+    }
+
+    /**
+     * Returns the list of missing packages after comparing original and current composer json files.
+     *
+     * @return array[]
+     *   Each dependency is an array that consists of the following keys:
+     *     "package" - a package name;
+     *     "version" - a version constraint;
+     *     "is_dev" - a "dev" package flag.
+     */
+    private function getMissingComposerPackages(array $originalComposerJson, array $currentComposerJson): array
+    {
+        $missingPackages = [];
+        foreach ($originalComposerJson['require'] ?? [] as $package => $version) {
+            if (!isset($currentComposerJson['require'][$package])) {
+                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => false];
+            }
+        }
+        foreach ($originalComposerJson['require-dev'] ?? [] as $package => $version) {
+            if (!isset($currentComposerJson['require-dev'][$package])) {
+                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => true];
+            }
+        }
+        return $missingPackages;
     }
 
     /**
@@ -415,19 +462,33 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Adds dependencies to composer.json.
      *
-     * @param array $packages
+     * @param array $packages The list of packages to add.
+     *   It could be just the name or an array with the following keys:
+     *     "package" - a package name;
+     *     "version" - a version constraint;
+     *     "is_dev" - a "dev" package flag.
      */
     private function addComposerPackages(array $packages): void
     {
         $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
+            $arguments = [];
+            if (is_string($project)) {
+                $arguments[] = $project;
+            } else {
+                $arguments = [$project['package'], $project['version']];
+                if ($dependency['is_dev']) {
+                    $arguments[] = '--dev';
+                }
+            }
+            $arguments[] = '-n';
             try {
-                $this->getComposer()->require($project);
-                $this->getGit()->commit(sprintf('Add %s project to Composer', $project));
-                $this->log()->notice(sprintf('%s is added', $project));
+                $this->getComposer()->require(...$arguments);
+                $this->getGit()->commit(sprintf('Add %s project to Composer', $arguments[0]));
+                $this->log()->notice(sprintf('%s is added', $arguments[0]));
             } catch (Throwable $t) {
                 $this->log()->warning(
-                    sprintf('Failed adding %s composer package: %s', $project, $t->getMessage())
+                    sprintf('Failed adding %s composer package: %s', $arguments[0], $t->getMessage())
                 );
             }
         }

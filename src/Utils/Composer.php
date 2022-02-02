@@ -99,4 +99,13 @@ class Composer
             );
         }
     }
+
+    /**
+     * Returns current composer.json as an array.
+     */
+    public function toArray(): array
+    {
+        $filePath = Files::buildPath($this->projectPath, 'composer.json');
+        return json_decode(file_get_contents($filePath), true);
+    }
 }
