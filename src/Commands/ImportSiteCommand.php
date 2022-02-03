@@ -7,9 +7,11 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportSiteCommand.
@@ -100,16 +102,30 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $localPath = $this->cloneSiteGitRepository();
         $this->setGit($localPath);
 
-        $this->fs->mirror($codeComponentPath, $localPath);
-        $this->getGit()->commit('Add code of the site imported from an archive');
-
         $env = $this->getEnv($siteId . '.dev');
         $workflow = $env->changeConnectionMode('git');
-        $this->processWorkflow($workflow);
 
+        $this->log()->notice('Copying the site code from the archive...');
+        $this->fs->mirror($codeComponentPath, $localPath);
+        $this->getGit()->commit('Add code of the site imported from an archive');
+        $this->processWorkflow($workflow);
         $this->getGit()->push(Git::DEFAULT_BRANCH);
 
-        // @todo: add pantheon.yml
+        $this->log()->notice('Adding pantheon.yml file...');
+        $pantheonYmlContent = [
+            'api_version' => 1,
+            'web_docroot' => true,
+            'build_step' => true,
+        ];
+        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
+        $pantheonYmlFile = fopen($path, 'wa+');
+        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+        fclose($pantheonYmlFile);
+        $this->getGit()->commit('Add pantheon.yml', ['pantheon.yml']);
+        $this->getGit()->push(Git::DEFAULT_BRANCH);
+
+        $this->setBranch(Git::DEFAULT_BRANCH);
+        $this->addCommitToTriggerBuild();
     }
 
     /**
