@@ -3,11 +3,11 @@
 namespace Pantheon\TerminusConversionTools\Commands;
 
 use Pantheon\Terminus\Commands\TerminusCommand;
-use Pantheon\Terminus\Commands\WorkflowProcessingTrait;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\Terminus\Site\SiteAwareTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -16,8 +16,7 @@ use Symfony\Component\Filesystem\Filesystem;
  */
 class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
-    use SiteAwareTrait;
-    use WorkflowProcessingTrait;
+    use ConversionCommandsTrait;
 
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -52,6 +51,8 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function importSite(
         string $site_name,
@@ -77,7 +78,38 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             throw new TerminusException(sprintf('Missing the code component in the archive (%s).', $codeComponentPath));
         }
 
-        $this->createSite($site_name, $options);
+        $siteId = $this->createSite($site_name, $options);
+
+        $this->importCode($siteId, $codeComponentPath);
+    }
+
+    /**
+     * Import the code to the site.
+     *
+     * @param string $siteId
+     *   The site ID.
+     * @param string $codeComponentPath
+     *   The path to the code files.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function importCode(string $siteId, string $codeComponentPath)
+    {
+        $localPath = $this->cloneSiteGitRepository();
+        $this->setGit($localPath);
+
+        $this->fs->mirror($codeComponentPath, $localPath);
+        $this->getGit()->commit('Add code of the site imported from an archive');
+
+        $env = $this->getEnv($siteId . '.dev');
+        $workflow = $env->changeConnectionMode('git');
+        $this->processWorkflow($workflow);
+
+        $this->getGit()->push(Git::DEFAULT_BRANCH);
+
+        // @todo: add pantheon.yml
     }
 
     /**
@@ -126,10 +158,13 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @param array $options
      *   Command options.
      *
+     * @return string
+     *   The site ID.
+     *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function createSite(string $site_name, array $options)
+    private function createSite(string $site_name, array $options): string
     {
         $workflowOptions = [
             'label' => $options['site_label'] ?: $site_name,
@@ -151,7 +186,10 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $site = $this->getSite($workflow->get('waiting_for_task')->site_id);
         $upstream = $user->getUpstreams()->get(self::EMPTY_UPSTREAM_ID);
         $this->processWorkflow($site->deployProduct($upstream->get('id')));
+        $this->setSite($site->get('id'));
 
         $this->log()->notice(sprintf('Site "%s" has been created.', $site->getName()));
+
+        return $site->get('id');
     }
 }
