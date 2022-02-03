@@ -53,7 +53,7 @@ class Composer
         if (null !== $version) {
             $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version), ...$options]);
         } else {
-            $this->execute(['composer', 'require', $package]);
+            $this->execute(['composer', 'require', $package, ...$options]);
         }
     }
 
@@ -103,7 +103,7 @@ class Composer
     /**
      * Returns current composer.json as an array.
      */
-    public function toArray(): array
+    public function getComposerJsonData(): array
     {
         $filePath = Files::buildPath($this->projectPath, 'composer.json');
         return json_decode(file_get_contents($filePath), true);

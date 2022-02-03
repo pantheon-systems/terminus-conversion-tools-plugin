@@ -111,7 +111,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
-        $currentComposerJson = $this->getComposer()->toArray();
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
 
         $missingPackages = $this->getMissingComposerPackages($originalRootComposerJson, $currentComposerJson);
         $this->addComposerPackages($missingPackages);
@@ -206,14 +206,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getMissingComposerPackages(array $originalComposerJson, array $currentComposerJson): array
     {
         $missingPackages = [];
-        foreach ($originalComposerJson['require'] ?? [] as $package => $version) {
-            if (!isset($currentComposerJson['require'][$package])) {
-                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => false];
-            }
-        }
-        foreach ($originalComposerJson['require-dev'] ?? [] as $package => $version) {
-            if (!isset($currentComposerJson['require-dev'][$package])) {
-                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => true];
+        foreach (['require', 'require-dev'] as $section) {
+            foreach ($originalComposerJson[$section] ?? [] as $package => $version) {
+                if (isset($currentComposerJson[$section][$package])) {
+                    continue;
+                }
+                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => 'require' !== $section];
             }
         }
         return $missingPackages;
@@ -472,23 +470,27 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
-            $arguments = [];
             if (is_string($project)) {
-                $arguments[] = $project;
-            } else {
-                $arguments = [$project['package'], $project['version']];
-                if ($dependency['is_dev']) {
-                    $arguments[] = '--dev';
-                }
+                $project = [
+                    'package' => $project,
+                    'version' => null,
+                    'is_dev' => false,
+                ];
             }
-            $arguments[] = '-n';
+            $package = $project['package'];
+            $arguments = [$project['package'], $project['version']];
+            if ($project['is_dev']) {
+                $arguments[] = '--dev';
+            }
+            $options = $project['is_dev'] ? ['--dev'] : [];
+            $options[] = '-n';
             try {
-                $this->getComposer()->require(...$arguments);
-                $this->getGit()->commit(sprintf('Add %s project to Composer', $arguments[0]));
-                $this->log()->notice(sprintf('%s is added', $arguments[0]));
+                $this->getComposer()->require(...$arguments, ...$options);
+                $this->getGit()->commit(sprintf('Add %s project to Composer', $package));
+                $this->log()->notice(sprintf('%s is added', $package));
             } catch (Throwable $t) {
                 $this->log()->warning(
-                    sprintf('Failed adding %s composer package: %s', $arguments[0], $t->getMessage())
+                    sprintf('Failed adding %s composer package: %s', $package, $t->getMessage())
                 );
             }
         }
