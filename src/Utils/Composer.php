@@ -108,4 +108,13 @@ class Composer
         $filePath = Files::buildPath($this->projectPath, 'composer.json');
         return json_decode(file_get_contents($filePath), true);
     }
+
+    /**
+     * Write given array as composer.json.
+     */
+    public function writeComposerJsonData(array $data)
+    {
+        $filePath = Files::buildPath($this->projectPath, 'composer.json');
+        return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE));
+    }
 }

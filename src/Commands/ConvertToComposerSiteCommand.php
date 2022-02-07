@@ -115,9 +115,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $missingPackages = $this->getMissingComposerPackages($originalRootComposerJson, $currentComposerJson);
         $this->addComposerPackages($missingPackages);
-
         $this->log()->notice('Composer require and require-dev sections have been migrated. Look at the logs for any errors in the process.');
         $this->log()->notice('Please note that other composer.json sections: repositories, config, extra, etc should be manually migrated if needed.');
+
+        $this->copyComposerPackagesConfiguration($originalRootComposerJson);
+
 
 
         if (!$options['dry-run']) {
@@ -180,6 +182,47 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         return $this->isWebRootSite()
             ? Files::buildPath(self::WEB_ROOT, ...$parts)
             : Files::buildPath(...$parts);
+    }
+
+    /**
+     * Copy composer well-known packages configuration.
+     */
+    private function copyComposerPackagesConfiguration($originalRootComposerJson)
+    {
+        $this->copyComposerPatchesConfiguration($originalRootComposerJson);
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Copy extra composer configuration.');
+        } else {
+            $this->log()->notice('No extra composer configuration found.');
+        }
+    }
+
+    /**
+     * Copy cweagans/composer-patches configuration if exists.
+     */
+    private function copyComposerPatchesConfiguration($originalRootComposerJson)
+    {
+        $packageName = 'cweagans/composer-patches';
+        $extraKeys = [
+            'patches',
+            'patches-file',
+            'enable-patching',
+            'patches-ignore',
+            'composer-exit-on-patch-failure',
+        ];
+        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+            return;
+        }
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        foreach ($extraKeys as $key) {
+            if (isset($originalRootComposerJson['extra'][$key])) {
+                $currentComposerJson['extra'][$key] = $originalRootComposerJson['extra'][$key];
+                if ($key === 'patches-file') {
+                    $this->log()->warning('cweagans/composer-patches patches-file option was copied but you should manually copy the patches file.');
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
 
     /**
