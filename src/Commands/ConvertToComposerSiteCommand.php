@@ -190,6 +190,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyComposerPackagesConfiguration($originalRootComposerJson)
     {
         $this->copyComposerPatchesConfiguration($originalRootComposerJson);
+        $this->copyComposerInstallersExtenderConfiguration($originalRootComposerJson);
         if ($this->getGit()->isAnythingToCommit()) {
             $this->getGit()->commit('Copy extra composer configuration.');
         } else {
@@ -219,6 +220,29 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $currentComposerJson['extra'][$key] = $originalRootComposerJson['extra'][$key];
                 if ($key === 'patches-file') {
                     $this->log()->warning('cweagans/composer-patches patches-file option was copied but you should manually copy the patches file.');
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy oomphinc/composer-installers-extender configuration if exists.
+     */
+    private function copyComposerInstallersExtenderConfiguration($originalRootComposerJson)
+    {
+        // @todo This is untested!
+        $packageName = 'oomphinc/composer-installers-extender';
+        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+            return;
+        }
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        if (isset($currentComposerJson['extra']['installer-types'])) {
+            $installerTypes = $currentComposerJson['extra']['installer-types'];
+            $currentComposerJson['extra']['installer-types'] = $originalRootComposerJson['extra']['installer-types'];
+            foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+                if (array_intersect($installerTypes, $types)) {
+                    $currentComposerJson['extra']['installer-paths'][$path] = $types;
                 }
             }
         }
