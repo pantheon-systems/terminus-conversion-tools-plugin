@@ -191,6 +191,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->copyComposerPatchesConfiguration($originalRootComposerJson);
         $this->copyComposerInstallersExtenderConfiguration($originalRootComposerJson);
+        $this->copyExtraComposerInstallersConfiguration($originalRootComposerJson);
         if ($this->getGit()->isAnythingToCommit()) {
             $this->getGit()->commit('Copy extra composer configuration.');
         } else {
@@ -243,6 +244,28 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
                 if (array_intersect($installerTypes, $types)) {
                     $currentComposerJson['extra']['installer-paths'][$path] = $types;
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy extra composer/installer configuration if exists.
+     */
+    private function copyExtraComposerInstallersConfiguration($originalRootComposerJson)
+    {
+        // @todo This is untested!
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        if (isset($currentComposerJson['extra']['installer-paths'])) {
+            $installerPaths = &$currentComposerJson['extra']['installer-paths'];
+            foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+                if (!isset($installerPaths[$path])) {
+                    $installerPaths[$path] = $types;
+                } else {
+                    if ($installerPaths[$path] !== $types) {
+                        $installerPaths[$path] = array_merge($installerPaths[$path], $types);
+                    }
                 }
             }
         }
