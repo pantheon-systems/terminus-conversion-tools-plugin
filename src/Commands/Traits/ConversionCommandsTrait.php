@@ -401,4 +401,15 @@ trait ConversionCommandsTrait
             $this->getGit()->deleteRemoteBranch($branch);
         }
     }
+
+    /**
+     * Determines whether the current site is a build tools site or not by looking at latest commit.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    protected function isBuildToolsSite()
+    {
+        $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
+        return in_array('build-metadata.json', $files);
+    }
 }
