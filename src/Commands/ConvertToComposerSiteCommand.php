@@ -232,14 +232,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function copyComposerInstallersExtenderConfiguration($originalRootComposerJson)
     {
-        // @todo This is untested!
         $packageName = 'oomphinc/composer-installers-extender';
         if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
             return;
         }
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
-        if (isset($currentComposerJson['extra']['installer-types'])) {
-            $installerTypes = $currentComposerJson['extra']['installer-types'];
+        if (isset($originalRootComposerJson['extra']['installer-types'])) {
+            $installerTypes = $originalRootComposerJson['extra']['installer-types'];
             $currentComposerJson['extra']['installer-types'] = $originalRootComposerJson['extra']['installer-types'];
             foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
                 if (array_intersect($installerTypes, $types)) {
@@ -255,7 +254,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function copyExtraComposerInstallersConfiguration($originalRootComposerJson)
     {
-        // @todo This is untested!
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
         if (isset($currentComposerJson['extra']['installer-paths'])) {
             $installerPaths = &$currentComposerJson['extra']['installer-paths'];
@@ -264,7 +262,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                     $installerPaths[$path] = $types;
                 } else {
                     if ($installerPaths[$path] !== $types) {
-                        $installerPaths[$path] = array_merge($installerPaths[$path], $types);
+                        $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
                     }
                 }
             }
