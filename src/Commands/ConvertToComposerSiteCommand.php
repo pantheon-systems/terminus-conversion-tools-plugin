@@ -558,6 +558,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
+            $arguments = [];
             if (is_string($project)) {
                 $project = [
                     'package' => $project,
@@ -572,6 +573,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             }
             $options = $project['is_dev'] ? ['--dev'] : [];
             $options[] = '-n';
+            $options[] = '-W';
             try {
                 $this->getComposer()->require(...$arguments, ...$options);
                 $this->getGit()->commit(sprintf('Add %s project to Composer', $package));
