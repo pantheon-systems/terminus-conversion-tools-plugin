@@ -32,7 +32,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'Sorry, no advice is available.';
+        return 'No conversion is necessary.';
     }
 
     /**

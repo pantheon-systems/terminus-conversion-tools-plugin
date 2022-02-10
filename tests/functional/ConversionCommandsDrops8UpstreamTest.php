@@ -40,7 +40,7 @@ final class ConversionCommandsDrops8UpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'Sorry, no advice is available.';
+        return 'No conversion is necessary.';
     }
 
     /**
