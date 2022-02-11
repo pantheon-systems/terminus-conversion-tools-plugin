@@ -259,15 +259,24 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyExtraComposerInstallersConfiguration($originalRootComposerJson)
     {
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
-        if (isset($currentComposerJson['extra']['installer-paths'])) {
-            $installerPaths = &$currentComposerJson['extra']['installer-paths'];
-            foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
-                if (!isset($installerPaths[$path])) {
-                    $installerPaths[$path] = $types;
-                } else {
-                    if ($installerPaths[$path] !== $types) {
-                        $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
+        $currentTypes = [];
+
+        $installerPaths = &$currentComposerJson['extra']['installer-paths'] ?? [];
+        foreach ($installerPaths as $path => $types) {
+            $currentTypes += $types;
+        }
+
+        foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+            if (!isset($installerPaths[$path])) {
+                foreach ($types as $type) {
+                    if (in_array($type, $currentTypes)) {
+                        continue;
                     }
+                    $installerPaths[$path][] = $type;
+                }
+            } else {
+                if ($installerPaths[$path] !== $types) {
+                    $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
                 }
             }
         }
