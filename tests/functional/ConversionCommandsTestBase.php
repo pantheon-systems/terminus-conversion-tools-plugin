@@ -110,11 +110,11 @@ abstract class ConversionCommandsTestBase extends TestCase
      */
     protected function tearDown(): void
     {
-        $this->terminus(
+        /*$this->terminus(
             sprintf('site:delete %s', $this->siteName),
             ['--quiet'],
             false
-        );
+        );*/
     }
 
     /**
