@@ -115,6 +115,6 @@ class Composer
     public function writeComposerJsonData(array $data)
     {
         $filePath = Files::buildPath($this->projectPath, 'composer.json');
-        return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE));
+        return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE) . PHP_EOL);
     }
 }
