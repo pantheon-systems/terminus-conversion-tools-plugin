@@ -53,7 +53,7 @@ class Composer
         if (null !== $version) {
             $this->execute(['composer', 'require', sprintf('%s:%s', $package, $version), ...$options]);
         } else {
-            $this->execute(['composer', 'require', $package]);
+            $this->execute(['composer', 'require', $package, ...$options]);
         }
     }
 
@@ -98,5 +98,23 @@ class Composer
                 sprintf('Failed executing Composer command: %s', $t->getMessage())
             );
         }
+    }
+
+    /**
+     * Returns current composer.json as an array.
+     */
+    public function getComposerJsonData(): array
+    {
+        $filePath = Files::buildPath($this->projectPath, 'composer.json');
+        return json_decode(file_get_contents($filePath), true);
+    }
+
+    /**
+     * Write given array as composer.json.
+     */
+    public function writeComposerJsonData(array $data)
+    {
+        $filePath = Files::buildPath($this->projectPath, 'composer.json');
+        return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE) . PHP_EOL);
     }
 }

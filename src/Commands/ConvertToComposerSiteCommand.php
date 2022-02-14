@@ -91,6 +91,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $contribProjects = $this->getContribDrupal8Projects();
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
+        $originalRootComposerJson = $this->getRootComposerJson();
 
         $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL);
         if ($isDefaultConfigFilesExist) {
@@ -109,6 +110,17 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
+
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+
+        $missingPackages = $this->getMissingComposerPackages($originalRootComposerJson, $currentComposerJson);
+        $this->addComposerPackages($missingPackages);
+        $this->log()->notice('Composer require and require-dev sections have been migrated. Look at the logs for any errors in the process.');
+        $this->log()->notice('Please note that other composer.json sections: repositories, config, extra, etc should be manually migrated if needed.');
+
+        $this->copyComposerPackagesConfiguration($originalRootComposerJson);
+
+
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
@@ -170,6 +182,136 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         return $this->isWebRootSite()
             ? Files::buildPath(self::WEB_ROOT, ...$parts)
             : Files::buildPath(...$parts);
+    }
+
+    /**
+     * Copy composer well-known packages configuration.
+     */
+    private function copyComposerPackagesConfiguration($originalRootComposerJson)
+    {
+        $this->copyComposerPatchesConfiguration($originalRootComposerJson);
+        $this->copyComposerInstallersExtenderConfiguration($originalRootComposerJson);
+        $this->copyExtraComposerInstallersConfiguration($originalRootComposerJson);
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Copy extra composer configuration.');
+        } else {
+            $this->log()->notice('No extra composer configuration found.');
+        }
+    }
+
+    /**
+     * Copy cweagans/composer-patches configuration if exists.
+     */
+    private function copyComposerPatchesConfiguration($originalRootComposerJson)
+    {
+        $packageName = 'cweagans/composer-patches';
+        $extraKeys = [
+            'patches',
+            'patches-file',
+            'enable-patching',
+            'patches-ignore',
+            'composer-exit-on-patch-failure',
+        ];
+        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+            return;
+        }
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        foreach ($extraKeys as $key) {
+            if (isset($originalRootComposerJson['extra'][$key])) {
+                $currentComposerJson['extra'][$key] = $originalRootComposerJson['extra'][$key];
+                if ($key === 'patches-file') {
+                    $this->log()->warning('cweagans/composer-patches patches-file option was copied but you should manually copy the patches file.');
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy oomphinc/composer-installers-extender configuration if exists.
+     */
+    private function copyComposerInstallersExtenderConfiguration($originalRootComposerJson)
+    {
+        $packageName = 'oomphinc/composer-installers-extender';
+        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+            return;
+        }
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        if (isset($originalRootComposerJson['extra']['installer-types'])) {
+            $installerTypes = $originalRootComposerJson['extra']['installer-types'];
+            $currentComposerJson['extra']['installer-types'] = $originalRootComposerJson['extra']['installer-types'];
+            foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+                if (array_intersect($installerTypes, $types)) {
+                    $currentComposerJson['extra']['installer-paths'][$path] = $types;
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy extra composer/installer configuration if exists.
+     */
+    private function copyExtraComposerInstallersConfiguration($originalRootComposerJson)
+    {
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        $currentTypes = [];
+
+        $installerPaths = &$currentComposerJson['extra']['installer-paths'] ?? [];
+        foreach ($installerPaths as $path => $types) {
+            $currentTypes += $types;
+        }
+
+        foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+            if (!isset($installerPaths[$path])) {
+                foreach ($types as $type) {
+                    if (in_array($type, $currentTypes)) {
+                        continue;
+                    }
+                    $installerPaths[$path][] = $type;
+                }
+            } else {
+                if ($installerPaths[$path] !== $types) {
+                    $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
+                }
+            }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Returns root composer.json file contents.
+     */
+    private function getRootComposerJson(): array
+    {
+        $filePath = Files::buildPath($this->getLocalSitePath(), 'composer.json');
+        if (file_exists($filePath)) {
+            return json_decode(file_get_contents($filePath), true);
+        }
+        return [];
+    }
+
+    /**
+     * Returns the list of missing packages after comparing original and current composer json files.
+     *
+     * @return array[]
+     *   Each dependency is an array that consists of the following keys:
+     *     "package" - a package name;
+     *     "version" - a version constraint;
+     *     "is_dev" - a "dev" package flag.
+     */
+    private function getMissingComposerPackages(array $originalComposerJson, array $currentComposerJson): array
+    {
+        $missingPackages = [];
+        foreach (['require', 'require-dev'] as $section) {
+            foreach ($originalComposerJson[$section] ?? [] as $package => $version) {
+                if (isset($currentComposerJson[$section][$package])) {
+                    continue;
+                }
+                $missingPackages[] = ['package' => $package, 'version' => $version, 'is_dev' => 'require' !== $section];
+            }
+        }
+        return $missingPackages;
     }
 
     /**
@@ -415,19 +557,35 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Adds dependencies to composer.json.
      *
-     * @param array $packages
+     * @param array $packages The list of packages to add.
+     *   It could be just the name or an array with the following keys:
+     *     "package" - a package name;
+     *     "version" - a version constraint;
+     *     "is_dev" - a "dev" package flag.
      */
     private function addComposerPackages(array $packages): void
     {
         $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
+            if (is_string($project)) {
+                $project = [
+                    'package' => $project,
+                    'version' => null,
+                    'is_dev' => false,
+                ];
+            }
+            $package = $project['package'];
+            $arguments = [$project['package'], $project['version']];
+            $options = $project['is_dev'] ? ['--dev'] : [];
+            $options[] = '-n';
+            $options[] = '-W';
             try {
-                $this->getComposer()->require($project);
-                $this->getGit()->commit(sprintf('Add %s project to Composer', $project));
-                $this->log()->notice(sprintf('%s is added', $project));
+                $this->getComposer()->require(...$arguments, ...$options);
+                $this->getGit()->commit(sprintf('Add %s project to Composer', $package));
+                $this->log()->notice(sprintf('%s is added', $package));
             } catch (Throwable $t) {
                 $this->log()->warning(
-                    sprintf('Failed adding %s composer package: %s', $project, $t->getMessage())
+                    sprintf('Failed adding %s composer package: %s', $package, $t->getMessage())
                 );
             }
         }
