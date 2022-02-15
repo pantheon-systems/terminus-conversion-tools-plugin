@@ -7,11 +7,9 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportSiteCommand.
@@ -29,7 +27,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     private const COMPONENT_FILES = 'files';
     private const COMPONENT_DATABASE = 'database';
 
-    private const EMPTY_UPSTREAM_ID = 'empty';
+    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
 
     /**
      * ImportSiteCommand constructor.
@@ -105,7 +103,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function importCode(string $siteId, string $codeComponentPath)
     {
-        $localPath = $this->cloneSiteGitRepository();
+        $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
 
         $env = $this->getEnv($siteId . '.dev');
@@ -117,21 +115,8 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->processWorkflow($workflow);
         $this->getGit()->push(Git::DEFAULT_BRANCH);
 
-        $this->log()->notice('Adding pantheon.yml file...');
-        $pantheonYmlContent = [
-            'api_version' => 1,
-            'web_docroot' => true,
-            'build_step' => true,
-        ];
-        $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
-        $pantheonYmlFile = fopen($path, 'wa+');
-        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
-        fclose($pantheonYmlFile);
-        $this->getGit()->commit('Add pantheon.yml', ['pantheon.yml']);
-        $this->getGit()->push(Git::DEFAULT_BRANCH);
-
-        $this->setBranch(Git::DEFAULT_BRANCH);
-        $this->addCommitToTriggerBuild();
+        // todo: sync .gitignore
+        // todo: sync composer.json (add missing packages and run "install")
     }
 
     /**
@@ -206,7 +191,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $workflow = $this->sites()->create($workflowOptions);
         $this->processWorkflow($workflow);
         $site = $this->getSite($workflow->get('waiting_for_task')->site_id);
-        $upstream = $user->getUpstreams()->get(self::EMPTY_UPSTREAM_ID);
+        $upstream = $user->getUpstreams()->get(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
         $this->processWorkflow($site->deployProduct($upstream->get('id')));
         $this->setSite($site->get('id'));
 
