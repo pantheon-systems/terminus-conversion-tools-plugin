@@ -6,11 +6,13 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
+use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportSiteCommand.
@@ -18,6 +20,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use ComposerAwareTrait;
 
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -49,11 +52,12 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @param string $archive_path
      * @param array $options
      *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function importSite(
         string $site_name,
@@ -101,9 +105,12 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function importCode(string $siteId, string $codeComponentPath)
     {
+        $this->log()->notice('Importing code from the archive...');
+
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
 
@@ -117,9 +124,9 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 
         $this->mergeGitignoreFile($codeComponentPath);
 
-        $this->getGit()->push(Git::DEFAULT_BRANCH);
+        $this->mergeComposerJsonFile($codeComponentPath);
 
-        // todo: sync composer.json (add missing packages and run "install")
+        $this->getGit()->push(Git::DEFAULT_BRANCH);
     }
 
     /**
@@ -152,6 +159,52 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         fwrite($gitignoreFile, implode(PHP_EOL, $gitignoreDiff) . PHP_EOL);
         fclose($gitignoreFile);
         $this->getGit()->commit('Add .gitignore rules from the code archive', ['.gitignore']);
+    }
+
+    /**
+     * Merges composer.json dependencies from the code archive to the resulting site's composer.json/composer.lock
+     * files.
+     *
+     * @param string $codeComponentPath
+     *   The path to the code files.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function mergeComposerJsonFile(string $codeComponentPath): void
+    {
+        $this->log()->notice('Checking Composer dependencies...');
+
+        $composerJsonArchiveFile = Files::buildPath($codeComponentPath, 'composer.json');
+        if (!is_file($composerJsonArchiveFile)) {
+            throw new TerminusNotFoundException(sprintf('%s not found.', $composerJsonArchiveFile));
+        }
+
+        $this->setComposer($this->getLocalSitePath());
+        $composerJsonRepoFile = Files::buildPath($this->getLocalSitePath(), 'composer.json');
+        $composerJsonRepoFileContent = Yaml::parseFile($composerJsonRepoFile);
+        $composerJsonArchiveFileContent = Yaml::parseFile($composerJsonArchiveFile);
+
+        foreach (['require', 'require-dev'] as $section) {
+            foreach ($composerJsonArchiveFileContent[$section] ?? [] as $package => $versionConstraint) {
+                if (isset($composerJsonRepoFileContent[$section][$package])) {
+                    continue;
+                }
+
+                $this->log()->notice(sprintf('Adding package %s:%s...', $package, $versionConstraint));
+
+                $options = 'require' === $section ? [] : ['--dev'];
+                $this->getComposer()->require($package, $versionConstraint, ...$options);
+
+                $this->getGit()->commit(
+                    sprintf('Add %s package', $package),
+                    ['composer.json', 'composer.lock']
+                );
+            }
+        }
     }
 
     /**
