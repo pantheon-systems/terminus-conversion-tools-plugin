@@ -115,21 +115,43 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->getGit()->commit('Add code of the site imported from an archive');
         $this->processWorkflow($workflow);
 
-        $gitignoreArchiveFile = Files::buildPath($codeComponentPath, '.gitignore');
-        $gitignoreRepoFile = Files::buildPath($localPath, '.gitignore');
-        if (is_file($gitignoreArchiveFile)
-            && sha1_file($gitignoreArchiveFile) !== sha1_file($gitignoreRepoFile)) {
-            // Append .gitignore file contents from the code archive to the resulting site's .gitignore file.
-            $gitignoreFile = fopen($gitignoreRepoFile, 'a');
-            fwrite($gitignoreFile, PHP_EOL . '# Ignore rules imported from the code archive.' . PHP_EOL);
-            fwrite($gitignoreFile, file_get_contents($gitignoreArchiveFile));
-            fclose($gitignoreFile);
-            $this->getGit()->commit('Add .gitignore rules from the code archive', ['.gitignore']);
-        }
+        $this->mergeGitignoreFile($codeComponentPath);
 
         $this->getGit()->push(Git::DEFAULT_BRANCH);
 
         // todo: sync composer.json (add missing packages and run "install")
+    }
+
+    /**
+     * Merges .gitignore file contents from the code archive to the resulting site's .gitignore file.
+     *
+     * @param string $codeComponentPath
+     *   The path to the code files.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function mergeGitignoreFile(string $codeComponentPath): void
+    {
+        $gitignoreArchiveFile = Files::buildPath($codeComponentPath, '.gitignore');
+        if (!is_file($gitignoreArchiveFile)) {
+            return;
+        }
+
+        $this->log()->notice('Checking .gitignore file...');
+        $gitignoreRepoFile = Files::buildPath($this->getLocalSitePath(), '.gitignore');
+        $gitignoreDiff = Git::getGitignoreDiff($gitignoreArchiveFile, $gitignoreRepoFile);
+        if (0 === count($gitignoreDiff)) {
+            return;
+        }
+
+        $this->log()->notice('Merging .gitignore file...');
+        $gitignoreFile = fopen($gitignoreRepoFile, 'a');
+        fwrite($gitignoreFile, PHP_EOL . '# Ignore rules imported from the code archive.' . PHP_EOL);
+        fwrite($gitignoreFile, implode(PHP_EOL, $gitignoreDiff) . PHP_EOL);
+        fclose($gitignoreFile);
+        $this->getGit()->commit('Add .gitignore rules from the code archive', ['.gitignore']);
     }
 
     /**
