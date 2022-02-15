@@ -83,6 +83,12 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $siteId = $this->createSite($site_name, $options);
 
         $this->importCode($siteId, $codeComponentPath);
+
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
+        $devEnv = $this->site()->getEnvironments()->get('dev');
+        $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
+
+        $this->log()->notice('Done!');
     }
 
     /**
