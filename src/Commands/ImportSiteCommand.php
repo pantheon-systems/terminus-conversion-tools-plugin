@@ -7,6 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
@@ -113,9 +114,21 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->fs->mirror($codeComponentPath, $localPath);
         $this->getGit()->commit('Add code of the site imported from an archive');
         $this->processWorkflow($workflow);
+
+        $gitignoreArchiveFile = Files::buildPath($codeComponentPath, '.gitignore');
+        $gitignoreRepoFile = Files::buildPath($localPath, '.gitignore');
+        if (is_file($gitignoreArchiveFile)
+            && sha1_file($gitignoreArchiveFile) !== sha1_file($gitignoreRepoFile)) {
+            // Append .gitignore file contents from the code archive to the resulting site's .gitignore file.
+            $gitignoreFile = fopen($gitignoreRepoFile, 'a');
+            fwrite($gitignoreFile, PHP_EOL . '# Ignore rules imported from the code archive.' . PHP_EOL);
+            fwrite($gitignoreFile, file_get_contents($gitignoreArchiveFile));
+            fclose($gitignoreFile);
+            $this->getGit()->commit('Add .gitignore rules from the code archive', ['.gitignore']);
+        }
+
         $this->getGit()->push(Git::DEFAULT_BRANCH);
 
-        // todo: sync .gitignore
         // todo: sync composer.json (add missing packages and run "install")
     }
 
