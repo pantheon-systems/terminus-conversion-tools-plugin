@@ -7,7 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
+use Pantheon\TerminusConversionTools\Utils\DrupalProjects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
@@ -33,12 +33,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private bool $isWebRootSite;
 
     /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
+     * @var \Pantheon\TerminusConversionTools\Utils\DrupalProjects
      */
-    private Drupal8Projects $drupal8Projects;
+    private DrupalProjects $drupalProjects;
 
     /**
-     * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
+     * Converts a standard Drupal site into a Drupal site managed by Composer.
      *
      * @command conversion:composer
      *
@@ -60,7 +60,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
 
-        if (!$this->site()->getFramework()->isDrupal8Framework()) {
+        if (!$this->site()->getFramework()->isDrupalFramework()) {
             throw new TerminusException(
                 'The site {site_name} is not a Drupal 8 based site.',
                 ['site_name' => $this->site()->getName()]
@@ -84,11 +84,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
-        $this->drupal8Projects = new Drupal8Projects($this->getDrupalAbsolutePath());
+        $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
         $this->setComposer($this->getLocalSitePath());
 
-        $contribProjects = $this->getContribDrupal8Projects();
+        $contribProjects = $this->getContribDrupalProjects();
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
         $originalRootComposerJson = $this->getRootComposerJson();
@@ -315,7 +315,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Detects and returns the list of Drupal8 libraries.
+     * Detects and returns the list of Drupal libraries.
      *
      * @return array
      *   The list of Composer package names.
@@ -326,7 +326,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getLibraries(): array
     {
         $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
-        $projects = $this->drupal8Projects->getLibraries();
+        $projects = $this->drupalProjects->getLibraries();
 
         if (0 === count($projects)) {
             $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
@@ -350,7 +350,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Detects and returns the list of contrib Drupal8 projects (modules and themes).
+     * Detects and returns the list of contrib Drupal projects (modules and themes).
      *
      * @return array
      *   The list of contrib modules and themes where:
@@ -360,12 +360,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function getContribDrupal8Projects(): array
+    private function getContribDrupalProjects(): array
     {
         $this->log()->notice(
             sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $projects = $this->drupal8Projects->getContribProjects();
+        $projects = $this->drupalProjects->getContribProjects();
         if (0 === count($projects)) {
             $this->log()->notice(
                 sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
@@ -402,12 +402,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $customModuleDirs = $this->drupal8Projects->getCustomModuleDirectories();
+        $customModuleDirs = $this->drupalProjects->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
 
-        $customThemeDirs = $this->drupal8Projects->getCustomThemeDirectories();
+        $customThemeDirs = $this->drupalProjects->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
         }
@@ -480,7 +480,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Adding packages to Composer...');
         try {
-            foreach ($this->getDrupal8ComposerDependencies() as $dependency) {
+            foreach ($this->getDrupalComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
                 if ($dependency['is_dev']) {
                     $arguments[] = '--dev';
@@ -525,7 +525,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Returns the list of Drupal8 composer dependencies.
+     * Returns the list of Drupal composer dependencies.
      *
      * @return array[]
      *   Each dependency is an array that consists of the following keys:
@@ -533,7 +533,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
      */
-    private function getDrupal8ComposerDependencies(): array
+    private function getDrupalComposerDependencies(): array
     {
         return [
             [
