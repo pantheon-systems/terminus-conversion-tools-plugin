@@ -540,20 +540,36 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function getDrupalComposerDependencies(): array
     {
+        $drupalConstraint = '^8.9';
+        foreach (['drupal/core-recommended', 'drupal/core'] as $package_name) {
+            if (isset($this->originalRootComposerJson['require'][$package_name])) {
+                $drupalConstraint = $this->originalRootComposerJson['require'][$package_name];
+                break;
+            }
+        }
+
+        $drupalIntegrationsConstraint = '^8';
+        // Try with first and second character of $drupalConstraint.
+        if (is_numeric(substr($drupalConstraint, 0, 1))) {
+            $drupalIntegrationsConstraint = '^' . substr($drupalConstraint, 0, 1);
+        } elseif (is_numeric(substr($drupalConstraint, 1, 2))) {
+            $drupalIntegrationsConstraint = '^' . substr($drupalConstraint, 1, 2);
+        }
+
         return [
             [
                 'package' => 'drupal/core-recommended',
-                'version' => '^8.9',
+                'version' => $drupalConstraint,
                 'is_dev' => false,
             ],
             [
                 'package' => 'pantheon-systems/drupal-integrations',
-                'version' => '^8',
+                'version' => $drupalIntegrationsConstraint,
                 'is_dev' => false,
             ],
             [
                 'package' => 'drupal/core-dev',
-                'version' => '^8.9',
+                'version' => $drupalConstraint,
                 'is_dev' => true,
             ],
         ];
