@@ -5,6 +5,7 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
+use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
@@ -78,43 +79,46 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 
         $extractDir = $this->extractArchive($archive_path, $options);
 
-        $codeComponentPath = $extractDir . DIRECTORY_SEPARATOR . self::COMPONENT_CODE;
+        $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
         if (!is_dir($codeComponentPath)) {
             throw new TerminusException(sprintf('Missing the code component in the archive (%s).', $codeComponentPath));
         }
 
-        $siteId = $this->createSite($site_name, $options);
-
-        $this->importCode($siteId, $codeComponentPath);
+        $this->createSite($site_name, $options);
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site()->getEnvironments()->get('dev');
-        $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
+        $this->importCode($devEnv, $codeComponentPath);
+
+        $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
+        $this->importDatabase($devEnv, $databaseComponentPath);
+
+        $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
     }
 
     /**
-     * Import the code to the site.
+     * Imports the code to the site.
      *
-     * @param string $siteId
-     *   The site ID.
+     * @param \Pantheon\Terminus\Models\Environment $env
+     *   The environment.
      * @param string $codeComponentPath
      *   The path to the code files.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
-    private function importCode(string $siteId, string $codeComponentPath)
+    private function importCode(Environment $env, string $codeComponentPath)
     {
         $this->log()->notice('Importing code from the archive...');
 
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
 
-        $env = $this->getEnv($siteId . '.dev');
         $workflow = $env->changeConnectionMode('git');
 
         $this->log()->notice('Copying the site code from the archive...');
@@ -127,6 +131,36 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->mergeComposerJsonFile($codeComponentPath);
 
         $this->getGit()->push(Git::DEFAULT_BRANCH);
+    }
+
+    /**
+     * Imports the database backup to the site.
+     *
+     * @param \Pantheon\Terminus\Models\Environment $env
+     *   The environment.
+     * @param string $databaseBackupPath
+     *   The path to the database backup file.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function importDatabase(Environment $env, string $databaseBackupPath): void
+    {
+        $this->log()->notice('Importing database from the archive...');
+
+        $sftpInfo = $env->sftpConnectionInfo();
+        $commandPrefix = sprintf(
+            'ssh -T %s@%s -p %s -o "StrictHostKeyChecking=no" -o "AddressFamily inet"',
+            $sftpInfo['username'],
+            $sftpInfo['host'],
+            $sftpInfo['port']
+        );
+
+        $command = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseBackupPath);
+        $executionResult = $this->getLocalMachineHelper()->execute($command, null, false);
+        if (0 !== $executionResult['exit_code']) {
+            throw new TerminusException(sprintf('Failed importing database: %s', $executionResult['stderr']));
+        }
     }
 
     /**
