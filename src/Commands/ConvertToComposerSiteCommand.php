@@ -60,7 +60,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
 
-        if (!$this->site()->getFramework()->isDrupalFramework()) {
+        if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
                 'The site {site_name} is not a Drupal 8 based site.',
                 ['site_name' => $this->site()->getName()]
