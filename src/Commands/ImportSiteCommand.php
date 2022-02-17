@@ -90,6 +90,11 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             $this->createSite($site_name, $options);
         } else {
             $this->setSite($site_name);
+            if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')) {
+                throw new TerminusException(
+                    sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID)
+                );
+            }
         }
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
