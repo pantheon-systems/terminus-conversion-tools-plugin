@@ -45,13 +45,21 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Imports the site to Pantheon from the archive.
+     * Imports code, database, and files to the site from a single archive or direct sources.
      *
      * @command conversion:import-site
      *
+     * @option override Override files on archive extraction if exists.
+     * @option skip_site_creation Skip creating a new site.
+     * @option org Organization name for a new site.
+     * @option site_label Site label for a new site.
+     *
      * @param string $site_name
+     *   The machine name of the site.
      * @param string $archive_path
+     *   The full path to the archive file.
      * @param array $options
+     *   The commandline options.
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
@@ -65,6 +73,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         string $archive_path,
         array $options = [
             'override' => null,
+            'skip_site_creation' => null,
             'site_label' => null,
             'org' => null,
         ]
@@ -73,12 +82,15 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             throw new TerminusNotFoundException(sprintf('Archive %s not found.', $archive_path));
         }
 
-        if ($this->sites()->nameIsTaken($site_name)) {
-            throw new TerminusException(sprintf('The site name %s is already taken.', $site_name));
-        }
+        if (!$options['skip_site_creation']) {
+            if ($this->sites()->nameIsTaken($site_name)) {
+                throw new TerminusException(sprintf('The site name %s is already taken.', $site_name));
+            }
 
-        // @todo: add an option to skip site create operation (validate for required upstream in that case).
-        $this->createSite($site_name, $options);
+            $this->createSite($site_name, $options);
+        } else {
+            $this->setSite($site_name);
+        }
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site()->getEnvironments()->get('dev');
@@ -125,17 +137,20 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
 
-        $workflow = $env->changeConnectionMode('git');
-
         $this->log()->notice('Copying the site code from the archive...');
         $this->fs->mirror($codePath, $localPath);
-        $this->getGit()->commit('Add code of the site imported from an archive');
-        $this->processWorkflow($workflow);
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Add code of the site imported from an archive');
+        }
 
         $this->mergeGitignoreFile($codePath);
 
         $this->mergeComposerJsonFile($codePath);
 
+        if ('git' !== $env->get('connection_mode')) {
+            $workflow = $env->changeConnectionMode('git');
+            $this->processWorkflow($workflow);
+        }
         $this->getGit()->push(Git::DEFAULT_BRANCH);
     }
 
@@ -298,6 +313,8 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function extractArchive(string $path, array $options): string
     {
+        $this->log()->notice('Extracting the archive...');
+
         ['filename' => $archiveFileName] = pathinfo($path);
         $archiveFileName = str_replace('.tar', '', $archiveFileName);
 
@@ -330,13 +347,10 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @param array $options
      *   Command options.
      *
-     * @return string
-     *   The site ID.
-     *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function createSite(string $site_name, array $options): string
+    private function createSite(string $site_name, array $options): void
     {
         $workflowOptions = [
             'label' => $options['site_label'] ?: $site_name,
@@ -361,7 +375,5 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->setSite($site->get('id'));
 
         $this->log()->notice(sprintf('Site "%s" has been created.', $site->getName()));
-
-        return $site->get('id');
     }
 }
