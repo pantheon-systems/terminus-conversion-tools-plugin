@@ -45,7 +45,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Imports code, database, and files to the site from a single archive or direct sources.
+     * Creates the site based on "drupal-recommended" upstream from imported code, database, and files.
      *
      * @command conversion:import-site
      *
@@ -53,6 +53,9 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @option skip_site_creation Skip creating a new site.
      * @option org Organization name for a new site.
      * @option site_label Site label for a new site.
+     * @option code Import code.
+     * @option files Import Drupal files.
+     * @option db Import database.
      *
      * @param string $site_name
      *   The machine name of the site.
@@ -76,6 +79,9 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             'skip_site_creation' => null,
             'site_label' => null,
             'org' => null,
+            'code' => null,
+            'files' => null,
+            'db' => null,
         ]
     ): void {
         if (!is_file($archive_path)) {
@@ -102,14 +108,24 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 
         $extractDir = $this->extractArchive($archive_path, $options);
 
-        $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
-        $this->importCode($devEnv, $codeComponentPath);
+        if (!$options['code'] && !$options['files'] && !$options['db']) {
+            $options['code'] = $options['files'] = $options['db'] = true;
+        }
 
-        $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
-        $this->importDatabase($devEnv, $databaseComponentPath);
+        if ($options['code']) {
+            $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
+            $this->importCode($devEnv, $codeComponentPath);
+        }
 
-        $filesComponentPath = Files::buildPath($extractDir, self::COMPONENT_FILES);
-        $this->importFiles($devEnv, $filesComponentPath);
+        if ($options['db']) {
+            $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
+            $this->importDatabase($devEnv, $databaseComponentPath);
+        }
+
+        if ($options['files']) {
+            $filesComponentPath = Files::buildPath($extractDir, self::COMPONENT_FILES);
+            $this->importFiles($devEnv, $filesComponentPath);
+        }
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
