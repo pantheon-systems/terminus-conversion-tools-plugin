@@ -91,6 +91,9 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
         $this->importDatabase($devEnv, $databaseComponentPath);
 
+        $filesComponentPath = Files::buildPath($extractDir, self::COMPONENT_FILES);
+        $this->importFiles($devEnv, $filesComponentPath);
+
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
     }
@@ -100,8 +103,8 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @param \Pantheon\Terminus\Models\Environment $env
      *   The environment.
-     * @param string $codeComponentPath
-     *   The path to the code files.
+     * @param string $codePath
+     *   The path to the code files directory.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -109,13 +112,13 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function importCode(Environment $env, string $codeComponentPath)
+    private function importCode(Environment $env, string $codePath)
     {
-        $this->log()->notice('Importing code from the archive...');
+        $this->log()->notice('Importing code...');
 
-        if (!is_dir($codeComponentPath)) {
+        if (!is_dir($codePath)) {
             throw new TerminusNotFoundException(
-                sprintf('Missing the code component in the archive (%s).', $codeComponentPath)
+                sprintf('Code files not found in %s.', $codePath)
             );
         }
 
@@ -125,13 +128,13 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $workflow = $env->changeConnectionMode('git');
 
         $this->log()->notice('Copying the site code from the archive...');
-        $this->fs->mirror($codeComponentPath, $localPath);
+        $this->fs->mirror($codePath, $localPath);
         $this->getGit()->commit('Add code of the site imported from an archive');
         $this->processWorkflow($workflow);
 
-        $this->mergeGitignoreFile($codeComponentPath);
+        $this->mergeGitignoreFile($codePath);
 
-        $this->mergeComposerJsonFile($codeComponentPath);
+        $this->mergeComposerJsonFile($codePath);
 
         $this->getGit()->push(Git::DEFAULT_BRANCH);
     }
@@ -149,7 +152,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function importDatabase(Environment $env, string $databaseBackupPath): void
     {
-        $this->log()->notice('Importing database from the archive...');
+        $this->log()->notice('Importing database...');
 
         if (!is_file($databaseBackupPath)) {
             throw new TerminusNotFoundException(sprintf('Backup file %s not found', $databaseBackupPath));
@@ -163,10 +166,43 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             $sftpInfo['port']
         );
 
-        $command = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseBackupPath);
-        $executionResult = $this->getLocalMachineHelper()->execute($command, null, false);
+        $sshCommand = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseBackupPath);
+        $executionResult = $this->getLocalMachineHelper()->execute($sshCommand, null, false);
         if (0 !== $executionResult['exit_code']) {
             throw new TerminusException(sprintf('Failed importing database: %s', $executionResult['stderr']));
+        }
+    }
+
+    /**
+     * Imports Drupal files to the site.
+     *
+     * @param \Pantheon\Terminus\Models\Environment $env
+     *   The environment.
+     * @param string $filesPath
+     *   The path to the Drupal files directory.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function importFiles(Environment $env, string $filesPath): void
+    {
+        $this->log()->notice('Importing Drupal files...');
+
+        if (!is_dir($filesPath)) {
+            throw new TerminusNotFoundException(sprintf('Drupal files not found in %s.', $filesPath));
+        }
+
+        $sftpInfo = $env->sftpConnectionInfo();
+        $rsyncCommand = sprintf(
+            "rsync -rLz --size-only --checksum --ipv4 -e 'ssh -p 2222' %s/. --temp-dir=~/tmp/ %s@%s:files/",
+            $filesPath,
+            $sftpInfo['username'],
+            $sftpInfo['host']
+        );
+
+        $executionResult = $this->getLocalMachineHelper()->execute($rsyncCommand, null, false);
+        if (0 !== $executionResult['exit_code']) {
+            throw new TerminusException(sprintf('Failed importing Drupal files: %s', $executionResult['stderr']));
         }
     }
 
