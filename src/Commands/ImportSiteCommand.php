@@ -50,17 +50,23 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @command conversion:import-site
      *
      * @option override Override files on archive extraction if exists.
-     * @option skip_site_creation Skip creating a new site.
      * @option org Organization name for a new site.
      * @option site_label Site label for a new site.
      * @option code Import code.
-     * @option files Import Drupal files.
+     * @option code_path Import code from specified directory. Has higher priority over "path" argument.
      * @option db Import database.
+     * @option db_path Import database from specified dump file. Has higher priority over "path" argument.
+     * @option files Import Drupal files.
+     * @option files_path Import Drupal files from specified directory. Has higher priority over "path" argument.
      *
      * @param string $site_name
      *   The machine name of the site.
-     * @param string $archive_path
-     *   The full path to the archive file.
+     * @param string|null $path
+     *   The full path to a single archive file (*.tar.gz) or a directory with components to import.
+     *   May contain the following components:
+     *   1) code ("code" directory);
+     *   2) database dump file ("database/database.sql" file);
+     *   3) Drupal files ("files" directory).
      * @param array $options
      *   The commandline options.
      *
@@ -73,57 +79,83 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function importSite(
         string $site_name,
-        string $archive_path,
-        array $options = [
+        string $path = null,
+        array  $options = [
             'override' => null,
-            'skip_site_creation' => null,
             'site_label' => null,
             'org' => null,
             'code' => null,
-            'files' => null,
+            'code_path' => null,
             'db' => null,
+            'db_path' => null,
+            'files' => null,
+            'files_path' => null,
         ]
     ): void {
-        if (!is_file($archive_path)) {
-            throw new TerminusNotFoundException(sprintf('Archive %s not found.', $archive_path));
+        $extractDir = null;
+        if (null !== $path) {
+            $extractDir = is_dir($path) ? $path : $this->extractArchive($path, $options);
         }
 
-        if (!$options['skip_site_creation']) {
-            if ($this->sites()->nameIsTaken($site_name)) {
-                throw new TerminusException(sprintf('The site name %s is already taken.', $site_name));
+        if (!$options['code'] && !$options['files'] && !$options['db']) {
+            $options['code'] = $options['files'] = $options['db'] = true;
+        }
+
+        foreach (['code' => 'code', 'db' => 'database', 'files' => 'files'] as $component => $label) {
+            // Validate requested components have sources.
+            if ($options[$component] && null === $extractDir && null === $options[$component . '_path']) {
+                throw new TerminusException(
+                    sprintf(
+                        <<<EOD
+Missing either "active_path" input or "%s_path" option for the %s component.
+EOD,
+                        $component,
+                        $label
+                    )
+                );
+            }
+        }
+
+        if ($this->sites()->nameIsTaken($site_name)) {
+            if (!$this->input()->getOption('yes') && !$this->io()
+                    ->confirm(
+                        sprintf(
+                            'Can\'t create site. %s already exists. Proceed to import to %s site?',
+                            $site_name,
+                            $site_name
+                        ),
+                        false
+                    )
+            ) {
+                return;
             }
 
-            $this->createSite($site_name, $options);
-        } else {
             $this->setSite($site_name);
             if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')) {
                 throw new TerminusException(
                     sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID)
                 );
             }
+        } else {
+            $this->createSite($site_name, $options);
         }
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site()->getEnvironments()->get('dev');
 
-        $extractDir = $this->extractArchive($archive_path, $options);
-
-        if (!$options['code'] && !$options['files'] && !$options['db']) {
-            $options['code'] = $options['files'] = $options['db'] = true;
-        }
-
         if ($options['code']) {
-            $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
+            $codeComponentPath = $options['code_path'] ?? Files::buildPath($extractDir, self::COMPONENT_CODE);
             $this->importCode($devEnv, $codeComponentPath);
         }
 
         if ($options['db']) {
-            $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
+            $databaseComponentPath = $options['db_path']
+                ?? Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
             $this->importDatabase($devEnv, $databaseComponentPath);
         }
 
         if ($options['files']) {
-            $filesComponentPath = Files::buildPath($extractDir, self::COMPONENT_FILES);
+            $filesComponentPath = $options['files_path'] ?? Files::buildPath($extractDir, self::COMPONENT_FILES);
             $this->importFiles($devEnv, $filesComponentPath);
         }
 
@@ -151,7 +183,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 
         if (!is_dir($codePath)) {
             throw new TerminusNotFoundException(
-                sprintf('Code files not found in %s.', $codePath)
+                sprintf('Directory %s not found.', $codePath)
             );
         }
 
@@ -225,7 +257,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         $this->log()->notice('Importing Drupal files...');
 
         if (!is_dir($filesPath)) {
-            throw new TerminusNotFoundException(sprintf('Drupal files not found in %s.', $filesPath));
+            throw new TerminusNotFoundException(sprintf('Directory %s not found.', $filesPath));
         }
 
         $sftpInfo = $env->sftpConnectionInfo();
