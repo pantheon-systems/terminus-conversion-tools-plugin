@@ -77,18 +77,15 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             throw new TerminusException(sprintf('The site name %s is already taken.', $site_name));
         }
 
-        $extractDir = $this->extractArchive($archive_path, $options);
-
-        $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
-        if (!is_dir($codeComponentPath)) {
-            throw new TerminusException(sprintf('Missing the code component in the archive (%s).', $codeComponentPath));
-        }
-
+        // @todo: add an option to skip site create operation (validate for required upstream in that case).
         $this->createSite($site_name, $options);
 
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site()->getEnvironments()->get('dev');
 
+        $extractDir = $this->extractArchive($archive_path, $options);
+
+        $codeComponentPath = Files::buildPath($extractDir, self::COMPONENT_CODE);
         $this->importCode($devEnv, $codeComponentPath);
 
         $databaseComponentPath = Files::buildPath($extractDir, self::COMPONENT_DATABASE, 'database.sql');
@@ -115,6 +112,12 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     private function importCode(Environment $env, string $codeComponentPath)
     {
         $this->log()->notice('Importing code from the archive...');
+
+        if (!is_dir($codeComponentPath)) {
+            throw new TerminusNotFoundException(
+                sprintf('Missing the code component in the archive (%s).', $codeComponentPath)
+            );
+        }
 
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
@@ -147,6 +150,10 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     private function importDatabase(Environment $env, string $databaseBackupPath): void
     {
         $this->log()->notice('Importing database from the archive...');
+
+        if (!is_file($databaseBackupPath)) {
+            throw new TerminusNotFoundException(sprintf('Backup file %s not found', $databaseBackupPath));
+        }
 
         $sftpInfo = $env->sftpConnectionInfo();
         $commandPrefix = sprintf(
