@@ -58,7 +58,6 @@ final class ConversionCommandsDrops9UpstreamTest extends ConversionCommandsUpstr
             'ctools',
             'pathauto',
             'google_analytics',
-            'adminimal_theme',
             'custom1',
             'custom2',
             'custom3',
