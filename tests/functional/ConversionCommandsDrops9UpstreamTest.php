@@ -45,6 +45,28 @@ final class ConversionCommandsDrops9UpstreamTest extends ConversionCommandsUpstr
 
     /**
      * @inheritdoc
+     */
+    protected function getProjects(): array
+    {
+        return [
+            'webform',
+            'metatag',
+            'token',
+            'entity',
+            'imce',
+            'field_group',
+            'ctools',
+            'pathauto',
+            'google_analytics',
+            'adminimal_theme',
+            'custom1',
+            'custom2',
+            'custom3',
+        ];
+    }
+
+    /**
+     * @inheritdoc
      *
      * @group upstream_drops9
      */
