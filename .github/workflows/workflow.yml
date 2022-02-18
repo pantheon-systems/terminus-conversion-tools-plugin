@@ -34,6 +34,8 @@ jobs:
         testing_groups:
           - name: on drops-8 upstream
             group: upstream_drops8
+          - name: on drops-9 upstream
+            group: upstream_drops9
           - name: on empty upstream
             group: upstream_empty
           - name: on drupal-project upstream
@@ -53,6 +55,7 @@ jobs:
       TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_RECOMMENDED_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:
