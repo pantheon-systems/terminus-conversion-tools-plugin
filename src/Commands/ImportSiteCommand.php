@@ -371,7 +371,7 @@ EOD,
         ['filename' => $archiveFileName] = pathinfo($path);
         $archiveFileName = str_replace('.tar', '', $archiveFileName);
 
-        $extractDir = dirname($path) . DIRECTORY_SEPARATOR . $archiveFileName;
+        $extractDir = Files::buildPath(dirname($path), $archiveFileName);
         if (is_dir($extractDir)) {
             if ($options['override']) {
                 $this->fs->remove($extractDir);
