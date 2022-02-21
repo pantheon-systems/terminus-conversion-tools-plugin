@@ -16,7 +16,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
     use ConversionCommandsTrait;
 
     /**
-     * Restore the master branch to the state before converting a standard Drupal8 site into a Drupal8 site managed by
+     * Restore the master branch to the state before converting a standard Drupal site into a Drupal site managed by
      * Composer.
      *
      * @command conversion:restore-master

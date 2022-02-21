@@ -7,7 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
-use Pantheon\TerminusConversionTools\Utils\Drupal8Projects;
+use Pantheon\TerminusConversionTools\Utils\DrupalProjects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
@@ -33,12 +33,17 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private bool $isWebRootSite;
 
     /**
-     * @var \Pantheon\TerminusConversionTools\Utils\Drupal8Projects
+     * @var \Pantheon\TerminusConversionTools\Utils\DrupalProjects
      */
-    private Drupal8Projects $drupal8Projects;
+    private DrupalProjects $drupalProjects;
 
     /**
-     * Converts a standard Drupal8 site into a Drupal8 site managed by Composer.
+     * @var array
+     */
+    private array $originalRootComposerJson;
+
+    /**
+     * Converts a standard Drupal site into a Drupal site managed by Composer.
      *
      * @command conversion:composer
      *
@@ -84,14 +89,14 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
-        $this->drupal8Projects = new Drupal8Projects($this->getDrupalAbsolutePath());
+        $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
         $this->setComposer($this->getLocalSitePath());
 
-        $contribProjects = $this->getContribDrupal8Projects();
+        $contribProjects = $this->getContribDrupalProjects();
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
-        $originalRootComposerJson = $this->getRootComposerJson();
+        $this->originalRootComposerJson = $this->getRootComposerJson();
 
         $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL);
         if ($isDefaultConfigFilesExist) {
@@ -113,12 +118,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
 
-        $missingPackages = $this->getMissingComposerPackages($originalRootComposerJson, $currentComposerJson);
+        $missingPackages = $this->getMissingComposerPackages($currentComposerJson);
         $this->addComposerPackages($missingPackages);
         $this->log()->notice('Composer require and require-dev sections have been migrated. Look at the logs for any errors in the process.');
         $this->log()->notice('Please note that other composer.json sections: repositories, config, extra, etc should be manually migrated if needed.');
 
-        $this->copyComposerPackagesConfiguration($originalRootComposerJson);
+        $this->copyComposerPackagesConfiguration();
 
 
 
@@ -187,11 +192,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copy composer well-known packages configuration.
      */
-    private function copyComposerPackagesConfiguration($originalRootComposerJson)
+    private function copyComposerPackagesConfiguration()
     {
-        $this->copyComposerPatchesConfiguration($originalRootComposerJson);
-        $this->copyComposerInstallersExtenderConfiguration($originalRootComposerJson);
-        $this->copyExtraComposerInstallersConfiguration($originalRootComposerJson);
+        $this->copyComposerPatchesConfiguration();
+        $this->copyComposerInstallersExtenderConfiguration();
+        $this->copyExtraComposerInstallersConfiguration();
         if ($this->getGit()->isAnythingToCommit()) {
             $this->getGit()->commit('Copy extra composer configuration.');
         } else {
@@ -202,7 +207,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copy cweagans/composer-patches configuration if exists.
      */
-    private function copyComposerPatchesConfiguration($originalRootComposerJson)
+    private function copyComposerPatchesConfiguration()
     {
         $packageName = 'cweagans/composer-patches';
         $extraKeys = [
@@ -212,13 +217,13 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             'patches-ignore',
             'composer-exit-on-patch-failure',
         ];
-        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+        if (!isset($this->originalRootComposerJson['require'][$packageName]) && !isset($this->originalRootComposerJson['require-dev'][$packageName])) {
             return;
         }
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
         foreach ($extraKeys as $key) {
-            if (isset($originalRootComposerJson['extra'][$key])) {
-                $currentComposerJson['extra'][$key] = $originalRootComposerJson['extra'][$key];
+            if (isset($this->originalRootComposerJson['extra'][$key])) {
+                $currentComposerJson['extra'][$key] = $this->originalRootComposerJson['extra'][$key];
                 if ($key === 'patches-file') {
                     $this->log()->warning('cweagans/composer-patches patches-file option was copied but you should manually copy the patches file.');
                 }
@@ -230,17 +235,17 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copy oomphinc/composer-installers-extender configuration if exists.
      */
-    private function copyComposerInstallersExtenderConfiguration($originalRootComposerJson)
+    private function copyComposerInstallersExtenderConfiguration()
     {
         $packageName = 'oomphinc/composer-installers-extender';
-        if (!isset($originalRootComposerJson['require'][$packageName]) && !isset($originalRootComposerJson['require-dev'][$packageName])) {
+        if (!isset($this->originalRootComposerJson['require'][$packageName]) && !isset($this->originalRootComposerJson['require-dev'][$packageName])) {
             return;
         }
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
-        if (isset($originalRootComposerJson['extra']['installer-types'])) {
-            $installerTypes = $originalRootComposerJson['extra']['installer-types'];
-            $currentComposerJson['extra']['installer-types'] = $originalRootComposerJson['extra']['installer-types'];
-            foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+        if (isset($this->originalRootComposerJson['extra']['installer-types'])) {
+            $installerTypes = $this->originalRootComposerJson['extra']['installer-types'];
+            $currentComposerJson['extra']['installer-types'] = $this->originalRootComposerJson['extra']['installer-types'];
+            foreach ($this->originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
                 if (array_intersect($installerTypes, $types)) {
                     $currentComposerJson['extra']['installer-paths'][$path] = $types;
                 }
@@ -252,7 +257,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     /**
      * Copy extra composer/installer configuration if exists.
      */
-    private function copyExtraComposerInstallersConfiguration($originalRootComposerJson)
+    private function copyExtraComposerInstallersConfiguration()
     {
         $currentComposerJson = $this->getComposer()->getComposerJsonData();
         $currentTypes = [];
@@ -262,7 +267,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $currentTypes += $types;
         }
 
-        foreach ($originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
+        foreach ($this->originalRootComposerJson['extra']['installer-paths'] ?? [] as $path => $types) {
             if (!isset($installerPaths[$path])) {
                 foreach ($types as $type) {
                     if (in_array($type, $currentTypes)) {
@@ -300,11 +305,11 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
      */
-    private function getMissingComposerPackages(array $originalComposerJson, array $currentComposerJson): array
+    private function getMissingComposerPackages(array $currentComposerJson): array
     {
         $missingPackages = [];
         foreach (['require', 'require-dev'] as $section) {
-            foreach ($originalComposerJson[$section] ?? [] as $package => $version) {
+            foreach ($this->originalRootComposerJson[$section] ?? [] as $package => $version) {
                 if (isset($currentComposerJson[$section][$package])) {
                     continue;
                 }
@@ -315,7 +320,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Detects and returns the list of Drupal8 libraries.
+     * Detects and returns the list of Drupal libraries.
      *
      * @return array
      *   The list of Composer package names.
@@ -326,7 +331,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function getLibraries(): array
     {
         $this->log()->notice(sprintf('Detecting libraries in "%s"...', $this->getDrupalAbsolutePath()));
-        $projects = $this->drupal8Projects->getLibraries();
+        $projects = $this->drupalProjects->getLibraries();
 
         if (0 === count($projects)) {
             $this->log()->notice(sprintf('No libraries were detected in "%s"', $this->getDrupalAbsolutePath()));
@@ -350,7 +355,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Detects and returns the list of contrib Drupal8 projects (modules and themes).
+     * Detects and returns the list of contrib Drupal projects (modules and themes).
      *
      * @return array
      *   The list of contrib modules and themes where:
@@ -360,12 +365,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function getContribDrupal8Projects(): array
+    private function getContribDrupalProjects(): array
     {
         $this->log()->notice(
             sprintf('Detecting contrib modules and themes in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $projects = $this->drupal8Projects->getContribProjects();
+        $projects = $this->drupalProjects->getContribProjects();
         if (0 === count($projects)) {
             $this->log()->notice(
                 sprintf('No contrib modules or themes were detected in "%s"', $this->getDrupalAbsolutePath())
@@ -402,12 +407,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->log()->notice(
             sprintf('Detecting custom projects (modules and themes) in "%s"...', $this->getDrupalAbsolutePath())
         );
-        $customModuleDirs = $this->drupal8Projects->getCustomModuleDirectories();
+        $customModuleDirs = $this->drupalProjects->getCustomModuleDirectories();
         foreach ($customModuleDirs as $path) {
             $this->log()->notice(sprintf('Custom modules found in "%s"', $path));
         }
 
-        $customThemeDirs = $this->drupal8Projects->getCustomThemeDirectories();
+        $customThemeDirs = $this->drupalProjects->getCustomThemeDirectories();
         foreach ($customThemeDirs as $path) {
             $this->log()->notice(sprintf('Custom themes found in "%s"', $path));
         }
@@ -480,7 +485,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     {
         $this->log()->notice('Adding packages to Composer...');
         try {
-            foreach ($this->getDrupal8ComposerDependencies() as $dependency) {
+            foreach ($this->getDrupalComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
                 if ($dependency['is_dev']) {
                     $arguments[] = '--dev';
@@ -525,7 +530,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Returns the list of Drupal8 composer dependencies.
+     * Returns the list of Drupal composer dependencies.
      *
      * @return array[]
      *   Each dependency is an array that consists of the following keys:
@@ -533,22 +538,28 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
      */
-    private function getDrupal8ComposerDependencies(): array
+    private function getDrupalComposerDependencies(): array
     {
+        $drupalConstraint = $this->originalRootComposerJson['require']['drupal/core-recommended']
+            ?? $this->originalRootComposerJson['require']['drupal/core']
+            ?? '^8.9';
+
+        $drupalIntegrationsConstraint = preg_match('^[^0-9]*9', $drupalConstraint) ? '^9' : '^8';
+
         return [
             [
                 'package' => 'drupal/core-recommended',
-                'version' => '^8.9',
+                'version' => $drupalConstraint,
                 'is_dev' => false,
             ],
             [
                 'package' => 'pantheon-systems/drupal-integrations',
-                'version' => '^8',
+                'version' => $drupalIntegrationsConstraint,
                 'is_dev' => false,
             ],
             [
                 'package' => 'drupal/core-dev',
-                'version' => '^8.9',
+                'version' => $drupalConstraint,
                 'is_dev' => true,
             ],
         ];

@@ -1,6 +1,6 @@
 {
     "name": "pantheon-systems/terminus-conversion-tools-plugin",
-    "description": "Conversion Tools is a Terminus plugin that contain commands to convert a standard Drupal8 site into a composer managed one.",
+    "description": "Conversion Tools is a Terminus plugin that contain commands to convert a standard Drupal site into a composer managed one.",
     "type": "terminus-plugin",
     "license": "MIT",
     "minimum-stability": "dev",

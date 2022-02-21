@@ -5,9 +5,9 @@ namespace Pantheon\TerminusConversionTools\Utils;
 use Symfony\Component\Finder\Finder;
 
 /**
- * Class Drupal8Projects.
+ * Class DrupalProjects.
  */
-class Drupal8Projects
+class DrupalProjects
 {
     /**
      * @var string
@@ -15,7 +15,7 @@ class Drupal8Projects
     private string $siteRootPath;
 
     /**
-     * Drupal8Projects constructor.
+     * DrupalProjects constructor.
      */
     public function __construct(string $siteRootPath)
     {
@@ -23,10 +23,10 @@ class Drupal8Projects
     }
 
     /**
-     * Detects and returns the list of contrib Drupal8 projects.
+     * Detects and returns the list of contrib Drupal projects.
      *
      * @return array
-     *   The list of contrib Drupal8 projects where the value is the following metadata:
+     *   The list of contrib Drupal projects where the value is the following metadata:
      *     "name" - the project name;
      *     "version" - the version of the project;
      *     "path" - the project's path.
@@ -92,7 +92,7 @@ class Drupal8Projects
     }
 
     /**
-     * Detects and returns the list of Drupal8 libraries.
+     * Detects and returns the list of Drupal libraries.
      *
      * @return array
      */
