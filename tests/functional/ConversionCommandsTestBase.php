@@ -241,7 +241,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      */
     protected function assertPagesExists(string $env): void
     {
-        $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
+        $baseUrl = $this->getBaseTestUrl($env);
         $this->assertEqualsInAttempts(
             fn() => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
             200,
@@ -259,6 +259,18 @@ abstract class ConversionCommandsTestBase extends TestCase
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
             );
         }
+    }
+
+    /**
+     * Returns the fixture site URL.
+     *
+     * @param string $env
+     *
+     * @return string
+     */
+    protected function getBaseTestUrl(string $env): string
+    {
+        return  $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
     }
 
     /**
