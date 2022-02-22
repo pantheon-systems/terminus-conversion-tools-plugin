@@ -44,7 +44,10 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @return string
      */
-    abstract protected function getUpstreamIdEnvName(): string;
+    protected function getUpstreamIdEnvName(): string
+    {
+        return '';
+    }
 
     /**
      * Returns the initial and expected (real) upstream ID of a fixture site.

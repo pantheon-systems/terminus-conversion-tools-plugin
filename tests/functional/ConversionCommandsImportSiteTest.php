@@ -112,12 +112,4 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             'custom2' => 'custom2/page',
         ];
     }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getUpstreamIdEnvName(): string
-    {
-        return 'n/a';
-    }
 }
