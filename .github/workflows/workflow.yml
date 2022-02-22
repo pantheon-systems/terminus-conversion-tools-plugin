@@ -32,20 +32,22 @@ jobs:
     strategy:
       matrix:
         testing_groups:
-          - name: on drops-8 upstream
-            group: upstream_drops8
-          - name: on drops-9 upstream
-            group: upstream_drops9
-          - name: on empty upstream
-            group: upstream_empty
-          - name: on drupal-project upstream
-            group: upstream_drupal_project
-          - name: conversion:advise command scenarios on empty upstream
-            group: advise_scenarios_empty_upstream
-          - name: conversion:push-to-multidev command
-            group: push_to_md_command
-          - name: conversion:enable-ic command
-            group: enable_integrated_composer_command
+#          - name: on drops-8 upstream
+#            group: upstream_drops8
+#          - name: on drops-9 upstream
+#            group: upstream_drops9
+#          - name: on empty upstream
+#            group: upstream_empty
+#          - name: on drupal-project upstream
+#            group: upstream_drupal_project
+#          - name: conversion:advise command scenarios on empty upstream
+#            group: advise_scenarios_empty_upstream
+#          - name: conversion:push-to-multidev command
+#            group: push_to_md_command
+#          - name: conversion:enable-ic command
+#            group: enable_integrated_composer_command
+          - name: conversion:import-site command
+            group: site_import
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
