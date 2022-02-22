@@ -3,6 +3,7 @@
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
 use Exception;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpClient\HttpClient;
 
@@ -98,6 +99,19 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             fn() => $this->httpClient->request('HEAD', $testFileUrl)->getStatusCode(),
             200,
             sprintf('Test file "%s" not found', $testFileUrl)
+        );
+
+        $gitignoreFile = Files::buildPath(
+            getenv('HOME'),
+            'pantheon-local-copies',
+            $this->siteName . '_terminus_conversion_plugin',
+            '.gitignore',
+        );
+        $gitignoreContents = file_get_contents($gitignoreFile);
+        $this->assertTrue(
+            false !== strpos($gitignoreContents, 'foo_bar_ignore')
+            && false !== strpos($gitignoreContents, '# Ignore rules imported from the code archive.'),
+            '.gitignore file must contain a custom rule imported from archive'
         );
     }
 
