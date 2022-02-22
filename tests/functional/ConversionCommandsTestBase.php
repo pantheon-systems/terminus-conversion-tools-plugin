@@ -300,7 +300,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     /**
      * Adds site's Git host to known_hosts file.
      */
-    private function addGitHostToKnownHosts(): void
+    protected function addGitHostToKnownHosts(): void
     {
         $gitInfo = $this->terminusJsonResponse(
             sprintf('connection:info %s.%s --fields=git_host,git_port', $this->siteName, self::DEV_ENV)
@@ -328,7 +328,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      * @param string $message
      *   Message.
      */
-    private function assertEqualsInAttempts(
+    protected function assertEqualsInAttempts(
         callable $callable,
         $expected,
         string $message = ''
