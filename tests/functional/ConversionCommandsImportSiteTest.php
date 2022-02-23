@@ -36,9 +36,22 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         );
 
         $this->archiveFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . self::SITE_ARCHIVE_FILE_NAME;
-        if (!file_put_contents($this->archiveFilePath, fopen($archiveUrl, 'r'))) {
-            throw new Exception(sprintf('Failed to download site archive %s', $archiveUrl));
-        }
+        $this->assertNotEqualsInAttempts(
+            function () use ($archiveUrl) {
+                $f = fopen($archiveUrl, 'r');
+                if (!$f) {
+                    return false;
+                }
+
+                if (!file_put_contents($this->archiveFilePath, $f)) {
+                    return false;
+                }
+
+                return true;
+            },
+            false,
+            sprintf('Failed to download site archive %s', $archiveUrl)
+        );
 
         $this->siteName = uniqid('fixture-term3-conv-plugin-site-import-');
         $command = sprintf(
