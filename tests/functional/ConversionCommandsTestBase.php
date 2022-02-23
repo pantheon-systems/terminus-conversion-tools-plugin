@@ -334,7 +334,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     }
 
     /**
-     * Asserts the actual result is equal to the expected one in multiple attempts.
+     * Asserts result of the callback using PHPUnit assert method.
      *
      * @param callable $callable
      *   Callable which provides the actual result.
@@ -342,11 +342,14 @@ abstract class ConversionCommandsTestBase extends TestCase
      *   Expected result.
      * @param string $message
      *   Message.
+     * @param string $methodName
+     *   PHPUnit assert method name.
      */
-    protected function assertEqualsInAttempts(
+    private function assertInAttempts(
         callable $callable,
         $expected,
-        string $message = ''
+        string $message,
+        string $methodName
     ): void {
         $attempts = 18;
         $intervalSeconds = 10;
@@ -361,6 +364,42 @@ abstract class ConversionCommandsTestBase extends TestCase
             $attempts--;
         } while ($attempts > 0);
 
-        $this->assertEquals($expected, $actual, $message);
+        $this->{$methodName}($expected, $actual, $message);
+    }
+
+    /**
+     * Asserts the actual result IS EQUAL to the expected one in multiple attempts.
+     *
+     * @param callable $callable
+     *   Callable which provides the actual result.
+     * @param mixed $expected
+     *   Expected result.
+     * @param string $message
+     *   Message.
+     */
+    protected function assertEqualsInAttempts(
+        callable $callable,
+        $expected,
+        string $message = ''
+    ): void {
+        $this->assertInAttempts($callable, $expected, $message, 'assertEquals');
+    }
+
+    /**
+     * Asserts the actual result IS NOT EQUAL to the expected one in multiple attempts.
+     *
+     * @param callable $callable
+     *   Callable which provides the actual result.
+     * @param mixed $expected
+     *   Expected result.
+     * @param string $message
+     *   Message.
+     */
+    protected function assertNotEqualsInAttempts(
+        callable $callable,
+        $expected,
+        string $message = ''
+    ): void {
+        $this->assertInAttempts($callable, $expected, $message, 'assertNotEquals');
     }
 }
