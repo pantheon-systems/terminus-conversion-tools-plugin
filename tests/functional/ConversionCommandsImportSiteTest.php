@@ -36,7 +36,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         );
 
         $this->archiveFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . self::SITE_ARCHIVE_FILE_NAME;
-        $this->assertNotEqualsInAttempts(
+        $this->assertEqualsInAttempts(
             function () use ($archiveUrl) {
                 $f = fopen($archiveUrl, 'r');
                 if (!$f) {
@@ -49,7 +49,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
 
                 return true;
             },
-            false,
+            true,
             sprintf('Failed to download site archive %s', $archiveUrl)
         );
 
