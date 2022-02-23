@@ -124,6 +124,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         $gitignoreContents = file_get_contents($gitignoreFile);
         $this->assertStringContainsString(
             '# Ignore rules imported from the code archive.' . PHP_EOL . 'foo_bar_ignore',
+            $gitignoreContents,
             '.gitignore file must contain a custom rule imported from archive'
         );
 
