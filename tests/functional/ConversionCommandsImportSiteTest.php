@@ -13,7 +13,15 @@ use Symfony\Component\HttpClient\HttpClient;
  */
 class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
 {
+    /**
+     * @var string
+     */
     private string $archiveFilePath;
+
+    /**
+     * @var string
+     */
+    private string $extractedPath;
 
     private const SITE_NAME = 'site-archive-d9';
     private const SITE_ARCHIVE_FILE_NAME = 'site-archive-d9.tar.gz';
@@ -51,6 +59,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             true,
             sprintf('Failed to download site archive %s', $archiveUrl)
         );
+        $this->extractedPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . basename($this->archiveFilePath, '.tar.gz');
 
         $this->siteName = uniqid('fixture-term3-conv-plugin-site-import-');
         $command = sprintf(
@@ -83,9 +92,8 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             $fs->remove($this->archiveFilePath);
         }
 
-        $extractedPath = basename($this->archiveFilePath, 'tar.gz');
-        if (is_dir($extractedPath)) {
-            $fs->remove($extractedPath);
+        if (is_dir($this->extractedPath)) {
+            $fs->remove($this->extractedPath);
         }
     }
 
@@ -127,8 +135,15 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             '.gitignore file must contain a custom rule imported from archive'
         );
 
+        [, $exitCode, $error] = self::callTerminus(sprintf('%s --yes', $command));
+        $this->assertNotEquals(0, $exitCode);
+        $this->assertStringContainsString(
+            sprintf('Extract directory %s already exists (use "--override" option).', $this->extractedPath),
+            $error
+        );
+
         $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, self::EMPTY_UPSTREAM_ID));
-        [$output, $exitCode, $error] = self::callTerminus($command . ' --yes');
+        [, $exitCode, $error] = self::callTerminus(sprintf('%s --override --yes', $command));
         $this->assertNotEquals(0, $exitCode);
         $this->assertStringContainsString(
             sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID),
