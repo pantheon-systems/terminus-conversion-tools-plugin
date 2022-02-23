@@ -2,7 +2,6 @@
 
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
-use Exception;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpClient\HttpClient;
