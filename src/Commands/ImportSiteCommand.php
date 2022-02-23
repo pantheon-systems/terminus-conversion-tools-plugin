@@ -237,7 +237,13 @@ EOD,
         $sshCommand = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseBackupPath);
         $executionResult = $this->getLocalMachineHelper()->execute($sshCommand, null, false);
         if (0 !== $executionResult['exit_code']) {
-            throw new TerminusException(sprintf('Failed importing database: %s', $executionResult['stderr']));
+            throw new TerminusException(
+                sprintf(
+                    'Failed importing database: exit code %s, error output - "%s"',
+                    $executionResult['exit_code'],
+                    $executionResult['stderr']
+                )
+            );
         }
     }
 
@@ -270,7 +276,13 @@ EOD,
 
         $executionResult = $this->getLocalMachineHelper()->execute($rsyncCommand, null, false);
         if (0 !== $executionResult['exit_code']) {
-            throw new TerminusException(sprintf('Failed importing Drupal files: %s', $executionResult['stderr']));
+            throw new TerminusException(
+                sprintf(
+                    'Failed importing Drupal files: exit code %s, error output - "%s"',
+                    $executionResult['exit_code'],
+                    $executionResult['stderr']
+                )
+            );
         }
     }
 
