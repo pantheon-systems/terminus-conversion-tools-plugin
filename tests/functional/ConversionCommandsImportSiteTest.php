@@ -19,6 +19,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
     private const SITE_NAME = 'site-archive-d9';
     private const SITE_ARCHIVE_FILE_NAME = 'site-archive-d9.tar.gz';
     private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
+    private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
      * @inheritdoc
@@ -108,10 +109,17 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             '.gitignore',
         );
         $gitignoreContents = file_get_contents($gitignoreFile);
-        $this->assertTrue(
-            false !== strpos($gitignoreContents, 'foo_bar_ignore')
-            && false !== strpos($gitignoreContents, '# Ignore rules imported from the code archive.'),
+        $this->assertStringContainsString(
+            '# Ignore rules imported from the code archive.' . PHP_EOL . 'foo_bar_ignore',
             '.gitignore file must contain a custom rule imported from archive'
+        );
+
+        $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, self::EMPTY_UPSTREAM_ID));
+        [$output, $exitCode, $error] = self::callTerminus($command . ' --yes');
+        $this->assertNotEquals(0, $exitCode);
+        $this->assertStringContainsString(
+            sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID),
+            $output
         );
     }
 
