@@ -132,7 +132,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         $this->assertNotEquals(0, $exitCode);
         $this->assertStringContainsString(
             sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID),
-            $output
+            $error
         );
     }
 
