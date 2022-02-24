@@ -107,7 +107,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
                 throw new TerminusException(
                     sprintf(
                         <<<EOD
-Missing either "active_path" input or "%s_path" option for the %s component.
+Missing either "path" input or "%s_path" option for the %s component.
 EOD,
                         $component,
                         $label
