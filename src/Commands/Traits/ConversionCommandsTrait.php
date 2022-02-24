@@ -96,6 +96,7 @@ trait ConversionCommandsTrait
      * Returns root composer.json file contents.
      *
      * @param string|null $filePath
+     *   Use specific composer.json file, otherwise defaults to local site's one.
      *
      * @return array
      *
