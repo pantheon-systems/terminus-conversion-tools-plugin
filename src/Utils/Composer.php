@@ -110,11 +110,23 @@ class Composer
     }
 
     /**
-     * Write given array as composer.json.
+     * Writes given array as composer.json file.
+     *
+     * @param array $data
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
-    public function writeComposerJsonData(array $data)
+    public function writeComposerJsonData(array $data): void
     {
         $filePath = Files::buildPath($this->projectPath, 'composer.json');
-        return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE) . PHP_EOL);
+        $dataEncoded = json_encode(
+            $data,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_LINE_TERMINATORS | JSON_UNESCAPED_UNICODE
+        ) . PHP_EOL;
+        if (file_put_contents($filePath, $dataEncoded)) {
+            return;
+        }
+
+        throw new ComposerException(sprintf('Failed writing composer.json to %', $filePath));
     }
 }
