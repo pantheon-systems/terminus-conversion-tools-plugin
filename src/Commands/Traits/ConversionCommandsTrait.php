@@ -95,15 +95,16 @@ trait ConversionCommandsTrait
     /**
      * Returns root composer.json file contents.
      *
+     * @param string|null $filePath
+     *
      * @return array
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function getComposerJson(?string $dir = null): array
+    private function getComposerJson(?string $filePath = null): array
     {
-        $dir = $dir ?? $this->getLocalSitePath();
-        $filePath = Files::buildPath($dir, 'composer.json');
+        $filePath = $filePath ?? Files::buildPath($this->getLocalSitePath(), 'composer.json');
         if (!file_exists($filePath)) {
             return [];
         }
