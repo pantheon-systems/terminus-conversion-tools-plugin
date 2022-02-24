@@ -7,13 +7,12 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Exceptions\TerminusNotFoundException;
 use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Site\SiteAwareInterface;
-use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportSiteCommand.
@@ -21,7 +20,7 @@ use Symfony\Component\Yaml\Yaml;
 class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
-    use ComposerAwareTrait;
+    use MigrateComposerJsonTrait;
 
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -333,35 +332,15 @@ EOD,
      */
     private function mergeComposerJsonFile(string $codeComponentPath): void
     {
-        $this->log()->notice('Checking Composer dependencies...');
-
         $composerJsonArchiveFile = Files::buildPath($codeComponentPath, 'composer.json');
         if (!is_file($composerJsonArchiveFile)) {
             throw new TerminusNotFoundException(sprintf('%s not found.', $composerJsonArchiveFile));
         }
 
-        $this->setComposer($this->getLocalSitePath());
-        $composerJsonRepoFile = Files::buildPath($this->getLocalSitePath(), 'composer.json');
-        $composerJsonRepoFileContent = Yaml::parseFile($composerJsonRepoFile);
-        $composerJsonArchiveFileContent = Yaml::parseFile($composerJsonArchiveFile);
-
-        foreach (['require', 'require-dev'] as $section) {
-            foreach ($composerJsonArchiveFileContent[$section] ?? [] as $package => $versionConstraint) {
-                if (isset($composerJsonRepoFileContent[$section][$package])) {
-                    continue;
-                }
-
-                $this->log()->notice(sprintf('Adding package %s:%s...', $package, $versionConstraint));
-
-                $options = 'require' === $section ? [] : ['--dev'];
-                $this->getComposer()->require($package, $versionConstraint, ...$options);
-
-                $this->getGit()->commit(
-                    sprintf('Add %s package', $package),
-                    ['composer.json', 'composer.lock']
-                );
-            }
-        }
+        $this->migrateComposerJson(
+            $this->getComposerJson($composerJsonArchiveFile),
+            $this->getLocalSitePath()
+        );
     }
 
     /**
