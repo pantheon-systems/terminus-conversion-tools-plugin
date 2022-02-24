@@ -93,6 +93,25 @@ trait ConversionCommandsTrait
     }
 
     /**
+     * Returns root composer.json file contents.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function getComposerJson(?string $dir = null): array
+    {
+        $dir = $dir ?? $this->getLocalSitePath();
+        $filePath = Files::buildPath($dir, 'composer.json');
+        if (!file_exists($filePath)) {
+            return [];
+        }
+
+        return json_decode(file_get_contents($filePath), true);
+    }
+
+    /**
      * Creates the multidev environment.
      *
      * @param string $branch

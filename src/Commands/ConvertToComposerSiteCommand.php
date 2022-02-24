@@ -125,24 +125,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     }
 
     /**
-     * Returns root composer.json file contents.
-     *
-     * @return array
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Psr\Container\ContainerExceptionInterface
-     */
-    private function getComposerJson(): array
-    {
-        $filePath = Files::buildPath($this->getLocalSitePath(), 'composer.json');
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        return json_decode(file_get_contents($filePath), true);
-    }
-
-    /**
      * Returns TRUE if the site is a webroot-based site.
      *
      * @return bool
