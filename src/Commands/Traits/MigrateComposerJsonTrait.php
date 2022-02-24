@@ -6,8 +6,6 @@ use Throwable;
 
 /**
  * Trait MigrateComposerJsonTrait.
- *
- * @method log()
  */
 trait MigrateComposerJsonTrait
 {
@@ -23,9 +21,13 @@ trait MigrateComposerJsonTrait
      * Migrates composer.json components.
      *
      * @param array $sourceComposerJson
+     *   Content of the source composer.json file.
      * @param string $projectPath
+     *   Path to Composer project.
      * @param array $contribProjects
+     *   Drupal contrib dependencies.
      * @param array $libraryProjects
+     *   Drupal library dependencies.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
