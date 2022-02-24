@@ -37,6 +37,8 @@ trait MigrateComposerJsonTrait
         array  $contribProjects = [],
         array  $libraryProjects = []
     ): void {
+        $this->log()->notice('Migrating Composer project components...');
+
         $this->sourceComposerJson = $sourceComposerJson;
         $this->setComposer($projectPath);
 
@@ -66,7 +68,6 @@ EOD
      */
     private function addDrupalComposerPackages(array $contribPackages): void
     {
-        $this->log()->notice('Adding packages to Composer...');
         try {
             foreach ($this->getDrupalComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
@@ -183,7 +184,6 @@ EOD
      */
     private function addComposerPackages(array $packages): void
     {
-        $this->log()->notice('Adding packages to Composer...');
         foreach ($packages as $project) {
             if (is_string($project)) {
                 $project = [
