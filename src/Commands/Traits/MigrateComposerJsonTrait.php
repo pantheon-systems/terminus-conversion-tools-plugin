@@ -128,7 +128,7 @@ EOD
             ?? $this->sourceComposerJson['require']['drupal/core']
             ?? '^8.9';
 
-        $drupalIntegrationsConstraint = preg_match('^[^0-9]*9', $drupalConstraint) ? '^9' : '^8';
+        $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
 
         return [
             [
