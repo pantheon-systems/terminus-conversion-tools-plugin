@@ -78,14 +78,18 @@ EOD
                 }
 
                 $this->getComposer()->require(...$arguments);
-                $this->getGit()->commit(
-                    sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
-                );
-                $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
+                if ($this->getGit()->isAnythingToCommit()) {
+                    $this->getGit()->commit(
+                        sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
+                    );
+                    $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
+                }
             }
 
             $this->getComposer()->install('--no-dev');
-            $this->getGit()->commit('Install composer packages');
+            if ($this->getGit()->isAnythingToCommit()) {
+                $this->getGit()->commit('Install composer packages');
+            }
         } catch (Throwable $t) {
             $this->log()->warning(
                 sprintf(
