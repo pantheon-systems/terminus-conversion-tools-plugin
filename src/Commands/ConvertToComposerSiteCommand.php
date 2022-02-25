@@ -87,6 +87,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
+        $sourceComposerJson = $this->getComposerJson();
 
         $contribProjects = $this->getContribDrupalProjects();
         $libraryProjects = $this->getLibraries();
@@ -108,7 +109,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->copySettingsPhp();
 
         $this->migrateComposerJson(
-            $this->getComposerJson(),
+            $sourceComposerJson,
             $this->getLocalSitePath(),
             $contribProjects,
             $libraryProjects
