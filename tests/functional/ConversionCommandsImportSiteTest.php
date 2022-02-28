@@ -45,7 +45,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         $this->archiveFilePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . self::SITE_ARCHIVE_FILE_NAME;
         $this->assertEqualsInAttempts(
             function () use ($archiveUrl) {
-                $f = fopen($archiveUrl, 'r');
+                $f = @fopen($archiveUrl, 'r');
                 if (!$f) {
                     return false;
                 }
