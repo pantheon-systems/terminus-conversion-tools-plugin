@@ -50,7 +50,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @option override Override files on archive extraction if exists.
      * @option org Organization name for a new site.
-     * @option site_label Site label for a new site.
+     * @option site-label Site label for a new site.
      * @option code Import code.
      * @option code_path Import code from specified directory. Has higher priority over "path" argument.
      * @option db Import database.
@@ -81,7 +81,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         string $path = null,
         array  $options = [
             'override' => null,
-            'site_label' => null,
+            'site-label' => null,
             'org' => null,
             'code' => null,
             'code_path' => null,
@@ -397,7 +397,7 @@ EOD,
     private function createSite(string $site_name, array $options): void
     {
         $workflowOptions = [
-            'label' => $options['site_label'] ?: $site_name,
+            'label' => $options['site-label'] ?: $site_name,
             'site_name' => $site_name,
         ];
 
