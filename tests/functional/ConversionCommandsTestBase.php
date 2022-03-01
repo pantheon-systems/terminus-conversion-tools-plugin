@@ -102,6 +102,7 @@ abstract class ConversionCommandsTestBase extends TestCase
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
             sprintf('site:info %s', $this->siteName)
         )['upstream'];
+        sleep(15);
 
         if ($this->isCiEnv()) {
             $this->addGitHostToKnownHosts();
@@ -228,9 +229,14 @@ abstract class ConversionCommandsTestBase extends TestCase
     private function setUpProjects(): void
     {
         foreach ($this->getProjects() as $name) {
-            $this->terminus(
-                sprintf('drush %s.%s -- en %s', $this->siteName, self::DEV_ENV, $name),
-                ['-y']
+            $command = sprintf('drush %s.%s -y -- en %s', $this->siteName, self::DEV_ENV, $name);
+            $this->assertEqualsInAttempts(
+                function () use ($command) {
+                    [, $exitCode] = self::callTerminus($command);
+                    return $exitCode;
+                },
+                0,
+                sprintf('Failed enabling drupal project "%s" (%s)', $name, $command)
             );
         }
     }
