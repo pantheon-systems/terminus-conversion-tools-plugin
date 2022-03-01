@@ -91,9 +91,15 @@ abstract class ConversionCommandsTestBase extends TestCase
             $command,
             [sprintf('--org=%s', $this->getOrg())]
         );
-        $this->terminus(
-            sprintf('drush %s.%s -- site-install demo_umami', $this->siteName, self::DEV_ENV),
-            ['-y']
+
+        $installCommand = sprintf('drush %s.%s --yes -- site-install demo_umami', $this->siteName, self::DEV_ENV);
+        $this->assertEqualsInAttempts(
+            function () use ($installCommand) {
+                [, $exitCode] = self::callTerminus($installCommand);
+                return $exitCode;
+            },
+            0,
+            sprintf('Failed installing fixture site (%s)', $installCommand)
         );
 
         $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, self::DEV_ENV, 'git'));
