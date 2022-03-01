@@ -100,9 +100,15 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             $options['code'] = $options['files'] = $options['db'] = true;
         }
 
-        foreach (['code' => 'code', 'db' => 'database', 'files' => 'files'] as $component => $label) {
+        $components = ['code' => 'code', 'db' => 'database', 'files' => 'files'];
+        foreach ($components as $component => $label) {
+            if (!$options[$component]) {
+                unset($components[$component]);
+                continue;
+            }
+
             // Validate requested components have sources.
-            if ($options[$component] && null === $extractDir && null === $options[$component . '_path']) {
+            if (null === $extractDir && null === $options[$component . '_path']) {
                 throw new TerminusException(
                     sprintf(
                         <<<EOD
@@ -119,9 +125,13 @@ EOD,
             if (!$this->input()->getOption('yes') && !$this->io()
                     ->confirm(
                         sprintf(
-                            'Can\'t create site. %s already exists. Proceed to import to %s site?',
+                            <<<EOD
+Can\'t create site. %s already exists.
+Proceed to import to %s site (WARNING: this will overwrite %s)?
+EOD,
                             $site_name,
-                            $site_name
+                            $site_name,
+                            implode(', ', $components)
                         ),
                         false
                     )

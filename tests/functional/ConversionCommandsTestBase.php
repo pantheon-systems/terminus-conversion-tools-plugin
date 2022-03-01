@@ -92,7 +92,7 @@ abstract class ConversionCommandsTestBase extends TestCase
             [sprintf('--org=%s', $this->getOrg())]
         );
 
-        $installCommand = sprintf('drush %s.%s --yes -- site-install demo_umami', $this->siteName, self::DEV_ENV);
+        $installCommand = sprintf('-y drush %s.%s -- site-install demo_umami -y', $this->siteName, self::DEV_ENV);
         $this->assertEqualsInAttempts(
             function () use ($installCommand) {
                 [, $exitCode] = self::callTerminus($installCommand);
@@ -235,7 +235,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     private function setUpProjects(): void
     {
         foreach ($this->getProjects() as $name) {
-            $command = sprintf('drush %s.%s -y -- en %s', $this->siteName, self::DEV_ENV, $name);
+            $command = sprintf('-y drush %s.%s -- en %s -y', $this->siteName, self::DEV_ENV, $name);
             $this->assertEqualsInAttempts(
                 function () use ($command) {
                     [, $exitCode] = self::callTerminus($command);
