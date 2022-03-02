@@ -48,7 +48,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command conversion:import-site
      *
-     * @option override Override files on archive extraction if exists.
+     * @option overwrite Overwrite files on archive extraction if exists.
      * @option org Organization name for a new site.
      * @option site-label Site label for a new site.
      * @option code Import code.
@@ -80,7 +80,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         string $site_name,
         string $path = null,
         array  $options = [
-            'override' => null,
+            'overwrite' => null,
             'site-label' => null,
             'org' => null,
             'code' => null,
@@ -374,11 +374,11 @@ EOD,
 
         $extractDir = Files::buildPath(dirname($path), $archiveFileName);
         if (is_dir($extractDir)) {
-            if ($options['override']) {
+            if ($options['overwrite']) {
                 $this->fs->remove($extractDir);
             } else {
                 throw new TerminusException(
-                    sprintf('Extract directory %s already exists (use "--override" option).', $extractDir)
+                    sprintf('Extract directory %s already exists (use "--overwrite" option).', $extractDir)
                 );
             }
         }
