@@ -51,6 +51,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @option overwrite Overwrite files on archive extraction if exists.
      * @option org Organization name for a new site.
      * @option site-label Site label for a new site.
+     * @option region Specify the service region where the site should be created. See documentation for valid regions.
      * @option code Import code.
      * @option code_path Import code from specified directory. Has higher priority over "path" argument.
      * @option db Import database.
@@ -82,6 +83,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         array  $options = [
             'overwrite' => null,
             'site-label' => null,
+            'region' => null,
             'org' => null,
             'code' => null,
             'code_path' => null,
@@ -410,6 +412,11 @@ EOD,
             'label' => $options['site-label'] ?: $site_name,
             'site_name' => $site_name,
         ];
+
+        $region = $options['region'] ?? $this->config->get('command_site_options_region');
+        if ($region) {
+            $workflowOptions['preferred_zone'] = $region;
+        }
 
         $user = $this->session()->getUser();
 
