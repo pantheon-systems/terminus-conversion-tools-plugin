@@ -44,6 +44,38 @@ class Git
     }
 
     /**
+     * Returns the list of .gitignore rules existing in the base file and missing in the file to compare with.
+     *
+     * @param string $baseFilePath
+     *   The path to the base .gitignore file.
+     * @param string $fileToComparePath
+     *   The path to the .gitignore file to compare with.
+     *
+     * @return array
+     *   The list of .gitignore rules.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public static function getGitignoreDiff(string $baseFilePath, string $fileToComparePath): array
+    {
+        if (!is_file($baseFilePath)) {
+            throw new GitException(sprintf('Missing base .gitignore file (%s).', $baseFilePath));
+        }
+        if (!is_file($fileToComparePath)) {
+            throw new GitException(sprintf('Missing .gitignore file to compare with (%s).', $fileToComparePath));
+        }
+
+        $filter = fn($rule) => false === strpos($rule, '#');
+        $baseRules = file($baseFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $baseRules = array_filter($baseRules, $filter);
+
+        $compareRules = file($fileToComparePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $compareRules = array_filter($compareRules, $filter);
+
+        return array_values(array_diff($baseRules, $compareRules));
+    }
+
+    /**
      * Commits the changes.
      *
      * @param string $commitMessage

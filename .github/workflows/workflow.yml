@@ -46,6 +46,8 @@ jobs:
             group: push_to_md_command
           - name: conversion:enable-ic command
             group: enable_integrated_composer_command
+          - name: conversion:import-site command
+            group: site_import
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}

@@ -13,6 +13,7 @@ Adds the following Terminus commands:
 * `conversion:restore-master`
 * `conversion:enable-ic`
 * `conversion:advise`
+* `conversion:import-site`
 
 Learn more about Terminus Plugins in the [Terminus Plugins documentation](https://pantheon.io/docs/terminus/plugins)
 
@@ -28,6 +29,7 @@ In active development
 * Run `terminus conversion:restore-master` to restore the master branch to its original state
 * Run `terminus conversion:enable-ic` to enable Pantheon Integrated Composer for the site
 * Run `terminus conversion:advise` to analyze the current state of the site and give advice on the next steps
+* Run `terminus conversion:import-site` to create a site based on "drupal-recommended" upstream from imported code, database, and files
 
 ## Installation
 
@@ -35,12 +37,3 @@ To install this plugin using Terminus 3:
 ```
 terminus self:plugin:install terminus-conversion-tools-plugin
 ```
-
-## Help
-* Run `terminus help conversion:composer` for help.
-* Run `terminus help conversion:drupal-recommended` for help.
-* Run `terminus help conversion:push-to-multidev` for help.
-* Run `terminus help conversion:release-to-master` for help.
-* Run `terminus help conversion:restore-master` for help.
-* Run `terminus help conversion:enable-ic` for help.
-* Run `terminus help conversion:advise` for help.

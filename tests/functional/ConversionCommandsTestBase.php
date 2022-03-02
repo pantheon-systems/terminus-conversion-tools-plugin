@@ -44,7 +44,10 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @return string
      */
-    abstract protected function getUpstreamIdEnvName(): string;
+    protected function getUpstreamIdEnvName(): string
+    {
+        return '';
+    }
 
     /**
      * Returns the initial and expected (real) upstream ID of a fixture site.
@@ -88,9 +91,15 @@ abstract class ConversionCommandsTestBase extends TestCase
             $command,
             [sprintf('--org=%s', $this->getOrg())]
         );
-        $this->terminus(
-            sprintf('drush %s.%s -- site-install demo_umami', $this->siteName, self::DEV_ENV),
-            ['-y']
+
+        $installCommand = sprintf('-y drush %s.%s -- site-install demo_umami -y', $this->siteName, self::DEV_ENV);
+        $this->assertEqualsInAttempts(
+            function () use ($installCommand) {
+                [, $exitCode] = self::callTerminus($installCommand);
+                return $exitCode;
+            },
+            0,
+            sprintf('Failed installing fixture site (%s)', $installCommand)
         );
 
         $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, self::DEV_ENV, 'git'));
@@ -99,6 +108,7 @@ abstract class ConversionCommandsTestBase extends TestCase
         $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
             sprintf('site:info %s', $this->siteName)
         )['upstream'];
+        sleep(15);
 
         if ($this->isCiEnv()) {
             $this->addGitHostToKnownHosts();
@@ -225,9 +235,14 @@ abstract class ConversionCommandsTestBase extends TestCase
     private function setUpProjects(): void
     {
         foreach ($this->getProjects() as $name) {
-            $this->terminus(
-                sprintf('drush %s.%s -- en %s', $this->siteName, self::DEV_ENV, $name),
-                ['-y']
+            $command = sprintf('-y drush %s.%s -- en %s -y', $this->siteName, self::DEV_ENV, $name);
+            $this->assertEqualsInAttempts(
+                function () use ($command) {
+                    [, $exitCode] = self::callTerminus($command);
+                    return $exitCode;
+                },
+                0,
+                sprintf('Failed enabling drupal project "%s" (%s)', $name, $command)
             );
         }
     }
@@ -241,7 +256,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      */
     protected function assertPagesExists(string $env): void
     {
-        $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
+        $baseUrl = $this->getBaseTestUrl($env);
         $this->assertEqualsInAttempts(
             fn() => $this->httpClient->request('HEAD', $baseUrl)->getStatusCode(),
             200,
@@ -259,6 +274,18 @@ abstract class ConversionCommandsTestBase extends TestCase
                 sprintf('Module "%s" must provide page by path "%s" (%s)', $module, $path, $url)
             );
         }
+    }
+
+    /**
+     * Returns the fixture site URL.
+     *
+     * @param string $env
+     *
+     * @return string
+     */
+    protected function getBaseTestUrl(string $env): string
+    {
+        return  $baseUrl = sprintf('https://%s-%s.pantheonsite.io', $env, $this->siteName);
     }
 
     /**
@@ -300,7 +327,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     /**
      * Adds site's Git host to known_hosts file.
      */
-    private function addGitHostToKnownHosts(): void
+    protected function addGitHostToKnownHosts(): void
     {
         $gitInfo = $this->terminusJsonResponse(
             sprintf('connection:info %s.%s --fields=git_host,git_port', $this->siteName, self::DEV_ENV)
@@ -328,7 +355,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      * @param string $message
      *   Message.
      */
-    private function assertEqualsInAttempts(
+    protected function assertEqualsInAttempts(
         callable $callable,
         $expected,
         string $message = ''

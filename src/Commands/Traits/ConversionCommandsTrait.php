@@ -93,6 +93,27 @@ trait ConversionCommandsTrait
     }
 
     /**
+     * Returns root composer.json file contents.
+     *
+     * @param string|null $filePath
+     *   Use specific composer.json file, otherwise defaults to local site's one.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function getComposerJson(?string $filePath = null): array
+    {
+        $filePath = $filePath ?? Files::buildPath($this->getLocalSitePath(), 'composer.json');
+        if (!file_exists($filePath)) {
+            return [];
+        }
+
+        return json_decode(file_get_contents($filePath), true);
+    }
+
+    /**
      * Creates the multidev environment.
      *
      * @param string $branch
