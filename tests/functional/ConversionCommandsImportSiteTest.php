@@ -138,12 +138,12 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         [, $exitCode, $error] = self::callTerminus(sprintf('%s --yes', $command));
         $this->assertNotEquals(0, $exitCode);
         $this->assertStringContainsString(
-            sprintf('Extract directory %s already exists (use "--override" option).', $this->extractedPath),
+            sprintf('Extract directory %s already exists (use "--overwrite" option).', $this->extractedPath),
             $error
         );
 
         $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, self::EMPTY_UPSTREAM_ID));
-        [, $exitCode, $error] = self::callTerminus(sprintf('%s --override --yes', $command));
+        [, $exitCode, $error] = self::callTerminus(sprintf('%s --overwrite --yes', $command));
         $this->assertNotEquals(0, $exitCode);
         $this->assertStringContainsString(
             sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID),

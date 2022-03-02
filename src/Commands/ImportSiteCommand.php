@@ -48,9 +48,10 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command conversion:import-site
      *
-     * @option override Override files on archive extraction if exists.
+     * @option overwrite Overwrite files on archive extraction if exists.
      * @option org Organization name for a new site.
      * @option site-label Site label for a new site.
+     * @option region Specify the service region where the site should be created. See documentation for valid regions.
      * @option code Import code.
      * @option code_path Import code from specified directory. Has higher priority over "path" argument.
      * @option db Import database.
@@ -80,8 +81,9 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
         string $site_name,
         string $path = null,
         array  $options = [
-            'override' => null,
+            'overwrite' => null,
             'site-label' => null,
+            'region' => null,
             'org' => null,
             'code' => null,
             'code_path' => null,
@@ -374,11 +376,11 @@ EOD,
 
         $extractDir = Files::buildPath(dirname($path), $archiveFileName);
         if (is_dir($extractDir)) {
-            if ($options['override']) {
+            if ($options['overwrite']) {
                 $this->fs->remove($extractDir);
             } else {
                 throw new TerminusException(
-                    sprintf('Extract directory %s already exists (use "--override" option).', $extractDir)
+                    sprintf('Extract directory %s already exists (use "--overwrite" option).', $extractDir)
                 );
             }
         }
@@ -410,6 +412,11 @@ EOD,
             'label' => $options['site-label'] ?: $site_name,
             'site_name' => $site_name,
         ];
+
+        $region = $options['region'] ?? $this->config->get('command_site_options_region');
+        if ($region) {
+            $workflowOptions['preferred_zone'] = $region;
+        }
 
         $user = $this->session()->getUser();
 
