@@ -219,22 +219,22 @@ EOD,
     }
 
     /**
-     * Imports the database backup to the site.
+     * Imports the database dump to the site.
      *
      * @param \Pantheon\Terminus\Models\Environment $env
      *   The environment.
-     * @param string $databaseBackupPath
-     *   The path to the database backup file.
+     * @param string $databaseDumpPath
+     *   The path to the database dump file.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function importDatabase(Environment $env, string $databaseBackupPath): void
+    private function importDatabase(Environment $env, string $databaseDumpPath): void
     {
         $this->log()->notice('Importing database...');
 
-        if (!is_file($databaseBackupPath)) {
-            throw new TerminusNotFoundException(sprintf('Backup file %s not found', $databaseBackupPath));
+        if (!is_file($databaseDumpPath)) {
+            throw new TerminusNotFoundException(sprintf('Database dump file %s not found', $databaseDumpPath));
         }
 
         $sftpInfo = $env->sftpConnectionInfo();
@@ -245,7 +245,7 @@ EOD,
             $sftpInfo['port']
         );
 
-        $sshCommand = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseBackupPath);
+        $sshCommand = sprintf('%s drush sql-cli < %s', $commandPrefix, $databaseDumpPath);
         $executionResult = $this->getLocalMachineHelper()->execute($sshCommand, null, false);
         if (0 !== $executionResult['exit_code']) {
             throw new TerminusException(
