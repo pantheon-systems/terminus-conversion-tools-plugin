@@ -359,7 +359,7 @@ EOD,
      * Extracts the archive.
      *
      * @param string $path
-     *   The path ot the archive file.
+     *   The path to the archive file.
      * @param array $options
      *   Command options.
      *
