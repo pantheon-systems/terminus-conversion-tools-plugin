@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
+use Composer\Semver\Comparator;
 use Throwable;
 
 /**
@@ -30,13 +31,15 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command conversion:advise
      *
+     * @option skip-upgrade-checks Skip upgrade checks during this command run.
+     *
      * @param string $siteId
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function advise(string $siteId): void
+    public function advise(string $siteId, array $options = ['skip-upgrade-checks' => false]): void
     {
         $this->setSite($siteId);
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
@@ -48,6 +51,24 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
                 $upstreamId,
             )
         );
+
+
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
+            $this->writeln('No conversion is necessary.');
+            return;
+        }
+
+        if (!$options['skip-upgrade-checks']) {
+            $env = $this->site()->getEnvironments()->get('dev');
+            $status = $env->getUpstreamStatus();
+            if ($status->hasUpdates() || $status->hasComposerUpdates()) {
+                $this->writeln("The site has upstream updates to be applied. Run `terminus upstream:updates:apply $siteId` to apply them.");
+            }
+            $phpVersion = $env->getPHPVersion();
+            if (Comparator::lessThan($phpVersion, '7.4')) {
+                $this->writeln("The site's PHP version is $phpVersion. Upgrade to PHP 7.4 or higher.");
+            }
+        }
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
@@ -65,10 +86,6 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             $this->adviseOnEmpty();
 
             return;
-        }
-
-        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
-            $this->writeln('No conversion is necessary.');
         }
     }
 
