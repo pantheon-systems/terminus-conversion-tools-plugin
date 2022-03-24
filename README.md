@@ -5,7 +5,7 @@
 
 [![Terminus 3.x Compatible](https://img.shields.io/badge/terminus-3.x-green.svg)](https://github.com/pantheon-systems/terminus/tree/3.x)
 
-The main purposes of the Conversion Tools project are to ease the conversion of a Drupal based site into a composer manged Drupal site.
+The main purposes of the Conversion Tools project are to ease the conversion of a Drupal based site into a composer managed Drupal site.
 
 Adds the following Terminus commands:
 * `conversion:advise`
