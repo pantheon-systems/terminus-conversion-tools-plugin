@@ -49,6 +49,18 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             )
         );
 
+
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
+            $this->writeln('No conversion is necessary.');
+            return;
+        }
+
+        $env = $this->site()->getEnvironments()->get('dev');
+        $status = $env->getUpstreamStatus();
+        if ($status->hasUpdates() || $status->hasComposerUpdates()) {
+            $this->writeln("The site has upstream updates to be applied. Run `terminus upstream:updates:apply $siteId` to apply them.");
+        }
+
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
 
@@ -67,9 +79,6 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             return;
         }
 
-        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
-            $this->writeln('No conversion is necessary.');
-        }
     }
 
     /**
