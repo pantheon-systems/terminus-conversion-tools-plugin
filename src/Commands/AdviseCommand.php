@@ -39,7 +39,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function advise(string $siteId, array $options = ['skip-upgrade-checks' => FALSE]): void
+    public function advise(string $siteId, array $options = ['skip-upgrade-checks' => false]): void
     {
         $this->setSite($siteId);
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
@@ -87,7 +87,6 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 
             return;
         }
-
     }
 
     /**
