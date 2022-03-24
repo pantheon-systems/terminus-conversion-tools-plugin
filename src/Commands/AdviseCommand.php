@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
+use Composer\Semver\Comparator;
 use Throwable;
 
 /**
@@ -59,6 +60,10 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $status = $env->getUpstreamStatus();
         if ($status->hasUpdates() || $status->hasComposerUpdates()) {
             $this->writeln("The site has upstream updates to be applied. Run `terminus upstream:updates:apply $siteId` to apply them.");
+        }
+        $phpVersion = $env->getPHPVersion();
+        if (Comparator::lessThan($phpVersion, '7.4')) {
+            $this->writeln("The site's PHP version is $phpVersion. Upgrade to PHP 7.4 or higher.");
         }
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
