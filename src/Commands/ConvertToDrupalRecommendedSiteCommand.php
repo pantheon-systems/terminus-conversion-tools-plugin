@@ -11,6 +11,7 @@ use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Pantheon\TerminusConversionTools\Commands\Traits\LocalEnvironmentAwareTrait;
 use Throwable;
 
 /**
@@ -20,6 +21,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 {
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
+    use LocalEnvironmentAwareTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -263,7 +265,7 @@ Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
 1. resolve code merge conflicts found in %s files: %s
 2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
-3. run `terminus conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
+3. run `{$this->getTerminusCommand()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $localPath,
