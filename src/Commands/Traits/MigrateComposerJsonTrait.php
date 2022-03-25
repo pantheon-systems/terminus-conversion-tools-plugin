@@ -134,11 +134,13 @@ EOD
             ?? $this->sourceComposerJson['require']['drupal/core']
             ?? '^8.9';
 
+        $drupalPackage = $this->sourceComposerJson['require']['drupal/core'] ? 'drupal/core' : 'drupal/core-recommended';
+
         $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
 
         return [
             [
-                'package' => 'drupal/core-recommended',
+                'package' => $drupalPackage,
                 'version' => $drupalConstraint,
                 'is_dev' => false,
             ],
