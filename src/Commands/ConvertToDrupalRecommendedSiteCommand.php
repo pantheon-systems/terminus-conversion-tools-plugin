@@ -11,6 +11,7 @@ use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException;
 use Throwable;
 
 /**
@@ -81,6 +82,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         $this->log()->notice('Updating composer.json to match "drupal-recommended" upstream...');
         try {
+            $errors = 0;
             $this->getGit()->checkout(Git::DEFAULT_BRANCH, 'composer.json');
             $this->getGit()->commit('Update composer.json to include site-specific changes', ['composer.json']);
 
@@ -103,11 +105,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             );
             $this->log()->notice('composer.json updated to match "drupal-recommended" upstream');
         } catch (Throwable $t) {
+            $errors++;
             $this->log()->error(
                 sprintf(
                     'Failed updating composer.json: %s',
                     $t->getMessage()
                 )
+            );
+        }
+        if ($errors) {
+            throw new ComposerException(
+                'Failed updating composer.json. Please check the logs for more information.'
             );
         }
 
