@@ -78,6 +78,10 @@ EOD
                 }
 
                 $this->getComposer()->require(...$arguments);
+                if ($dependency['package'] === 'drupal/core') {
+                    // We should remove drupal/core-recommended because it's a conflict and it's required in the upstream.
+                    $this->getComposer()->remove('drupal/core-recommended', '--no-update');
+                }
                 if ($this->getGit()->isAnythingToCommit()) {
                     $this->getGit()->commit(
                         sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
