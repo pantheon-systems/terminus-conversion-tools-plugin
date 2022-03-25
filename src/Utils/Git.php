@@ -82,16 +82,24 @@ class Git
      *   The commit message.
      * @param null|array $files
      *   The files to stage.
+     * @param null|bool $force
+     *   Force adding changes (use -f flag).
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function commit(string $commitMessage, ?array $files = null): void
+    public function commit(string $commitMessage, ?array $files = null, ?bool $force = false): void
     {
+        $addArguments = [];
         if (null === $files) {
-            $this->execute(['add', '-A']);
+            $addArguments = ['add', '-A'];
         } else {
-            $this->execute(['add', ...$files]);
+            $addArguments = ['add', ...$files];
         }
+
+        if ($force) {
+            $addArguments[] = '-f';
+        }
+        $this->execute($addArguments);
 
         $this->execute(['commit', '-m', $commitMessage]);
     }

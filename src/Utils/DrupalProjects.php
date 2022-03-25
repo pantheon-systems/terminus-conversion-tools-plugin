@@ -3,6 +3,7 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * Class DrupalProjects.
@@ -20,6 +21,16 @@ class DrupalProjects
     public function __construct(string $siteRootPath)
     {
         $this->siteRootPath = $siteRootPath;
+    }
+
+    /**
+     * Returns site root path.
+     *
+     * @return string
+     */
+    public function getSiteRootPath(): string
+    {
+        return $this->siteRootPath;
     }
 
     /**
@@ -100,6 +111,7 @@ class DrupalProjects
     {
         $composerJsonFiles = [];
         $finder = new Finder();
+        $filesystem = new Filesystem();
         foreach ($this->getLibrariesDirectories() as $librariesDir) {
             $finder->files()->in($librariesDir . DIRECTORY_SEPARATOR . '*');
             $finder->files()->name('composer.json');
@@ -112,6 +124,8 @@ class DrupalProjects
             }
         }
 
+        $packagistBaseUrl = 'https://packagist.org/packages/{package}.json';
+
         $packages = [];
         foreach ($composerJsonFiles as $filePath => $fileName) {
             $composerJsonFileContent = json_decode(
@@ -123,7 +137,15 @@ class DrupalProjects
                 continue;
             }
 
-            $packages[] = $composerJsonFileContent['name'];
+            $packagistUrl = str_replace('{package}', $composerJsonFileContent['name'], $packagistBaseUrl);
+            if (file_get_contents($packagistUrl)) {
+                $packages[] = $composerJsonFileContent['name'];
+            } else {
+                if (!$filesystem->exists($this->siteRootPath . '/libraries-backup')) {
+                    $filesystem->mkdir($this->siteRootPath . '/libraries-backup');
+                }
+                $filesystem->mirror($filePath, $this->siteRootPath . '/libraries-backup/' . basename($filePath));
+            }
         }
 
         return $packages;

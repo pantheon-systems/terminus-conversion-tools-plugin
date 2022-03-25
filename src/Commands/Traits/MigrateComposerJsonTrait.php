@@ -2,6 +2,8 @@
 
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
 /**
@@ -18,6 +20,11 @@ trait MigrateComposerJsonTrait
     private array $sourceComposerJson;
 
     /**
+     * @var string
+     */
+    private string $projectPath;
+
+    /**
      * Migrates composer.json components.
      *
      * @param array $sourceComposerJson
@@ -28,6 +35,8 @@ trait MigrateComposerJsonTrait
      *   Drupal contrib dependencies.
      * @param array $libraryProjects
      *   Drupal library dependencies.
+     * @param string $librariesBackupPath
+     *   Path to backup of libraries.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -37,11 +46,13 @@ trait MigrateComposerJsonTrait
         array  $sourceComposerJson,
         string $projectPath,
         array  $contribProjects = [],
-        array  $libraryProjects = []
+        array  $libraryProjects = [],
+        string $librariesBackupPath = null,
     ): void {
         $this->log()->notice('Migrating Composer project components...');
 
         $this->sourceComposerJson = $sourceComposerJson;
+        $this->projectPath = $projectPath;
         $this->setComposer($projectPath);
 
         $this->addDrupalComposerPackages($contribProjects);
@@ -61,6 +72,27 @@ EOD
         );
 
         $this->copyComposerPackagesConfiguration();
+
+        if ($librariesBackupPath && is_dir($librariesBackupPath)) {
+            $this->restoreLibraries($librariesBackupPath);
+        }
+    }
+
+    /**
+     * Restore libraries from the backup path and commit them.
+     */
+    private function restoreLibraries(string $librariesBackupPath): void
+    {
+        $finder = new Finder();
+        $filesystem = new Filesystem();
+        foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
+            $filesystem->mirror($folder->getPathname(), $this->localSitePath . '/web/libraries/' . $folder->getRelativePathname());
+            $this->getGit()->commit('Copy library ' . $folder->getRelativePathname(), [$this->localSitePath . '/web/libraries/' . $folder->getRelativePathname()], true);
+        }
+        $filesystem->remove($librariesBackupPath);
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Remove libraries backup folder.');
+        }
     }
 
     /**
