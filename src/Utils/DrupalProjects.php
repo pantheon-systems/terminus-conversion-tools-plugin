@@ -141,14 +141,38 @@ class DrupalProjects
             if (file_get_contents($packagistUrl)) {
                 $packages[] = $composerJsonFileContent['name'];
             } else {
-                if (!$filesystem->exists($this->siteRootPath . '/libraries-backup')) {
-                    $filesystem->mkdir($this->siteRootPath . '/libraries-backup');
+                $this->backupLibrary($filePath);
+            }
+        }
+
+        $finder = new Finder();
+        foreach ($this->getLibrariesDirectories() as $librariesDir) {
+            $finder->directories()->in($librariesDir)->depth(0);
+            if (!$finder->hasResults()) {
+                continue;
+            }
+
+            foreach ($finder as $folder) {
+                if (!file_exists($folder->getPathname() . DIRECTORY_SEPARATOR . 'composer.json')) {
+                    $this->backupLibrary($folder->getPathname());
                 }
-                $filesystem->mirror($filePath, $this->siteRootPath . '/libraries-backup/' . basename($filePath));
             }
         }
 
         return $packages;
+    }
+
+    /**
+     * Backup given library folder.
+     */
+    private function backupLibrary(string $filePath): void
+    {
+        $filesystem = new Filesystem();
+        $backupPath = Files::buildPath($this->siteRootPath, 'libraries-backup');
+        if (!$filesystem->exists($backupPath)) {
+            $filesystem->mkdir($backupPath);
+        }
+        $filesystem->mirror($filePath, Files::buildPath($this->siteRootPath, 'libraries-backup', basename($filePath)));
     }
 
     /**
