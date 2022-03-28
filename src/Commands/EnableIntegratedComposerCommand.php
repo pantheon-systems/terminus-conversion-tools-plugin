@@ -11,7 +11,6 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
-use Pantheon\TerminusConversionTools\Commands\Traits\LocalEnvironmentAwareTrait;
 
 /**
  * Class EnableIntegratedComposerCommand.
@@ -19,7 +18,6 @@ use Pantheon\TerminusConversionTools\Commands\Traits\LocalEnvironmentAwareTrait;
 class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
-    use LocalEnvironmentAwareTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
 
@@ -70,7 +68,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
 You can push the changes to "$masterBranch" branch by executing
-`{$this->getTerminusCommand()} multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
+`{$this->getTerminusExecutable()} multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
 EOD
         );
 

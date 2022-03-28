@@ -7,7 +7,6 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Composer\Semver\Comparator;
-use Pantheon\TerminusConversionTools\Commands\Traits\LocalEnvironmentAwareTrait;
 use Throwable;
 
 /**
@@ -16,7 +15,6 @@ use Throwable;
 class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
-    use LocalEnvironmentAwareTrait;
 
     private const DROPS_8_UPSTREAM_ID = 'drupal8';
     private const DROPS_8_GIT_REMOTE_URL = 'https://github.com/pantheon-systems/drops-8.git';
@@ -64,7 +62,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             $env = $this->site()->getEnvironments()->get('dev');
             $status = $env->getUpstreamStatus();
             if ($status->hasUpdates() || $status->hasComposerUpdates()) {
-                $this->writeln("The site has upstream updates to be applied. Run `{$this->getTerminusCommand()} upstream:updates:apply $siteId` to apply them.");
+                $this->writeln("The site has upstream updates to be applied. Run `{$this->getTerminusExecutable()} upstream:updates:apply $siteId` to apply them.");
             }
             $phpVersion = $env->getPHPVersion();
             if (Comparator::lessThan($phpVersion, '7.4')) {
@@ -142,9 +140,9 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `{$this->getTerminusCommand()} conversion:composer {$this->site()->getName()}`) or manually according to the following
+(i.e. `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`) or manually according to the following
 guide - https://pantheon.io/docs/guides/composer-convert. Once done you can switch the upstream with
-Terminus to "drupal-recommended" accordingly (`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+Terminus to "drupal-recommended" accordingly (`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
         );
     }
@@ -159,7 +157,7 @@ EOD
             <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
 Terminus command. Once done you can switch the upstream with Terminus to "drupal-recommended" accordingly
-(`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+(`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
         );
     }
@@ -196,7 +194,7 @@ EOD
                     $this->output()->writeln(
                         <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus -
-`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`.
+`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`.
 EOD
                     );
 
@@ -207,9 +205,9 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: convert the site to use "drupal-recommended" Pantheon Upstream
-(`{$this->getTerminusCommand()} conversion:drupal-recommended {$this->site()->getName()}`) and then switch
+(`{$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}`) and then switch
 the upstream with Terminus to "drupal-recommended" accordingly
-(`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+(`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
             );
 
@@ -224,8 +222,8 @@ Advice: you might want to convert to drupal-recommended if you are not using Con
 Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
 
 If you wish to convert to drupal-recommended, you could do so by using `conversion:composer` Terminus command
-(i.e. `{$this->getTerminusCommand()} conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
-Terminus to "drupal-recommended" accordingly (`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+(i.e. `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
+Terminus to "drupal-recommended" accordingly (`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
 EOD
             );
 
@@ -235,8 +233,8 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `{$this->getTerminusCommand()} conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
-Terminus to "drupal-recommended" accordingly (`{$this->getTerminusCommand()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+(i.e. `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`). Once done you can switch the upstream with
+Terminus to "drupal-recommended" accordingly (`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
 You could also stay in the current upstream if you prefer so.
 EOD
         );
