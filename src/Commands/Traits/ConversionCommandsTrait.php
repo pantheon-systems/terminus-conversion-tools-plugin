@@ -100,6 +100,7 @@ trait ConversionCommandsTrait
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -386,7 +387,9 @@ trait ConversionCommandsTrait
             if (!$this->input()->getOption('yes') && !$this->io()
                     ->confirm(
                         sprintf(
-                            'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                            <<<EOD
+Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?
+EOD,
                             $branch
                         )
                     )
