@@ -75,19 +75,16 @@ EOD,
 
         if (self::DROPS_8_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrops8();
-
             return;
         }
 
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrupalProject();
-
             return;
         }
 
         if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnEmpty();
-
             return;
         }
     }
@@ -161,12 +158,18 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
-        $this->writeln('This site is using the upstream pantheon-systems/drupal-project, which was the default upstream prior to November 30, 2021.');
         $this->output()->writeln(
             <<<EOD
-Advice: convert the site to use "drupal-recommended" Pantheon Upstream by using `conversion:drupal-recommended`
-Terminus command. Once done you can switch the upstream with Terminus to "drupal-recommended" accordingly
-(`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+    Drupal Recommended (drupal-recommended)
+This process may be done manually by following the instructions in the guide:
+INSERT
+An automated process to convert this site is available. To begin, run:
+    {$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}
+This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
         );
     }
