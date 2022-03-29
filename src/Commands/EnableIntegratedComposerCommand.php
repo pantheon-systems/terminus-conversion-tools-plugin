@@ -68,7 +68,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
 You can push the changes to "$masterBranch" branch by executing
-`terminus multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
+`{$this->getTerminusExecutable()} multidev:merge-to-dev {$this->site()->getName()}.{$this->getBranch()}` command.
 EOD
         );
 
