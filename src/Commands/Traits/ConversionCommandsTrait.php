@@ -95,6 +95,7 @@ trait ConversionCommandsTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     protected function getLocalSitePath(?bool $force = null)
     {
@@ -102,11 +103,49 @@ trait ConversionCommandsTrait
             return $this->localSitePath;
         }
 
+        $existingLocalGitRepo = $this->detectLocalGitRepo();
+        if (null !== $existingLocalGitRepo) {
+            if ($this->input()->getOption('yes') || $this->io()
+                    ->confirm(
+                        sprintf(
+                            <<<EOD
+An existing local site repository found in "%s".
+Do you want to proceed with it (a temporary copy will be cloned otherwise)?
+EOD,
+                            $existingLocalGitRepo
+                        )
+                    )
+            ) {
+                $this->log()->notice(sprintf('Local git repository path is set to "%s".', $existingLocalGitRepo));
+
+                return $this->localSitePath = $existingLocalGitRepo;
+            }
+        }
+
         $this->localSitePath = null === $force
             ? $this->cloneSiteGitRepository()
             : $this->cloneSiteGitRepository($force);
+        $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
 
         return $this->localSitePath;
+    }
+
+    /**
+     * Returns an absolute local git repository path or NULL if not detected.
+     *
+     * @return string|null
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function detectLocalGitRepo(): ?string
+    {
+        $possibleLocalRepoPath = getcwd();
+        $git = new Git($possibleLocalRepoPath);
+        $localGitRemote = $git->getConfig('remote.origin.url');
+
+        return $this->getRemoteGitUrl() === $localGitRemote ? $git->getToplevelRepoPath() : null;
     }
 
     /**
