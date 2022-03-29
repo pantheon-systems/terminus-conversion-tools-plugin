@@ -45,7 +45,10 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
-                "The site %s uses \"%s\" (%s) upstream.",
+<<<EOD
+The site %s was created from the upstream:
+    %s (%s)
+EOD,
                 $this->site()->getName(),
                 $this->site()->getUpstream()->get('label'),
                 $upstreamId,
@@ -62,11 +65,11 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             $env = $this->site()->getEnvironments()->get('dev');
             $status = $env->getUpstreamStatus();
             if ($status->hasUpdates() || $status->hasComposerUpdates()) {
-                $this->writeln("The site has upstream updates to be applied. Run `{$this->getTerminusExecutable()} upstream:updates:apply $siteId` to apply them.");
+                $this->writeln("Notice: The site has upstream updates to be applied. Run `{$this->getTerminusExecutable()} upstream:updates:apply $siteId` to apply them.");
             }
             $phpVersion = $env->getPHPVersion();
             if (Comparator::lessThan($phpVersion, '7.4')) {
-                $this->writeln("The site's PHP version is $phpVersion. Upgrade to PHP 7.4 or higher.");
+                $this->writeln("Notice: The site's PHP version is $phpVersion. Upgrade to PHP 7.4 or higher.");
             }
         }
 
@@ -98,8 +101,6 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      */
     private function adviseOnDrops8(): void
     {
-        $this->writeln('This site was created from the dashboard on Drupal 8.');
-
         $localPath = $this->getLocalSitePath(false);
         $this->setGit($localPath);
         $this->getGit()->addRemote(self::DROPS_8_GIT_REMOTE_URL, self::DROPS_8_UPSTREAM_ID);
@@ -120,29 +121,37 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         if (0 < count($composerJsonRequireExtraPackages)) {
+            $this->output()->writeln(
+                <<<EOD
+NOTICE: Although the site's upstream is not Composer-managed, Composer was used
+to add modules to the site. Doing this results in a working site, but might
+cause difficulties when applying upstream updates in the future. Following these
+conversion steps should automatically repair this situation.\n
+EOD
+            );
+
             $this->log()->notice(
                 sprintf(
-                    "The packages you installed are: %s.\n",
+                    "The packages you installed are:\n%s.\n",
                     implode(', ', $composerJsonRequireExtraPackages)
                 )
             );
-            $this->output()->writeln(
-                <<<EOD
-This site was created from the Pantheon Drupal 8 upstream, which is not a
-Composer-managed upstream; however, Composer was used to add modules to the site. Doing this
-results in a working site, but might cause difficulties when applying upstream updates in the future.\n
-EOD
-            );
         } else {
-            $this->output()->writeln('Standard drops-8 site.');
+            $this->output()->writeln('Standard drupal 8 site.');
         }
 
         $this->output()->writeln(
             <<<EOD
-Advice: convert the site to a Composer managed one by using `conversion:composer` Terminus command
-(i.e. `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`) or manually according to the following
-guide - https://pantheon.io/docs/guides/composer-convert. Once done you can switch the upstream with
-Terminus to "drupal-recommended" accordingly (`{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended`).
+Advice: We recommend that this site be converted to a Composer-managed upstream:
+    Drupal Recommended (drupal-recommended)
+This process may be done manually by following the instructions in the guide:
+    https://pantheon.io/docs/guides/composer-convert
+An automated process to convert this site is available. To begin, run:
+    `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`)
+This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
+    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
         );
     }
