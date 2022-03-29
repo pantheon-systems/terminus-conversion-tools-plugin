@@ -358,6 +358,18 @@ class Git
     }
 
     /**
+     * Returns the top-level repository path.
+     *
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function getToplevelRepoPath(): string
+    {
+        return trim($this->execute(['rev-parse', '--show-toplevel']));
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command
