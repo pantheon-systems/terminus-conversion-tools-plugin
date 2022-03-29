@@ -60,13 +60,30 @@ trait ConversionCommandsTrait
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
 
-        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $this->site->getEnvironments()->get('dev');
-
-        $gitUrl = $devEnv->connectionInfo()['git_url'] ?? null;
-        $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
+        $this->getLocalMachineHelper()->cloneGitRepository($this->getRemoteGitUrl(), $path, true);
 
         return $path;
+    }
+
+    /**
+     * Returns the site Git remote URL.
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function getRemoteGitUrl(): string
+    {
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
+        $devEnv = $this->site->getEnvironments()->get('dev');
+        $connectionInfo = $devEnv->connectionInfo();
+
+        if (!isset($connectionInfo['git_url'])) {
+            throw new TerminusException('Failed to get site Git URL');
+        }
+
+        return $connectionInfo['git_url'];
     }
 
     /**
