@@ -44,6 +44,7 @@ trait MigrateComposerJsonTrait
         $this->sourceComposerJson = $sourceComposerJson;
         $this->setComposer($projectPath);
 
+        $this->copyMinimumStability();
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
@@ -333,6 +334,18 @@ EOD
                     $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
                 }
             }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy minimum stability setting
+     */
+    private function copyMinimumStability(): void
+    {
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        if (isset($this->sourceComposerJson['minimum-stability'])) {
+            $currentComposerJson['minimum-stability'] = $this->sourceComposerJson['minimum-stability'];
         }
         $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
