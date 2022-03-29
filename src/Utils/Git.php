@@ -344,6 +344,20 @@ class Git
     }
 
     /**
+     * Returns Git config value by the config name.
+     *
+     * @param string $confName
+     *
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function getConfig(string $confName): string
+    {
+        return trim($this->execute(['config', '--get', $confName]));
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command
