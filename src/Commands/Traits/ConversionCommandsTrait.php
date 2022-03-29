@@ -39,6 +39,11 @@ trait ConversionCommandsTrait
     private string $localSitePath;
 
     /**
+     * @var string
+     */
+    private string $siteGitRemoteUrl;
+
+    /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
      * @param bool $force
@@ -75,6 +80,10 @@ trait ConversionCommandsTrait
      */
     protected function getRemoteGitUrl(): string
     {
+        if (isset($this->siteGitRemoteUrl)) {
+            return $this->siteGitRemoteUrl;
+        }
+
         /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
         $connectionInfo = $devEnv->connectionInfo();
@@ -83,7 +92,7 @@ trait ConversionCommandsTrait
             throw new TerminusException('Failed to get site Git URL');
         }
 
-        return $connectionInfo['git_url'];
+        return $this->siteGitRemoteUrl = $connectionInfo['git_url'];
     }
 
     /**
