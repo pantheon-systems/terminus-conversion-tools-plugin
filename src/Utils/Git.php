@@ -358,7 +358,13 @@ class Git
         try {
             $process = $this->executeAndReturnProcess($command, $input);
             if (0 !== $process->getExitCode()) {
-                throw new GitException(sprintf('Git command failed with exit code %d and message %s', $process->getExitCode(), $process->getErrorOutput()));
+                throw new GitException(
+                    sprintf(
+                        'Git command failed with exit code %d and message %s',
+                        $process->getExitCode(),
+                        $process->getErrorOutput()
+                    )
+                );
             }
         } catch (Throwable $t) {
             throw new GitException(
@@ -375,7 +381,7 @@ class Git
      * @param array|string $command
      * @param null|string $input
      *
-     * @return Symfony\Component\Process\Process
+     * @return \Symfony\Component\Process\Process
      */
     private function executeAndReturnProcess($command, ?string $input = null): Process
     {
