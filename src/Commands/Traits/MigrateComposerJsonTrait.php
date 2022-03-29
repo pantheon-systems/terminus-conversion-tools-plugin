@@ -125,6 +125,16 @@ EOD
     }
 
     /**
+     * Returns whether the sources composer json has drupal/core-recommended or not.
+     *
+     * @return bool
+     */
+    private function sourceHasDrupalCoreRecommended(): bool
+    {
+        return isset($this->sourceComposerJson['require']['drupal/core-recommended']);
+    }
+
+    /**
      * Returns the list of Drupal composer dependencies.
      *
      * @return array[]
@@ -139,7 +149,7 @@ EOD
             ?? $this->sourceComposerJson['require']['drupal/core']
             ?? '^8.9';
 
-        $drupalPackage = $this->sourceComposerJson['require']['drupal/core'] ? 'drupal/core' : 'drupal/core-recommended';
+        $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
 
         $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
 
