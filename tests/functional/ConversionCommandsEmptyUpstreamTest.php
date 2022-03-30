@@ -24,7 +24,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
+        return 'Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream';
     }
 
     /**
