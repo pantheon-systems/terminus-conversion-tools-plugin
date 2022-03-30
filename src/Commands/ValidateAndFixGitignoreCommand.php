@@ -20,9 +20,24 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
     use ComposerAwareTrait;
 
     /**
+     * @var \Symfony\Component\Filesystem\Filesystem
+     */
+    private Filesystem $fs;
+
+    /**
      * @var string
      */
     private $gitignoreFilePath;
+
+    /**
+     * ValidateAndFixGitignoreCommand constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->fs = new Filesystem();
+    }
 
     /**
      * Validates Git/Composer project and suggests tweaks to .gitignore file.
@@ -102,15 +117,10 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         }
         $this->getGit()->commit('Add .gitignore', ['.gitignore']);
 
-        $fs = new Filesystem();
-        $defaultPathsToIgnore = array_filter(
-            ['vendor'],
-            fn($path) => $fs->exists($path)
+        array_map(
+            [$this, 'addPathToIgnore'],
+            $this->getDefaultPathsToIgnore()
         );
-
-        foreach ($defaultPathsToIgnore as $path) {
-            $this->addPathToIgnore($path);
-        }
     }
 
     /**
@@ -122,7 +132,13 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      */
     private function addPathToIgnore(string $path): void
     {
-        $this->log()->notice(sprintf('Adding "%s" to .gitignore...', $path));
+        if (!$this->fs->exists($path)) {
+            $this->log()->notice(sprintf('Skipped adding "%s" to .gitignore file: the path does not exist.', $path));
+
+            return;
+        }
+
+        $this->log()->notice(sprintf('Adding "%s" to .gitignore file...', $path));
 
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
         fwrite($gitignoreFile, $path);
@@ -131,5 +147,15 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
 
         $this->getGit()->remove('-r', '--cached', $path);
         $this->getGit()->commit(sprintf('Remove ignored path "%s"', $path), ['-u']);
+    }
+
+    /**
+     * Returns the list of paths to ignore by default.
+     *
+     * @return string[]
+     */
+    private function getDefaultPathsToIgnore(): array
+    {
+        return ['vendor'];
     }
 }
