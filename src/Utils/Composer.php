@@ -97,6 +97,25 @@ class Composer
     }
 
     /**
+     * Returns the list of installation paths.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    public function getInstallationPaths(): array
+    {
+        $pathsJson = $this->execute(['composer', 'info', '--path', '--format=json']);
+
+        $paths = json_decode($pathsJson, true);
+        if (json_last_error()) {
+            throw new ComposerException(sprintf('Failed decoding JSON string: error code %d', json_last_error()));
+        }
+
+        return $paths;
+    }
+
+    /**
      * Executes the Composer command.
      *
      * @param array $command
