@@ -16,6 +16,7 @@ Adds the following Terminus commands:
 * `conversion:restore-master`
 * `conversion:enable-ic`
 * `conversion:import-site`
+* `conversion:validate-gitignore`
 
 Learn more about Terminus Plugins in the [Terminus Plugins documentation](https://pantheon.io/docs/terminus/plugins)
 
@@ -32,6 +33,7 @@ In active development
 * Run `terminus conversion:restore-master` to restore the master branch to its original state
 * Run `terminus conversion:enable-ic` to enable Pantheon Integrated Composer for the site
 * Run `terminus conversion:import-site` to create a site based on "drupal-recommended" upstream from imported code, database, and files
+* Run `conversion:validate-gitignore` to validate Git/Composer project and update .gitignore file accordingly
 
 ## Installation
 
