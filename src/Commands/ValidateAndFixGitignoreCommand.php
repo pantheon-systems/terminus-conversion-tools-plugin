@@ -47,6 +47,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->setComposer($this->getLocalSitePath());
         $this->log()->notice('Installing Composer dependencies...');
         $this->getComposer()->install();
+        $installationPaths = $this->getComposer()->getInstallationPaths();
 
         // 1. clone site
         //    @todo: provide a path to local cloned copy if exists
