@@ -32,7 +32,7 @@ final class ConversionCommandsDrops9UpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream';
+        return 'Advice: We recommend that this site be converted to a Composer-managed upstream';
     }
 
     /**
