@@ -80,17 +80,17 @@ class Git
      *
      * @param string $commitMessage
      *   The commit message.
-     * @param null|array $files
-     *   The files to stage.
+     * @param null|array $gitAddOptions
+     *   git-add options.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function commit(string $commitMessage, ?array $files = null): void
+    public function commit(string $commitMessage, ?array $gitAddOptions = null): void
     {
-        if (null === $files) {
-            $this->execute(['add', '-A']);
+        if (null === $gitAddOptions) {
+            $this->add('-A');
         } else {
-            $this->execute(['add', ...$files]);
+            $this->add(...$gitAddOptions);
         }
 
         $this->execute(['commit', '-m', $commitMessage]);
@@ -341,6 +341,19 @@ class Git
         $commitHashes = $this->execute(['log', $branch, '--pretty=format:%H']);
 
         return preg_split('/\r\n|\n|\r/', $commitHashes);
+    }
+
+    /**
+     * Adds files to index.
+     *
+     * @param $options
+     *   The list of files and git-add options.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function add(...$options): void
+    {
+        $this->execute(['add', ...$options]);
     }
 
     /**
