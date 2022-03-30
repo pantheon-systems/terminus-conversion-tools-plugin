@@ -101,13 +101,17 @@ class Composer
      *
      * @param array $command
      *
+     * @return string
+     *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
-    private function execute(array $command): void
+    private function execute(array $command): string
     {
         try {
             $process = new Process($command, $this->projectPath, null, null, 180);
             $process->mustRun();
+
+            return $process->getOutput();
         } catch (Throwable $t) {
             throw new ComposerException(
                 sprintf('Failed executing Composer command: %s', $t->getMessage())
