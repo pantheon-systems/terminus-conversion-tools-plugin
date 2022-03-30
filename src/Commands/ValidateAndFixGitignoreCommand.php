@@ -30,6 +30,8 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      *
      * @param string $site_id
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -41,17 +43,20 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->validateGitignoreExists();
 
         $this->setGit($this->getLocalSitePath());
+
         $this->setComposer($this->getLocalSitePath());
+        $this->log()->notice('Installing Composer dependencies...');
+        $this->getComposer()->install();
 
         // 1. clone site
         //    @todo: provide a path to local cloned copy if exists
-        // 1.1 install dependencies
         // 2. check for existing .gitignore file
-        // 3. validate
+        // 3. install dependencies
+        // 4. analyze
         //    - "vendor" must be always ignored
-        // 4. suggest fixes
-        // 5. confirm fixes
-        // 6. apply fixes
+        // 5. suggest fixes
+        // 6. confirm fixes
+        // 7. apply fixes
 
         $this->log()->notice('Done!');
     }
