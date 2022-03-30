@@ -93,8 +93,18 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                     $arguments[] = '--dev';
                 }
 
-                $this->getComposer()->require(...$arguments);
-                $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
+                try {
+                    $this->getComposer()->require(...$arguments);
+                    $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
+                } catch (ComposerException $e) {
+                    $errors++;
+                    $this->log()->error(
+                        sprintf(
+                            'Failed updating composer.json: %s',
+                            $t->getMessage()
+                        )
+                    );
+                }
             }
 
             $this->log()->notice('Updating composer dependencies...');
