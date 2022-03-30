@@ -45,7 +45,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
         $upstreamId = $this->site()->getUpstream()->get('machine_name');
         $this->writeln(
             sprintf(
-<<<EOD
+        <<<EOD
 The site %s was created from the upstream:
     %s (%s)
 EOD,
