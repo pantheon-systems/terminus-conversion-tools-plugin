@@ -344,6 +344,30 @@ class Git
     }
 
     /**
+     * Returns TRUE if the path is an ignored path.
+     *
+     * @param string $path
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function isIgnoredPath(string $path): bool
+    {
+        $process = $this->executeAndReturnProcess(['check-ignore', '--quiet', $path]);
+        switch ($process->getExitCode()) {
+            case 0:
+                return true;
+            case 1:
+                return false;
+            default:
+                throw new GitException(
+                    sprintf('Failed to check if path "%s" is ignored: exit code %d', $path, $process->getExitCode())
+                );
+        }
+    }
+
+    /**
      * Returns Git config value by the config name.
      *
      * @param string $confName
