@@ -112,7 +112,13 @@ class Composer
             throw new ComposerException(sprintf('Failed decoding JSON string: error code %d', json_last_error()));
         }
 
-        return $paths;
+        if (!isset($paths['installed'])) {
+            return [];
+        }
+
+        $installationPaths = array_column($paths['installed'], 'path');
+
+        return array_filter($installationPaths, fn($path) => $path !== $this->projectPath);
     }
 
     /**
