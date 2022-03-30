@@ -39,6 +39,11 @@ trait ConversionCommandsTrait
     private string $localSitePath;
 
     /**
+     * @var string
+     */
+    private string $terminusExecutable;
+
+    /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
      * @param bool $force
@@ -432,5 +437,24 @@ trait ConversionCommandsTrait
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
+    }
+
+    /**
+     * Returns the terminus executable.
+     *
+     * @return string
+     */
+    protected function getTerminusExecutable(): string
+    {
+        if (isset($this->terminusExecutable)) {
+            return $this->terminusExecutable;
+        }
+
+        if (getenv('LANDO_APP_NAME')) {
+            // Lando-based environment.
+            return $this->terminusExecutable = 'lando terminus';
+        }
+
+        return $this->terminusExecutable = 'terminus';
     }
 }

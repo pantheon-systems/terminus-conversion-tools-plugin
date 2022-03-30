@@ -45,6 +45,7 @@ trait MigrateComposerJsonTrait
         $this->sourceComposerJson = $sourceComposerJson;
         $this->setComposer($projectPath);
 
+        $this->copyMinimumStability();
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
@@ -80,6 +81,10 @@ EOD
                 }
 
                 $this->getComposer()->require(...$arguments);
+                if ($dependency['package'] === 'drupal/core') {
+                    // We should remove drupal/core-recommended because it's a conflict and it's required in the upstream.
+                    $this->getComposer()->remove('drupal/core-recommended', '--no-update');
+                }
                 if ($this->getGit()->isAnythingToCommit()) {
                     $this->getGit()->commit(
                         sprintf('Add %s (%s) project to Composer', $dependency['package'], $dependency['version'])
@@ -131,6 +136,16 @@ EOD
     }
 
     /**
+     * Returns whether the sources composer json has drupal/core-recommended or not.
+     *
+     * @return bool
+     */
+    private function sourceHasDrupalCoreRecommended(): bool
+    {
+        return isset($this->sourceComposerJson['require']['drupal/core-recommended']);
+    }
+
+    /**
      * Returns the list of Drupal composer dependencies.
      *
      * @return array[]
@@ -145,11 +160,13 @@ EOD
             ?? $this->sourceComposerJson['require']['drupal/core']
             ?? '^8.9';
 
+        $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
+
         $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
 
         return [
             [
-                'package' => 'drupal/core-recommended',
+                'package' => $drupalPackage,
                 'version' => $drupalConstraint,
                 'is_dev' => false,
             ],
@@ -343,6 +360,18 @@ EOD
                     $installerPaths[$path] = array_values(array_unique(array_merge($installerPaths[$path], $types)));
                 }
             }
+        }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copy minimum stability setting
+     */
+    private function copyMinimumStability(): void
+    {
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        if (isset($this->sourceComposerJson['minimum-stability'])) {
+            $currentComposerJson['minimum-stability'] = $this->sourceComposerJson['minimum-stability'];
         }
         $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
