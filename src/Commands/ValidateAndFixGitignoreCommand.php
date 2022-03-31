@@ -187,20 +187,23 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             scandir(Files::buildPath($this->getLocalSitePath(), $path)),
             ['.', '..', ...$subPaths]
         ) : [];
+
         $excludesString = implode(
             ', ',
             array_map(fn($exclude) => Files::buildPath($path, $exclude), $excludes)
         );
+        $pathMessagePart = $excludes ?
+            sprintf('"%s" (excluding: "%s")', $pathPattern, $excludesString) :
+            sprintf('"%s"', $pathPattern);
 
-        $confirmDialogMessage = $excludes ?
-            sprintf(
-                'Do you want to add path "%s" (excluding: "%s") to .gitignore and commit the changes respectively?',
-                $pathPattern,
-                $excludesString
-            ) :
-            sprintf('Do you want to add path "%s" to .gitignore and commit the changes respectively?', $pathPattern);
-
-        if (!$this->input()->getOption('yes') && !$this->io()->confirm($confirmDialogMessage)) {
+        if (!$this->input()->getOption('yes')
+            && !$this->io()->confirm(
+                sprintf(
+                    'Do you want to add path %s to .gitignore and commit the changes respectively?',
+                    $pathMessagePart
+                )
+            )
+        ) {
             $this->log()->warning(
                 sprintf('Skipped adding "%s" to .gitignore file: rejected by the user.', $pathPattern)
             );
@@ -208,15 +211,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             return;
         }
 
-        if ($excludes) {
-            $this->log()->notice(
-                sprintf('Adding "%s" (excluding: "%s") to .gitignore file...', $pathPattern, $excludesString)
-            );
-        } else {
-            $this->log()->notice(
-                sprintf('Adding "%s" to .gitignore file...', $pathPattern)
-            );
-        }
+        $this->log()->notice(sprintf('Adding %s to .gitignore file...', $pathMessagePart));
 
         // Add new gitignore rule(s).
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
@@ -231,12 +226,12 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         fclose($gitignoreFile);
 
         // Commit new .gitignore rule(s).
-        $commitMessage = $excludes ?
-            sprintf('Add "%s" (excluding: "%s") to .gitignore', $pathPattern, $excludesString) :
-            sprintf('Add "%s" to .gitignore', $pathPattern);
-        $this->getGit()->commit($commitMessage, ['.gitignore']);
+        $this->getGit()->commit(
+            sprintf('Add %s to .gitignore', $pathMessagePart),
+            ['.gitignore']
+        );
 
-        // Remove path (or paths) from git because now ignored.
+        // Remove path (or paths) from git.
         $removedPaths = [];
         if ($subPaths && $excludes) {
             // Remove specific paths because of excludes.
