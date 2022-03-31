@@ -30,6 +30,11 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
     private $gitignoreFilePath;
 
     /**
+     * @var bool
+     */
+    private $isGitignoreHeaderAdded = false;
+
+    /**
      * ValidateAndFixGitignoreCommand constructor.
      */
     public function __construct()
@@ -110,17 +115,12 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             );
         }
 
-        if (!file_put_contents($this->gitignoreFilePath, '# Added by Terminus Conversion Tools Plugin.' . PHP_EOL)) {
+        if (false === file_put_contents($this->gitignoreFilePath, '')) {
             throw new TerminusException(
                 sprintf('Failed to create .gitignore file in "%s".', $this->getLocalSitePath())
             );
         }
         $this->getGit()->commit('Add .gitignore', ['.gitignore']);
-
-        array_map(
-            [$this, 'addPathToIgnore'],
-            $this->getDefaultPathsToIgnore()
-        );
     }
 
     /**
@@ -141,8 +141,13 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->log()->notice(sprintf('Adding "%s" to .gitignore file...', $path));
 
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
+        if (!$this->isGitignoreHeaderAdded) {
+            fwrite($gitignoreFile, '# Added by Terminus Conversion Tools Plugin.' . PHP_EOL);
+            $this->isGitignoreHeaderAdded = true;
+        }
         fwrite($gitignoreFile, '/' . $path . PHP_EOL);
         fclose($gitignoreFile);
+
         $this->getGit()->commit(sprintf('Add "%s" to .gitignore', $path), ['.gitignore']);
 
         $this->getGit()->remove('-r', '--cached', $path);
