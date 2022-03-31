@@ -45,6 +45,9 @@ final class ConversionCommandsValidateAndFixGitignoreTest extends ConversionComm
 # Added by Terminus Conversion Tools Plugin.
 /vendor
 /web/core
+/web/modules/composer/*
+/web/themes/composer/*
+!/web/themes/composer/this_file_must_not_be_gitignored.txt
 
 EOD,
             file_get_contents($gitignoreFilePath)
