@@ -241,9 +241,7 @@ EOD
             );
 
             return;
-        }
-        elseif ($this->isDrupalProjectSite()) {
-
+        } elseif ($this->isDrupalProjectSite()) {
             // @todo Detect if:
             // 1) there is a conversion multidev
 
