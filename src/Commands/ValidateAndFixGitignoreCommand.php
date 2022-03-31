@@ -73,17 +73,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $installationPathsProcessed = array_filter($installationPaths, fn($path) => 0 !== strpos($path, 'vendor/'));
         array_unshift($installationPathsProcessed, ...$this->getDefaultPathsToIgnore());
         sort($installationPathsProcessed);
-
-        // 1. clone site
-        //    @todo: provide a path to local cloned copy if exists
-        // 2. check for existing .gitignore file
-        // 3. install dependencies
-        // 4. analyze
-        //    - get Composer installation paths
-        // 5. suggest fixes
-        //    - "vendor" must be always ignored
-        // 6. confirm fixes
-        // 7. apply fixes
+        array_walk($installationPathsProcessed, [$this, 'addPathToIgnore']);
 
         $this->log()->notice('Done!');
     }
@@ -137,6 +127,25 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
     {
         if (!$this->fs->exists(Files::buildPath($this->getLocalSitePath(), $path))) {
             $this->log()->notice(sprintf('Skipped adding "%s" to .gitignore file: the path does not exist.', $path));
+
+            return;
+        }
+
+        if ($this->getGit()->isIgnoredPath($path)) {
+            $this->log()->notice(sprintf('Skipped adding "%s" to .gitignore file: the path is already ignored.', $path));
+
+            return;
+        }
+
+        if (!$this->input()->getOption('yes')
+            && !$this->io()->confirm(
+                sprintf(
+                    'Do you want to add path "%s" to .gitignore and commit the changes respectively?',
+                    $path
+                )
+            )
+        ) {
+            $this->log()->warning(sprintf('Skipped adding "%s" to .gitignore file: rejected by the user.', $path));
 
             return;
         }
