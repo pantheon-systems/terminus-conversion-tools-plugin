@@ -90,7 +90,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             // Remove all installation paths that starts with $pathParent...
             $installationPathsProcessed = array_filter(
                 $installationPathsProcessed,
-                fn($path) => 0 !== strpos($path, $pathParent)
+                fn($path) => is_array($path) || 0 !== strpos($path, $pathParent)
             );
             // ...and replace with a single complex rule instead.
             $installationPathsProcessed[] = [
