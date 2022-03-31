@@ -90,6 +90,41 @@ EOD,
     }
 
     /**
+     * Determines whether the current site is a drupal-recommended site or not.
+     */
+    protected function isDrupalRecommendedSite(): bool
+    {
+        $localPath = $this->getLocalSitePath(false);
+        $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
+        if (is_file($upstreamConfComposerJsonPath)) {
+            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
+            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
+                // Repository contents matches "drupal-recommended" upstream.
+
+                $this->getGit()->addRemote(
+                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
+                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
+                );
+                return $this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determines whether the current site is a drupal-project site or not.
+     */
+    protected function isDrupalProjectSite(): bool
+    {
+        if (!$this->isDrupalRecommendedSite()) {
+            $localPath = $this->getLocalSitePath(false);
+            $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
+            return is_file($upstreamConfComposerJsonPath);
+        }
+        return false;
+    }
+
+    /**
      * Prints advice related to "drops-8" upstream.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -197,29 +232,17 @@ EOD
             $this->writeln('Notice: This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
         }
 
-        $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-        if (is_file($upstreamConfComposerJsonPath) && !$isBuildTools) {
-            // Repository contents matches either "drupal-project" or "drupal-recommended" upstream.
-
-            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
-            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
-                // Repository contents matches "drupal-recommended" upstream.
-
-                $this->getGit()->addRemote(
-                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
-                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
-                );
-                if ($this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID)) {
-                    $this->output()->writeln(
-                        <<<EOD
+        if ($this->isDrupalRecommendedSite()) {
+            $this->output()->writeln(
+                <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus:
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 EOD
-                    );
+            );
 
-                    return;
-                }
-            }
+            return;
+        }
+        elseif ($this->isDrupalProjectSite()) {
 
             // @todo Detect if:
             // 1) there is a conversion multidev

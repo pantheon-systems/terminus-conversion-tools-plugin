@@ -501,7 +501,7 @@ EOD,
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function isBuildToolsSite()
+    protected function isBuildToolsSite(): bool
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
