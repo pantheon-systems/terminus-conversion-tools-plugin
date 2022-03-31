@@ -137,6 +137,10 @@ EOD
             $this->output()->writeln('Standard drupal 8 site.');
         }
 
+        // @todo Detect if:
+        // 1) dev environment already matches drupal-recommended
+        // 2) there is a conversion multidev
+
         $this->output()->writeln(
             <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
@@ -160,6 +164,9 @@ EOD
     {
 // This process may be done manually by following the instructions in the guide:
 // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
+// @todo Detect if:
+// 1) dev environment already matches drupal-recommended
+// 2) there is a conversion multidev
         $this->output()->writeln(
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
@@ -214,6 +221,9 @@ EOD
                 }
             }
 
+            // @todo Detect if:
+            // 1) there is a conversion multidev
+
 // This process may be done manually by following the instructions in the guide:
 // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
             // Upstream is drupal-project.
@@ -234,6 +244,9 @@ EOD
         }
 
         if ($isBuildTools) {
+            // @todo Detect if:
+            // 1) there is a conversion multidev
+
             // Build artifact created by Terminus Build Tools plugin is present.
             $this->output()->writeln(
                 <<<EOD
@@ -253,6 +266,9 @@ EOD
 
             return;
         }
+
+        // @todo Detect if:
+        // 1) there is a conversion multidev
 
         $this->output()->writeln(
             <<<EOD
