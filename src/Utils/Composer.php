@@ -37,6 +37,21 @@ class Composer
     }
 
     /**
+     * Executes `composer remove` command.
+     *
+     * @param string $package
+     *   The package name.
+     * @param array $options
+     *   Additional options.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    public function remove(string $package, ...$options): void
+    {
+        $this->execute(['composer', 'remove', $package, ...$options]);
+    }
+
+    /**
      * Executes `composer require` command.
      *
      * @param string $package
