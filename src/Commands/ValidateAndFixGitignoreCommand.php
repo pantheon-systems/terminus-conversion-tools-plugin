@@ -69,6 +69,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->setGit($this->getLocalSitePath());
         $this->validateGitignoreExists();
 
+        $this->log()->notice('Analyzing Composer installation paths...');
         $installationPaths = $this->getComposer()->getInstallationPaths();
         $installationPathsProcessed = array_filter(
             $installationPaths,
