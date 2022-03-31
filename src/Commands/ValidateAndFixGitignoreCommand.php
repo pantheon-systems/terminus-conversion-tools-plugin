@@ -141,7 +141,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->log()->notice(sprintf('Adding "%s" to .gitignore file...', $path));
 
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
-        fwrite($gitignoreFile, $path . PHP_EOL);
+        fwrite($gitignoreFile, '/' . $path . PHP_EOL);
         fclose($gitignoreFile);
         $this->getGit()->commit(sprintf('Add "%s" to .gitignore', $path), ['.gitignore']);
 
