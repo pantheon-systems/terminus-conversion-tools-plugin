@@ -28,13 +28,14 @@ final class ConversionCommandsValidateAndFixGitignoreTest extends ConversionComm
     {
         $this->terminus(sprintf('conversion:validate-gitignore %s', $this->siteName));
 
-        $localSiteCopyDirName = sprintf('%s_terminus_conversion_plugin', $this->siteName);
-        $gitignoreFilePath = Files::buildPath(
+        $localSiteDirName = sprintf('%s_terminus_conversion_plugin', $this->siteName);
+        $localSitePath = $gitignoreFilePath = Files::buildPath(
             $_SERVER['HOME'],
             'pantheon-local-copies',
-            $localSiteCopyDirName,
-            '.gitignore'
+            $localSiteDirName
         );
+        $gitignoreFilePath = Files::buildPath($localSitePath, '.gitignore');
+
         $this->assertTrue(
             is_file($gitignoreFilePath),
             sprintf('File "%s" must exist', $gitignoreFilePath)
