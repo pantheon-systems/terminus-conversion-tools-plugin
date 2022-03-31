@@ -368,32 +368,6 @@ class Git
     }
 
     /**
-     * Returns Git config value by the config name.
-     *
-     * @param string $confName
-     *
-     * @return string
-     *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     */
-    public function getConfig(string $confName): string
-    {
-        return trim($this->execute(['config', '--get', $confName]));
-    }
-
-    /**
-     * Returns the top-level repository path.
-     *
-     * @return string
-     *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     */
-    public function getToplevelRepoPath(): string
-    {
-        return trim($this->execute(['rev-parse', '--show-toplevel']));
-    }
-
-    /**
      * Adds files to index.
      *
      * @param $options
@@ -421,13 +395,7 @@ class Git
         try {
             $process = $this->executeAndReturnProcess($command, $input);
             if (0 !== $process->getExitCode()) {
-                throw new GitException(
-                    sprintf(
-                        'Git command failed with exit code %d and message %s',
-                        $process->getExitCode(),
-                        $process->getErrorOutput()
-                    )
-                );
+                throw new GitException(sprintf('Git command failed with exit code %d and message %s', $process->getExitCode(), $process->getErrorOutput()));
             }
         } catch (Throwable $t) {
             throw new GitException(
@@ -444,7 +412,7 @@ class Git
      * @param array|string $command
      * @param null|string $input
      *
-     * @return \Symfony\Component\Process\Process
+     * @return Symfony\Component\Process\Process
      */
     private function executeAndReturnProcess($command, ?string $input = null): Process
     {

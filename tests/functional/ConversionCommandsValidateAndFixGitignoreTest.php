@@ -35,7 +35,19 @@ final class ConversionCommandsValidateAndFixGitignoreTest extends ConversionComm
             $localSiteCopyDirName,
             '.gitignore'
         );
-        $this->assertTrue(is_file($gitignoreFilePath), $gitignoreFilePath . ' .gitignore file must exist');
-        $this->assertEquals('haha', file_get_contents($gitignoreFilePath));
+        $this->assertTrue(
+            is_file($gitignoreFilePath),
+            sprintf('File "%s" must exist', $gitignoreFilePath)
+        );
+
+        $this->assertEquals(
+            <<<EOD
+# Added by Terminus Conversion Tools Plugin.
+/vendor
+/web/core
+
+EOD,
+            file_get_contents($gitignoreFilePath)
+        );
     }
 }
