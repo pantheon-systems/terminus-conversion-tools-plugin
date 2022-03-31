@@ -159,7 +159,9 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      * Adds a path to .gitignore.
      *
      * @param string $pathPattern
+     *   A path or a gitignore path pattern (i.e. /web/themes/composer/*).
      * @param array $subPaths
+     *   An array of sub-paths to ignore. Used with path pattern "/*".
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
