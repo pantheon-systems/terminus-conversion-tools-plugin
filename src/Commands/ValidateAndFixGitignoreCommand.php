@@ -70,6 +70,9 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->validateGitignoreExists();
 
         $installationPaths = $this->getComposer()->getInstallationPaths();
+        $installationPathsProcessed = array_filter($installationPaths, fn($path) => 0 !== strpos($path, 'vendor/'));
+        array_unshift($installationPathsProcessed, ...$this->getDefaultPathsToIgnore());
+        sort($installationPathsProcessed);
 
         // 1. clone site
         //    @todo: provide a path to local cloned copy if exists
