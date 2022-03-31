@@ -97,7 +97,7 @@ class Composer
     }
 
     /**
-     * Returns the list of installation paths.
+     * Returns the list of relative installation paths.
      *
      * @return array
      *
@@ -117,8 +117,12 @@ class Composer
         }
 
         $installationPaths = array_column($paths['installed'], 'path');
+        $installationPaths = array_filter($installationPaths, fn($path) => $path !== $this->projectPath);
 
-        return array_filter($installationPaths, fn($path) => $path !== $this->projectPath);
+        return array_map(
+            fn($path) => str_replace($this->projectPath . '/', '', $path),
+            $installationPaths
+        );
     }
 
     /**
