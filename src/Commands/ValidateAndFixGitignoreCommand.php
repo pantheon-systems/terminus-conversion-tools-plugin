@@ -132,7 +132,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      */
     private function addPathToIgnore(string $path): void
     {
-        if (!$this->fs->exists($path)) {
+        if (!$this->fs->exists(Files::buildPath($this->getLocalSitePath(), $path))) {
             $this->log()->notice(sprintf('Skipped adding "%s" to .gitignore file: the path does not exist.', $path));
 
             return;
@@ -141,7 +141,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
         $this->log()->notice(sprintf('Adding "%s" to .gitignore file...', $path));
 
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
-        fwrite($gitignoreFile, $path);
+        fwrite($gitignoreFile, $path . PHP_EOL);
         fclose($gitignoreFile);
         $this->getGit()->commit(sprintf('Add "%s" to .gitignore', $path), ['.gitignore']);
 
