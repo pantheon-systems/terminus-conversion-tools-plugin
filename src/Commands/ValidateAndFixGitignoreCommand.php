@@ -187,7 +187,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             scandir(Files::buildPath($this->getLocalSitePath(), $path)),
             ['.', '..', ...$subPaths]
         ) : [];
-        $excludesList = implode(
+        $excludesString = implode(
             ', ',
             array_map(fn($exclude) => Files::buildPath($path, $exclude), $excludes)
         );
@@ -196,7 +196,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             sprintf(
                 'Do you want to add path "%s" (excluding: "%s") to .gitignore and commit the changes respectively?',
                 $pathPattern,
-                $excludesList
+                $excludesString
             ) :
             sprintf('Do you want to add path "%s" to .gitignore and commit the changes respectively?', $pathPattern);
 
@@ -210,7 +210,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
 
         if ($excludes) {
             $this->log()->notice(
-                sprintf('Adding "%s" (excluding: "%s") to .gitignore file...', $pathPattern, $excludesList)
+                sprintf('Adding "%s" (excluding: "%s") to .gitignore file...', $pathPattern, $excludesString)
             );
         } else {
             $this->log()->notice(
@@ -218,23 +218,43 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             );
         }
 
+        // Add new gitignore rule(s).
         $gitignoreFile = fopen($this->gitignoreFilePath, 'a');
         if (!$this->isGitignoreHeaderAdded) {
             fwrite($gitignoreFile, '# Added by Terminus Conversion Tools Plugin.' . PHP_EOL);
             $this->isGitignoreHeaderAdded = true;
         }
-
         fwrite($gitignoreFile, '/' . $pathPattern . PHP_EOL);
         foreach ($excludes as $exclude) {
             fwrite($gitignoreFile, '!/' . $path . '/' . $exclude . PHP_EOL);
-            // @fixme: this made an exclude uncommitted!
         }
-
         fclose($gitignoreFile);
 
-        $this->getGit()->commit(sprintf('Add "%s" to .gitignore', $pathPattern), ['.gitignore']);
-        $this->getGit()->remove('-r', '--cached', $path);
-        $this->getGit()->commit(sprintf('Remove ignored path "%s"', $pathPattern), ['-u']);
+        // Commit new .gitignore rule(s).
+        $commitMessage = $excludes ?
+            sprintf('Add "%s" (excluding: "%s") to .gitignore', $pathPattern, $excludesString) :
+            sprintf('Add "%s" to .gitignore', $pathPattern);
+        $this->getGit()->commit($commitMessage, ['.gitignore']);
+
+        // Remove path (or paths) from git because now ignored.
+        $removedPaths = [];
+        if ($subPaths && $excludes) {
+            // Remove specific paths because of excludes.
+            foreach ($subPaths as $subPath) {
+                $pathToRemove = $path . '/' . $subPath;
+                $this->getGit()->remove('-r', '--cached', $pathToRemove);
+                $removedPaths[] = $pathToRemove;
+            }
+        } else {
+            $this->getGit()->remove('-r', '--cached', $path);
+            $removedPaths[] = $path;
+        }
+
+        $removedPathsString = implode(', ', $removedPaths);
+        $commitMessage = 1 === count($removedPaths) ?
+            sprintf('Remove git-ignored path "%s"', $removedPathsString) :
+            sprintf('Remove git-ignored paths "%s"', $removedPathsString);
+        $this->getGit()->commit($commitMessage, ['-u']);
     }
 
     /**
