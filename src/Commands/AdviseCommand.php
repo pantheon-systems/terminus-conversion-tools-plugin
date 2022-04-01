@@ -217,7 +217,6 @@ EOD
         } elseif ($this->conversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
-
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
@@ -316,7 +315,6 @@ EOD
             if ($this->conversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
-
                 // Build artifact created by Terminus Build Tools plugin is present.
                 $this->output()->writeln(
                     <<<EOD
@@ -341,7 +339,6 @@ EOD
         if ($this->conversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
-
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
