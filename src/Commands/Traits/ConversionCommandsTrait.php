@@ -525,4 +525,13 @@ EOD,
 
         return $this->terminusExecutable = 'terminus';
     }
+
+    /**
+     * Determines whether a multidev named "conversion" exists for this site.
+     */
+    protected function conversionMultidevExist(): bool
+    {
+        $environments = $this->site()->getEnvironments()->fetch()->ids();
+        return in_array('conversion', $environments);
+    }
 }

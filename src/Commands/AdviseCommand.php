@@ -197,13 +197,33 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
+        if ($this->isDrupalRecommendedSite()) {
+            $this->output()->writeln(
+                <<<EOD
+Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+    Drupal Recommended (drupal-recommended)
+This process has already been started and seems to be ready in the dev environment. To finish it, you should change the upstream with the following command:
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+            );
+            return;
+        } elseif ($this->conversionMultidevExist()) {
+            $this->output()->writeln(
+                <<<EOD
+Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+    Drupal Recommended (drupal-recommended)
+This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
+    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+            );
+        } else {
 // This process may be done manually by following the instructions in the guide:
 // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
-// @todo Detect if:
-// 1) dev environment already matches drupal-recommended
-// 2) there is a conversion multidev
-        $this->output()->writeln(
-            <<<EOD
+            $this->output()->writeln(
+                <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
     Drupal Recommended (drupal-recommended)
 An automated process to convert this site is available. To begin, run:
@@ -213,7 +233,8 @@ This command will create a new multidev named “conversion” that will contain
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
-        );
+            );
+        }
     }
 
     /**
