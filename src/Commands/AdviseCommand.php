@@ -125,6 +125,46 @@ EOD,
     }
 
     /**
+     * Print advise for dev environment already on Drupal Recommended.
+     */
+    private function adviseDevAlreadyOnDrupalRecommended(): void
+    {
+        $this->output()->writeln(
+            <<<EOD
+Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Drupal Recommended (drupal-recommended)
+This process has already been started and seems to be ready in the dev environment. To finish it, you should change the upstream with the following command:
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+        );
+    }
+
+    /**
+     * Print advise for when conversion multidev already exists.
+     */
+    private function adviseConversionMultidevExists(): void
+    {
+        $this->output()->writeln(
+            <<<EOD
+Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Drupal Recommended (drupal-recommended)
+This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
+    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
+You could also delete the multidev environment:
+    {$this->getTerminusExecutable()} multidev:delete {$this->site()->getName()}.conversion --delete-branch
+Or run:
+    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+if you wish to start over.
+
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+        );
+    }
+
+    /**
      * Prints advice related to "drops-8" upstream.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -172,24 +212,27 @@ EOD
             $this->output()->writeln('Standard drupal 8 site.');
         }
 
-        // @todo Detect if:
-        // 1) dev environment already matches drupal-recommended
-        // 2) there is a conversion multidev
+        if ($this->isDrupalRecommendedSite()) {
+            $this->adviseDevAlreadyOnDrupalRecommended();
+        } elseif ($this->conversionMultidevExist()) {
+            $this->adviseConversionMultidevExists();
+        } else {
 
-        $this->output()->writeln(
-            <<<EOD
+            $this->output()->writeln(
+                <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
     Drupal Recommended (drupal-recommended)
 This process may be done manually by following the instructions in the guide:
     https://pantheon.io/docs/guides/composer-convert
 An automated process to convert this site is available. To begin, run:
-    `{$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}`)
+    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
-        );
+            );
+        }
     }
 
     /**
@@ -198,27 +241,9 @@ EOD
     private function adviseOnDrupalProject(): void
     {
         if ($this->isDrupalRecommendedSite()) {
-            $this->output()->writeln(
-                <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
-    Drupal Recommended (drupal-recommended)
-This process has already been started and seems to be ready in the dev environment. To finish it, you should change the upstream with the following command:
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
-You may run the conversion:advise command again to check your progress and see the next steps again.
-EOD
-            );
-            return;
+            $this->adviseDevAlreadyOnDrupalRecommended();
         } elseif ($this->conversionMultidevExist()) {
-            $this->output()->writeln(
-                <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
-    Drupal Recommended (drupal-recommended)
-This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
-You may run the conversion:advise command again to check your progress and see the next steps again.
-EOD
-            );
+            $this->adviseConversionMultidevExists();
         } else {
 // This process may be done manually by following the instructions in the guide:
 // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
@@ -263,14 +288,15 @@ EOD
 
             return;
         } elseif ($this->isDrupalProjectSite()) {
-            // @todo Detect if:
-            // 1) there is a conversion multidev
+            if ($this->conversionMultidevExist()) {
+                $this->adviseConversionMultidevExists();
+            } else {
+                // This process may be done manually by following the instructions in the guide:
+                // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
 
-// This process may be done manually by following the instructions in the guide:
-// https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
-            // Upstream is drupal-project.
-            $this->output()->writeln(
-                <<<EOD
+                // Upstream is drupal-project.
+                $this->output()->writeln(
+                    <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
     Drupal Recommended (drupal-recommended)
 An automated process to convert this site is available. To begin, run:
@@ -280,18 +306,20 @@ This command will create a new multidev named “conversion” that will contain
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
-            );
+                );
+            }
 
             return;
         }
 
         if ($isBuildTools) {
-            // @todo Detect if:
-            // 1) there is a conversion multidev
+            if ($this->conversionMultidevExist()) {
+                $this->adviseConversionMultidevExists();
+            } else {
 
-            // Build artifact created by Terminus Build Tools plugin is present.
-            $this->output()->writeln(
-                <<<EOD
+                // Build artifact created by Terminus Build Tools plugin is present.
+                $this->output()->writeln(
+                    <<<EOD
 Advice: you might want to convert to drupal-recommended if you are NOT using Continuous Integration (e.g. running tests, compiling css, etc).
 Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
 
@@ -304,16 +332,18 @@ This command will create a new multidev named “conversion” that will contain
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
-            );
+                );
+            }
 
             return;
         }
 
-        // @todo Detect if:
-        // 1) there is a conversion multidev
+        if ($this->conversionMultidevExist()) {
+            $this->adviseConversionMultidevExists();
+        } else {
 
-        $this->output()->writeln(
-            <<<EOD
+            $this->output()->writeln(
+                <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
     Drupal Recommended (drupal-recommended)
 This process may be done manually by following the instructions in the guide:
@@ -327,6 +357,7 @@ You may run the conversion:advise command again to check your progress and see t
 
 You could also stay in the current upstream if you prefer so.
 EOD
-        );
+            );
+        }
     }
 }
