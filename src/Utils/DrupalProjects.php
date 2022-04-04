@@ -15,6 +15,8 @@ class DrupalProjects
      */
     private string $siteRootPath;
 
+    private const PACKAGIST_URL_PATTERN = 'https://packagist.org/packages/{package}.json';
+
     /**
      * DrupalProjects constructor.
      */
@@ -112,8 +114,8 @@ class DrupalProjects
         $composerJsonFiles = [];
         $finder = new Finder();
         $filesystem = new Filesystem();
-        foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $finder->files()->in($librariesDir . DIRECTORY_SEPARATOR . '*');
+        foreach ($this->getLibrariesDirectories() as $librariesDirectory) {
+            $finder->files()->in($librariesDirectory . DIRECTORY_SEPARATOR . '*');
             $finder->files()->name('composer.json');
             if (!$finder->hasResults()) {
                 continue;
@@ -123,8 +125,6 @@ class DrupalProjects
                 $composerJsonFiles[$file->getPath()] = $file->getFilename();
             }
         }
-
-        $packagistBaseUrl = 'https://packagist.org/packages/{package}.json';
 
         $packages = [];
         foreach ($composerJsonFiles as $filePath => $fileName) {
@@ -137,7 +137,7 @@ class DrupalProjects
                 continue;
             }
 
-            $packagistUrl = str_replace('{package}', $composerJsonFileContent['name'], $packagistBaseUrl);
+            $packagistUrl = str_replace('{package}', $composerJsonFileContent['name'], self::PACKAGIST_URL_PATTERN);
             if (file_get_contents($packagistUrl)) {
                 $packages[] = $composerJsonFileContent['name'];
             } else {
@@ -146,15 +146,15 @@ class DrupalProjects
         }
 
         $finder = new Finder();
-        foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $finder->directories()->in($librariesDir)->depth(0);
+        foreach ($this->getLibrariesDirectories() as $librariesDirectory) {
+            $finder->directories()->in($librariesDirectory)->depth(0);
             if (!$finder->hasResults()) {
                 continue;
             }
 
-            foreach ($finder as $folder) {
-                if (!file_exists($folder->getPathname() . DIRECTORY_SEPARATOR . 'composer.json')) {
-                    $this->backupLibrary($folder->getPathname());
+            foreach ($finder as $directory) {
+                if (!file_exists($directory->getPathname() . DIRECTORY_SEPARATOR . 'composer.json')) {
+                    $this->backupLibrary($directory->getPathname());
                 }
             }
         }

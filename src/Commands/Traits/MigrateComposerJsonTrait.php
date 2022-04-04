@@ -4,6 +4,7 @@ namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Filesystem\Filesystem;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Throwable;
 
 /**
@@ -47,7 +48,7 @@ trait MigrateComposerJsonTrait
         string $projectPath,
         array  $contribProjects = [],
         array  $libraryProjects = [],
-        string $librariesBackupPath = null,
+        string $librariesBackupPath = null
     ): void {
         $this->log()->notice('Migrating Composer project components...');
 
@@ -81,14 +82,17 @@ EOD
 
     /**
      * Restore libraries from the backup path and commit them.
+     *
+     * @param string $librariesBackupPath
+     *   Path to backup of libraries.
      */
     private function restoreLibraries(string $librariesBackupPath): void
     {
         $finder = new Finder();
         $filesystem = new Filesystem();
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
-            $filesystem->mirror($folder->getPathname(), $this->localSitePath . '/web/libraries/' . $folder->getRelativePathname());
-            $this->getGit()->commit('Copy library ' . $folder->getRelativePathname(), [$this->localSitePath . '/web/libraries/' . $folder->getRelativePathname(), '-f']);
+            $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
+            $this->getGit()->commit(sprintf('Copy library %s', $folder->getRelativePathname()), [Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()), '-f']);
         }
         $filesystem->remove($librariesBackupPath);
         if ($this->getGit()->isAnythingToCommit()) {
