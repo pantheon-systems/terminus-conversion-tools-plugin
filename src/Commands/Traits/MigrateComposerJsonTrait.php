@@ -92,7 +92,11 @@ EOD
         $filesystem = new Filesystem();
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
             $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
-            $this->getGit()->commit(sprintf('Copy library %s', $folder->getRelativePathname()), [Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()), '-f']);
+            $libraryPath = Files::buildPath('web/libraries/', $folder->getRelativePathname());
+            if ($this->getGit()->isIgnoredPath($libraryPath)) {
+                $this->getGit()->appendToIgnore(sprintf('!%s', $libraryPath));
+            }
+            $this->getGit()->commit(sprintf('Copy library %s', $folder->getRelativePathname()), [$libraryPath]);
         }
         $filesystem->remove($librariesBackupPath);
         if ($this->getGit()->isAnythingToCommit()) {

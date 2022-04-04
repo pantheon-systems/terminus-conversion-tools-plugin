@@ -394,6 +394,19 @@ class Git
     }
 
     /**
+     * Append given path to .gitignore.
+     *
+     * @param string $path
+     *   Path to ignore.
+     */
+    public function appendToIgnore(string $path): void
+    {
+        $gitignoreFile = fopen(Files::buildPath($this->repoPath, '.gitignore'), 'a');
+        fwrite($gitignoreFile, $path . PHP_EOL);
+        $this->commit(sprintf('Add %s to gitignore.', $path), [$path]);
+    }
+
+    /**
      * Adds files to index.
      *
      * @param $options
