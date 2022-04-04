@@ -80,17 +80,17 @@ class Git
      *
      * @param string $commitMessage
      *   The commit message.
-     * @param null|array $files
-     *   The files to stage.
+     * @param null|array $gitAddOptions
+     *   git-add options.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function commit(string $commitMessage, ?array $files = null): void
+    public function commit(string $commitMessage, ?array $gitAddOptions = null): void
     {
-        if (null === $files) {
-            $this->execute(['add', '-A']);
+        if (null === $gitAddOptions) {
+            $this->add('-A');
         } else {
-            $this->execute(['add', ...$files]);
+            $this->add(...$gitAddOptions);
         }
 
         $this->execute(['commit', '-m', $commitMessage]);
@@ -367,6 +367,43 @@ class Git
     public function getToplevelRepoPath(): string
     {
         return trim($this->execute(['rev-parse', '--show-toplevel']));
+    }
+
+    /**
+     * Returns TRUE if the path is an ignored path.
+     *
+     * @param string $path
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function isIgnoredPath(string $path): bool
+    {
+        $process = $this->executeAndReturnProcess(['check-ignore', '--quiet', $path]);
+        switch ($process->getExitCode()) {
+            case 0:
+                return true;
+            case 1:
+                return false;
+            default:
+                throw new GitException(
+                    sprintf('Failed to check if path "%s" is ignored: exit code %d', $path, $process->getExitCode())
+                );
+        }
+    }
+
+    /**
+     * Adds files to index.
+     *
+     * @param $options
+     *   The list of files and git-add options.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function add(...$options): void
+    {
+        $this->execute(['add', ...$options]);
     }
 
     /**

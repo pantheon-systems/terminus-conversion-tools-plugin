@@ -97,17 +97,50 @@ class Composer
     }
 
     /**
+     * Returns the list of relative installation paths.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    public function getInstallationPaths(): array
+    {
+        $pathsJson = $this->execute(['composer', 'info', '--path', '--format=json']);
+
+        $paths = json_decode($pathsJson, true);
+        if (json_last_error()) {
+            throw new ComposerException(sprintf('Failed decoding JSON string: error code %d', json_last_error()));
+        }
+
+        if (!isset($paths['installed'])) {
+            return [];
+        }
+
+        $installationPaths = array_column($paths['installed'], 'path');
+        $installationPaths = array_filter($installationPaths, fn($path) => $path !== $this->projectPath);
+
+        return array_map(
+            fn($path) => str_replace($this->projectPath . '/', '', $path),
+            $installationPaths
+        );
+    }
+
+    /**
      * Executes the Composer command.
      *
      * @param array $command
      *
+     * @return string
+     *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
-    private function execute(array $command): void
+    private function execute(array $command): string
     {
         try {
             $process = new Process($command, $this->projectPath, null, null, 180);
             $process->mustRun();
+
+            return $process->getOutput();
         } catch (Throwable $t) {
             throw new ComposerException(
                 sprintf('Failed executing Composer command: %s', $t->getMessage())
