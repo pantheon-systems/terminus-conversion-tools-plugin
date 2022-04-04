@@ -132,10 +132,14 @@ EOD,
         $this->output()->writeln(
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
-Drupal Recommended (drupal-recommended)
+
+    Drupal Recommended (drupal-recommended)
+
 This process has already been started and seems to be ready in the dev environment. To finish it, you should change the upstream with the following command:
+
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
-You may run the conversion:advise command again to check your progress and see the next steps again.
+
+You may run the conversion:advise command again to confirm the conversion completed successfully.
 EOD
         );
     }
@@ -148,15 +152,22 @@ EOD
         $this->output()->writeln(
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
-Drupal Recommended (drupal-recommended)
+
+    Drupal Recommended (drupal-recommended)
+
 This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You could also delete the multidev environment:
+
     {$this->getTerminusExecutable()} multidev:delete {$this->site()->getName()}.conversion --delete-branch
+
 Or run:
+
     {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+
 if you wish to start over.
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
@@ -220,14 +231,22 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
+
     Drupal Recommended (drupal-recommended)
+
 This process may be done manually by following the instructions in the guide:
+
     https://pantheon.io/docs/guides/composer-convert
+
 An automated process to convert this site is available. To begin, run:
+
     {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
             );
@@ -249,12 +268,18 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+
     Drupal Recommended (drupal-recommended)
+
 An automated process to convert this site is available. To begin, run:
+
     {$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}
+
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
             );
@@ -281,7 +306,8 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus:
-{$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 EOD
             );
 
@@ -297,12 +323,18 @@ EOD
                 $this->output()->writeln(
                     <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+
     Drupal Recommended (drupal-recommended)
+
 An automated process to convert this site is available. To begin, run:
+
     {$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}
+
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
                 );
@@ -322,12 +354,18 @@ Advice: you might want to convert to drupal-recommended if you are NOT using Con
 Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
 
 If you wish to convert to drupal-recommended, this process may be done manually by following the instructions in the guide:
+
     https://pantheon.io/docs/guides/composer-convert-from-empty
+
 An automated process to convert this site is available. To begin, run:
+
     {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
                 );
@@ -342,14 +380,22 @@ EOD
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+
     Drupal Recommended (drupal-recommended)
+
 This process may be done manually by following the instructions in the guide:
+
     https://pantheon.io/docs/guides/composer-convert-from-empty
+
 An automated process to convert this site is available. To begin, run:
+
     {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
     {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+
 You may run the conversion:advise command again to check your progress and see the next steps again.
 
 You could also stay in the current upstream if you prefer so.
