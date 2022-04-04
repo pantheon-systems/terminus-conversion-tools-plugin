@@ -47,6 +47,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
             sprintf(
                 <<<EOD
 The site %s was created from the upstream:
+
     %s (%s)
 EOD,
                 $this->site()->getName(),
