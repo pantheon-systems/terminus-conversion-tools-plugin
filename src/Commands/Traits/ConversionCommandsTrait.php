@@ -39,6 +39,16 @@ trait ConversionCommandsTrait
     private string $localSitePath;
 
     /**
+     * @var string
+     */
+    private string $terminusExecutable;
+  
+    /**
+     * @var string
+     */
+    private string $siteGitRemoteUrl;
+
+    /**
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
      * @param bool $force
@@ -60,13 +70,34 @@ trait ConversionCommandsTrait
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
 
-        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
-        $devEnv = $this->site->getEnvironments()->get('dev');
-
-        $gitUrl = $devEnv->connectionInfo()['git_url'] ?? null;
-        $this->getLocalMachineHelper()->cloneGitRepository($gitUrl, $path, true);
+        $this->getLocalMachineHelper()->cloneGitRepository($this->getRemoteGitUrl(), $path, true);
 
         return $path;
+    }
+
+    /**
+     * Returns the site Git remote URL.
+     *
+     * @return string
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function getRemoteGitUrl(): string
+    {
+        if (isset($this->siteGitRemoteUrl)) {
+            return $this->siteGitRemoteUrl;
+        }
+
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
+        $devEnv = $this->site->getEnvironments()->get('dev');
+        $connectionInfo = $devEnv->connectionInfo();
+
+        if (!isset($connectionInfo['git_url'])) {
+            throw new TerminusException('Failed to get site Git URL');
+        }
+
+        return $this->siteGitRemoteUrl = $connectionInfo['git_url'];
     }
 
     /**
@@ -78,6 +109,7 @@ trait ConversionCommandsTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     protected function getLocalSitePath(?bool $force = null)
     {
@@ -85,11 +117,49 @@ trait ConversionCommandsTrait
             return $this->localSitePath;
         }
 
+        $existingLocalGitRepo = $this->detectLocalGitRepo();
+        if (null !== $existingLocalGitRepo) {
+            if ($this->input()->getOption('yes') || $this->io()
+                    ->confirm(
+                        sprintf(
+                            <<<EOD
+An existing local site repository found in "%s".
+Do you want to proceed with it (a temporary copy will be cloned otherwise)?
+EOD,
+                            $existingLocalGitRepo
+                        )
+                    )
+            ) {
+                $this->log()->notice(sprintf('Local git repository path is set to "%s".', $existingLocalGitRepo));
+
+                return $this->localSitePath = $existingLocalGitRepo;
+            }
+        }
+
         $this->localSitePath = null === $force
             ? $this->cloneSiteGitRepository()
             : $this->cloneSiteGitRepository($force);
+        $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
 
         return $this->localSitePath;
+    }
+
+    /**
+     * Returns an absolute local git repository path or NULL if not detected.
+     *
+     * @return string|null
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function detectLocalGitRepo(): ?string
+    {
+        $possibleLocalRepoPath = getcwd();
+        $git = new Git($possibleLocalRepoPath);
+        $localGitRemote = $git->getConfig('remote.origin.url');
+
+        return $this->getRemoteGitUrl() === $localGitRemote ? $git->getToplevelRepoPath() : null;
     }
 
     /**
@@ -100,6 +170,7 @@ trait ConversionCommandsTrait
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -386,7 +457,9 @@ trait ConversionCommandsTrait
             if (!$this->input()->getOption('yes') && !$this->io()
                     ->confirm(
                         sprintf(
-                            'Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?',
+                            <<<EOD
+Multidev "%s" already exists. Are you sure you want to delete it and its source git branch?
+EOD,
                             $branch
                         )
                     )
@@ -432,5 +505,24 @@ trait ConversionCommandsTrait
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
+    }
+
+    /**
+     * Returns the terminus executable.
+     *
+     * @return string
+     */
+    protected function getTerminusExecutable(): string
+    {
+        if (isset($this->terminusExecutable)) {
+            return $this->terminusExecutable;
+        }
+
+        if (getenv('LANDO_APP_NAME')) {
+            // Lando-based environment.
+            return $this->terminusExecutable = 'lando terminus';
+        }
+
+        return $this->terminusExecutable = 'terminus';
     }
 }

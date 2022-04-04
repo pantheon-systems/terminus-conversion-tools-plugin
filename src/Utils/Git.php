@@ -80,20 +80,17 @@ class Git
      *
      * @param string $commitMessage
      *   The commit message.
-     * @param null|array $files
-     *   The files to stage.
-     * @param null|bool $force
-     *   Force adding changes (use -f flag).
+     * @param null|array $gitAddOptions
+     *   git-add options.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function commit(string $commitMessage, ?array $files = null, ?bool $force = false): void
+    public function commit(string $commitMessage, ?array $gitAddOptions = null): void
     {
-        $addArguments = [];
-        if (null === $files) {
-            $addArguments = ['add', '-A'];
+        if (null === $gitAddOptions) {
+            $this->add('-A');
         } else {
-            $addArguments = ['add', ...$files];
+            $this->add(...$gitAddOptions);
         }
 
         if ($force) {
@@ -352,6 +349,69 @@ class Git
     }
 
     /**
+     * Returns Git config value by the config name.
+     *
+     * @param string $confName
+     *
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function getConfig(string $confName): string
+    {
+        return trim($this->execute(['config', '--get', $confName]));
+    }
+
+    /**
+     * Returns the top-level repository path.
+     *
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function getToplevelRepoPath(): string
+    {
+        return trim($this->execute(['rev-parse', '--show-toplevel']));
+    }
+
+    /**
+     * Returns TRUE if the path is an ignored path.
+     *
+     * @param string $path
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function isIgnoredPath(string $path): bool
+    {
+        $process = $this->executeAndReturnProcess(['check-ignore', '--quiet', $path]);
+        switch ($process->getExitCode()) {
+            case 0:
+                return true;
+            case 1:
+                return false;
+            default:
+                throw new GitException(
+                    sprintf('Failed to check if path "%s" is ignored: exit code %d', $path, $process->getExitCode())
+                );
+        }
+    }
+
+    /**
+     * Adds files to index.
+     *
+     * @param $options
+     *   The list of files and git-add options.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    private function add(...$options): void
+    {
+        $this->execute(['add', ...$options]);
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command
@@ -366,7 +426,13 @@ class Git
         try {
             $process = $this->executeAndReturnProcess($command, $input);
             if (0 !== $process->getExitCode()) {
-                throw new GitException(sprintf('Git command failed with exit code %d and message %s', $process->getExitCode(), $process->getErrorOutput()));
+                throw new GitException(
+                    sprintf(
+                        'Git command failed with exit code %d and message %s',
+                        $process->getExitCode(),
+                        $process->getErrorOutput()
+                    )
+                );
             }
         } catch (Throwable $t) {
             throw new GitException(
@@ -383,7 +449,7 @@ class Git
      * @param array|string $command
      * @param null|string $input
      *
-     * @return Symfony\Component\Process\Process
+     * @return \Symfony\Component\Process\Process
      */
     private function executeAndReturnProcess($command, ?string $input = null): Process
     {

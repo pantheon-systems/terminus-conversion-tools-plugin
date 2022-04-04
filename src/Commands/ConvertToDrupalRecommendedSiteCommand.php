@@ -263,7 +263,7 @@ Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
 1. resolve code merge conflicts found in %s files: %s
 2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
-3. run `terminus conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
+3. run `{$this->getTerminusExecutable()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $localPath,

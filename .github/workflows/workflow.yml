@@ -48,6 +48,8 @@ jobs:
             group: enable_integrated_composer_command
           - name: conversion:import-site command
             group: site_import
+          - name: conversion:validate-gitignore
+            group: validate_and_fix_gitignore_command
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
