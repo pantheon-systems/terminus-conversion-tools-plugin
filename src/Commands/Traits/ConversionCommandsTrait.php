@@ -156,10 +156,14 @@ EOD,
     protected function detectLocalGitRepo(): ?string
     {
         $possibleLocalRepoPath = getcwd();
-        $git = new Git($possibleLocalRepoPath);
-        $localGitRemote = $git->getConfig('remote.origin.url');
+        try {
+            $git = new Git($possibleLocalRepoPath);
+            $localGitRemote = $git->getConfig('remote.origin.url');
+            return $this->getRemoteGitUrl() === $localGitRemote ? $git->getToplevelRepoPath() : null;
+        } catch (TerminusException $exception) {
+            return null;
+        }
 
-        return $this->getRemoteGitUrl() === $localGitRemote ? $git->getToplevelRepoPath() : null;
     }
 
     /**
