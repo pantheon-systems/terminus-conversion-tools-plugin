@@ -49,6 +49,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
 The site %s was created from the upstream:
 
     %s (%s)
+
 EOD,
                 $this->site()->getName(),
                 $this->site()->getUpstream()->get('label'),
@@ -259,6 +260,9 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
+        $localPath = $this->getLocalSitePath(false);
+        $this->setGit($localPath);
+
         if ($this->isDrupalRecommendedSite()) {
             $this->adviseDevAlreadyOnDrupalRecommended();
         } elseif ($this->conversionMultidevExist()) {
