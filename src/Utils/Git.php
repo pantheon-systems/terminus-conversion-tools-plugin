@@ -93,11 +93,6 @@ class Git
             $this->add(...$gitAddOptions);
         }
 
-        if ($force) {
-            $addArguments[] = '-f';
-        }
-        $this->execute($addArguments);
-
         $this->execute(['commit', '-m', $commitMessage]);
     }
 

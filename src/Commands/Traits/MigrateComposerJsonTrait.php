@@ -88,7 +88,7 @@ EOD
         $filesystem = new Filesystem();
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
             $filesystem->mirror($folder->getPathname(), $this->localSitePath . '/web/libraries/' . $folder->getRelativePathname());
-            $this->getGit()->commit('Copy library ' . $folder->getRelativePathname(), [$this->localSitePath . '/web/libraries/' . $folder->getRelativePathname()], true);
+            $this->getGit()->commit('Copy library ' . $folder->getRelativePathname(), [$this->localSitePath . '/web/libraries/' . $folder->getRelativePathname(), '-f']);
         }
         $filesystem->remove($librariesBackupPath);
         if ($this->getGit()->isAnythingToCommit()) {
