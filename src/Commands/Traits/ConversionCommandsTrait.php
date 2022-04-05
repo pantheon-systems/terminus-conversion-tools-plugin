@@ -529,9 +529,9 @@ EOD,
     /**
      * Determines whether a multidev named "conversion" exists for this site.
      */
-    protected function conversionMultidevExist(): bool
+    protected function isConversionMultidevExist(): bool
     {
         $environments = $this->site()->getEnvironments()->fetch()->ids();
-        return in_array('conversion', $environments);
+        return in_array('conversion', $environments, true);
     }
 }

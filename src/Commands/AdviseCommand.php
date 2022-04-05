@@ -227,7 +227,7 @@ EOD
 
         if ($this->isDrupalRecommendedSite()) {
             $this->adviseDevAlreadyOnDrupalRecommended();
-        } elseif ($this->conversionMultidevExist()) {
+        } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
@@ -265,7 +265,7 @@ EOD
 
         if ($this->isDrupalRecommendedSite()) {
             $this->adviseDevAlreadyOnDrupalRecommended();
-        } elseif ($this->conversionMultidevExist()) {
+        } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
 // This process may be done manually by following the instructions in the guide:
@@ -318,7 +318,7 @@ EOD
 
             return;
         } elseif ($this->isDrupalProjectSite()) {
-            if ($this->conversionMultidevExist()) {
+            if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
                 // This process may be done manually by following the instructions in the guide:
@@ -349,7 +349,7 @@ EOD
         }
 
         if ($isBuildTools) {
-            if ($this->conversionMultidevExist()) {
+            if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
                 // Build artifact created by Terminus Build Tools plugin is present.
@@ -379,7 +379,7 @@ EOD
             return;
         }
 
-        if ($this->conversionMultidevExist()) {
+        if ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
