@@ -163,7 +163,6 @@ EOD,
         } catch (TerminusException $exception) {
             return null;
         }
-
     }
 
     /**
