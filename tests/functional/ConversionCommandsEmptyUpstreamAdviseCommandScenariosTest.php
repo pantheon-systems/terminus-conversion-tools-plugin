@@ -44,9 +44,9 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
     {
         switch ($this->scenario) {
             case self::SCENARIO_ON_TOP_OF_DRUPAL_RECOMMENDED:
-                return 'switch the upstream to "drupal-recommended" with Terminus -';
+                return 'switch the upstream to "drupal-recommended" with Terminus';
             case self::SCENARIO_ON_TOP_OF_DRUPAL_PROJECT:
-                return 'convert the site to use "drupal-recommended" Pantheon Upstream';
+                return 'Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream';
             default:
                 return '';
         }

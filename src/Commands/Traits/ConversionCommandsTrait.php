@@ -501,7 +501,7 @@ EOD,
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function isBuildToolsSite()
+    protected function isBuildToolsSite(): bool
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
@@ -524,5 +524,14 @@ EOD,
         }
 
         return $this->terminusExecutable = 'terminus';
+    }
+
+    /**
+     * Determines whether a multidev named "conversion" exists for this site.
+     */
+    protected function isConversionMultidevExist(): bool
+    {
+        $environments = $this->site()->getEnvironments()->fetch()->ids();
+        return in_array('conversion', $environments, true);
     }
 }
