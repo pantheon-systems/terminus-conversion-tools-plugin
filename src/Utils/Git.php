@@ -403,7 +403,7 @@ class Git
     {
         $gitignoreFile = fopen(Files::buildPath($this->repoPath, '.gitignore'), 'a');
         fwrite($gitignoreFile, $path . PHP_EOL);
-        $this->commit(sprintf('Add %s to gitignore.', $path), [$path]);
+        $this->commit(sprintf('Add %s to gitignore.', $path), ['.gitignore']);
     }
 
     /**
