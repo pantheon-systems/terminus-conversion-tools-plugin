@@ -268,13 +268,15 @@ EOD
         } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
-// This process may be done manually by following the instructions in the guide:
-// https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
 
     Drupal Recommended (drupal-recommended)
+
+This process may be done manually by following the instructions in the guide:
+
+    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
 
 An automated process to convert this site is available. To begin, run:
 
@@ -321,15 +323,16 @@ EOD
             if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
-                // This process may be done manually by following the instructions in the guide:
-                // https://pantheon.io/docs/guides/switch-drupal-recommended-upstream.
-
                 // Upstream is drupal-project.
                 $this->output()->writeln(
                     <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
 
     Drupal Recommended (drupal-recommended)
+
+This process may be done manually by following the instructions in the guide:
+
+    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
 
 An automated process to convert this site is available. To begin, run:
 
