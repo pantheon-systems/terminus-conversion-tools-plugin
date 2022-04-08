@@ -65,7 +65,11 @@ Site does not seem to match the expected upstream repos:
 EOD);
         }
 
+        // @todo: Is this reliable? Should be merged with pantheon.upstream.yml.
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
+        if (file_exists(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml'))) {
+            $pantheonYmlContent = array_merge($pantheonYmlContent, Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml')));
+        }
         if (false === ($pantheonYmlContent['build_step'] ?? false)) {
             throw new TerminusException(
                 'Pantheon Integrated Composer feature is not enabled on the site {site_name}.',
