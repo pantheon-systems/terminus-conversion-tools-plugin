@@ -32,7 +32,7 @@ final class ConversionCommandsDrops9UpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'convert the site to a Composer managed one by using `conversion:composer` Terminus command';
+        return 'Advice: We recommend that this site be converted to a Composer-managed upstream';
     }
 
     /**
