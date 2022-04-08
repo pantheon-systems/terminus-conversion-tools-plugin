@@ -104,6 +104,13 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                 );
             }
         }
+
+        if ($errors) {
+            throw new ComposerException(
+                'Failed updating composer.json. Please check the logs for more information.'
+            );
+        }
+
         $this->log()->notice('Updating composer dependencies...');
         $this->getComposer()->update();
         $this->getGit()->commit(
@@ -111,12 +118,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             ['composer.json', 'composer.lock']
         );
         $this->log()->notice('composer.json updated to match "drupal-recommended" upstream');
-
-        if ($errors) {
-            throw new ComposerException(
-                'Failed updating composer.json. Please check the logs for more information.'
-            );
-        }
 
         $this->detectDrupalProjectDiff($localPath);
 
