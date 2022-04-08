@@ -12,6 +12,7 @@ use Pantheon\TerminusConversionTools\Utils\Files;
 use Composer\Semver\Comparator;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
+use Pantheon\Terminus\Helpers\LocalMachineHelper;
 
 /**
  * Class UpgradeD9Command.
@@ -65,7 +66,6 @@ Site does not seem to match the expected upstream repos:
 EOD);
         }
 
-        // @todo: Is this reliable? Should be merged with pantheon.upstream.yml.
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
         if (file_exists(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml'))) {
             $pantheonYmlContent = array_merge($pantheonYmlContent, Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml')));
@@ -92,11 +92,19 @@ EOD);
         }
 
         if (!$options['skip-upgrade-status']) {
-            // @todo Step 1: Does this site has upgrade-status? Bail if not! (skip option)
-            // Look at sendCommandViaSsh in Terminus.
-            // @todo Step 2: Run update status. Is it clean? Bail if not! (skip option)
             $this->log()->notice('Checking if site is ready for upgrade to Drupal 9');
-            //$this->checkSiteIsReadyForUpgrade();
+            $command = 'drush upgrade_status:analyze --all';
+            $ssh_command = $this->getConnectionString() . ' ' . escapeshellarg($command);
+            $this->logger->debug('shell command: {command}', [ 'command' => $command ]);
+            $result = $this->getContainer()->get(LocalMachineHelper::class)->exec($ssh_command);
+            if (0 !== $result['exit_code']) {
+                throw new TerminusException(
+                    'Upgrade status command not found or not clean. Error: {error}',
+                    [
+                        'error' => $result['stderr'],
+                    ]
+                );
+            }
         }
 
         $masterBranch = Git::DEFAULT_BRANCH;
@@ -131,6 +139,24 @@ EOD);
         $this->log()->notice(sprintf('Site %s has been upgraded to Drupal 9', $this->site()->getName()));
 
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Returns the connection string.
+     *
+     * @return string
+     *   SSH connection string.
+     */
+    private function getConnectionString()
+    {
+        $environment = $this->getEnv(sprintf('%s.dev', $this->site()->getName()));
+        $sftp = $environment->sftpConnectionInfo();
+        $command = $this->getConfig()->get('ssh_command');
+
+        return vsprintf(
+            '%s -T %s@%s -p %s -o "StrictHostKeyChecking=no" -o "AddressFamily inet"',
+            [$command, $sftp['username'], $sftp['host'], $sftp['port'],]
+        );
     }
 
 }
