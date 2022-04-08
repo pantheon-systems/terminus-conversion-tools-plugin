@@ -137,17 +137,24 @@ EOD
     /**
      * Returns the list of Drupal composer dependencies.
      *
+     * @param string $forceDrupalVersion
+     *   Force Drupal version to the once received.
+     *
      * @return array[]
      *   Each dependency is an array that consists of the following keys:
      *     "package" - a package name;
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
      */
-    private function getDrupalComposerDependencies(): array
+    private function getDrupalComposerDependencies(string $forceDrupalVersion = null): array
     {
-        $drupalConstraint = $this->sourceComposerJson['require']['drupal/core-recommended']
-            ?? $this->sourceComposerJson['require']['drupal/core']
-            ?? '^8.9';
+
+        $drupalConstraint = $forceDrupalVersion;
+        if (!$drupalConstraint) {
+            $drupalConstraint = $this->sourceComposerJson['require']['drupal/core-recommended']
+                ?? $this->sourceComposerJson['require']['drupal/core']
+                ?? '^8.9';
+        }
 
         $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
 
