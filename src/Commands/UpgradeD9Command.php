@@ -23,6 +23,8 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
     use MigrateComposerJsonTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
+    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
+    private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
     /**
      * Upgrade a Drupal 8 with IC site to Drupal 9.
