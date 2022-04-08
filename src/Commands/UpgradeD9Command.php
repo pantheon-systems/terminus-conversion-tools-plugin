@@ -9,7 +9,7 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
 use Pantheon\TerminusConversionTools\Utils\Files;
-use Composer\Semver\Semver;
+use Composer\Semver\Comparator;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
 
@@ -82,9 +82,7 @@ EOD);
         $this->sourceComposerJson = $this->getComposerJson();
         $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
         $drupalCoreVersion = $this->sourceComposerJson['require'][$drupalPackage];
-
-        // @todo: Does this work for composer.json?
-        if (!Semver::satisfies($drupalCoreVersion, '^8')) {
+        if (Comparator::greaterThanOrEqualTo($drupalCoreVersion, '^9')) {
             throw new TerminusException(
                 'Site {site_name} is not Drupal 8. It may have been already upgraded to Drupal 9',
                 [
