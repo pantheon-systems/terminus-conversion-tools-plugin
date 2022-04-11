@@ -63,7 +63,8 @@ Site does not seem to match the expected upstream repos:
 
     https://github.com/pantheon-systems/drupal-recommended or
     https://github.com/pantheon-systems/drupal-project
-EOD);
+EOD
+            );
         }
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
@@ -145,7 +146,8 @@ EOD);
     /**
      * Require updated packages from a fixed list if they are installed in current site.
      */
-    protected function requireUpdatedPackages() {
+    protected function requireUpdatedPackages()
+    {
         $packages = [
             [
                 'package' => 'phpunit/phpunit',
@@ -187,5 +189,4 @@ EOD);
             [$command, $sftp['username'], $sftp['host'], $sftp['port'],]
         );
     }
-
 }
