@@ -60,6 +60,16 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
 
     /**
      * @inheritdoc
+     */
+    protected function getUrlsToTestByModule(): array
+    {
+        return [
+            'webform' => 'form/contact',
+        ];
+    }
+
+    /**
+     * @inheritdoc
      *
      * @group upgrade_d9_command
      */
