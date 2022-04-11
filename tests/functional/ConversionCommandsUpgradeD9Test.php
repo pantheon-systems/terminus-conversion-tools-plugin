@@ -24,7 +24,7 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
      */
     protected function getRealUpstreamId(): string
     {
-        return 'drupal-recommended';
+        return 'empty';
     }
 
     /**
@@ -32,7 +32,7 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'No conversion is necessary.';
+        return 'switch the upstream to "drupal-recommended" with Terminus';
     }
 
     /**
