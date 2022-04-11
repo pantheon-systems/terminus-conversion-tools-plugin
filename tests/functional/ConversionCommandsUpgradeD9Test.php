@@ -70,6 +70,14 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
 
     /**
      * @inheritdoc
+     */
+    protected function getLibraries(): array
+    {
+        return [];
+    }
+
+    /**
+     * @inheritdoc
      *
      * @group upgrade_d9_command
      */
