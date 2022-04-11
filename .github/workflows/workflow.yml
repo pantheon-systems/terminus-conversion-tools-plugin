@@ -50,6 +50,8 @@ jobs:
             group: site_import
           - name: conversion:validate-gitignore
             group: validate_and_fix_gitignore_command
+          - name: conversion:upgrade-d9
+            group: upgrade_d9_command
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
@@ -60,6 +62,7 @@ jobs:
       TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DRUPAL_PROJECT_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_UPGRADE_D9_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_UPGRADE_D9_UPSTREAM_ID }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:
