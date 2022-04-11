@@ -99,7 +99,7 @@ EOD);
             $result = $this->getContainer()->get(LocalMachineHelper::class)->exec($ssh_command);
             if (0 !== $result['exit_code']) {
                 throw new TerminusException(
-                    'Upgrade status command not found or not clean. Error: {error}',
+                    'Upgrade status command not found or not successful. Error: {error}',
                     [
                         'error' => $result['stderr'],
                     ]
@@ -124,6 +124,7 @@ EOD);
                 $this->log()->notice(sprintf('%s (%s) is added', $dependency['package'], $dependency['version']));
             }
         }
+        $this->requireUpdatedPackages();
         $this->getComposer()->update();
         if ($this->getGit()->isAnythingToCommit()) {
             $this->getGit()->commit('Run composer update.');
@@ -139,6 +140,34 @@ EOD);
         $this->log()->notice(sprintf('Site %s has been upgraded to Drupal 9', $this->site()->getName()));
 
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Require updated packages from a fixed list if they are installed in current site.
+     */
+    protected function requireUpdatedPackages() {
+        $packages = [
+            [
+                'package' => 'phpunit/phpunit',
+                'version' => '^8',
+            ],
+        ];
+        $composerJson = $this->getComposer()->getComposerJsonData();
+        foreach ($packages as $package) {
+            if (isset($composerJson['require'][$package['package']])) {
+                $this->getComposer()->require($package['package'], $package['version'], '--no-update');
+                $this->getGit()->commit(
+                    sprintf('Add %s (%s) project to Composer', $package['package'], $package['version'])
+                );
+                $this->log()->notice(sprintf('%s (%s) is added', $package['package'], $package['version']));
+            } elseif (isset($composerJson['require-dev'][$package['package']])) {
+                $this->getComposer()->require($package['package'], $package['version'], '--dev', '--no-update');
+                $this->getGit()->commit(
+                    sprintf('Add %s (%s) project to Composer', $package['package'], $package['version'])
+                );
+                $this->log()->notice(sprintf('%s (%s) is added', $package['package'], $package['version']));
+            }
+        }
     }
 
     /**
