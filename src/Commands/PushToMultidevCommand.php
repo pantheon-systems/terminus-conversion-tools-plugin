@@ -21,6 +21,7 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
      * @command conversion:push-to-multidev
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on.
      * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException

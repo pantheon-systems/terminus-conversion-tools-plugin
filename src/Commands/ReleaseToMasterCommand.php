@@ -30,6 +30,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      * @option branch The source git branch name (Multidev environment name).
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on.
      * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException

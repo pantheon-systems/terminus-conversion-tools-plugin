@@ -29,6 +29,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      * @option branch The target branch name for multidev env.
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on
      * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException

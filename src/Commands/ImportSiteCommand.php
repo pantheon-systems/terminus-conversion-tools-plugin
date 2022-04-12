@@ -60,7 +60,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @option files_path Import Drupal files from specified directory. Has higher priority over "path" argument.
      *
      * @param string $site_name
-     *   The machine name of the site.
+     *   The name or UUID of a site to operate on.
      * @param string|null $path
      *   The full path to a single archive file (*.tar.gz) or a directory with components to import.
      *   May contain the following components:

@@ -22,6 +22,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      * @command conversion:restore-master
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
