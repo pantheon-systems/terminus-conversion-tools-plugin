@@ -3,6 +3,7 @@
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
 use Throwable;
+use Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException;
 
 /**
  * Trait MigrateComposerJsonTrait.
@@ -71,6 +72,7 @@ EOD
      */
     private function addDrupalComposerPackages(array $contribPackages): void
     {
+        $errors = 0;
         try {
             foreach ($this->getDrupalComposerDependencies() as $dependency) {
                 $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
@@ -96,6 +98,7 @@ EOD
                 $this->getGit()->commit('Install composer packages');
             }
         } catch (Throwable $t) {
+            $errors++;
             $this->log()->warning(
                 sprintf(
                     'Failed adding and/or installing Drupal 8 dependencies: %s',
@@ -103,7 +106,11 @@ EOD
                 )
             );
         }
+        if ($errors) {
+            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+        }
 
+        $errors = 0;
         foreach ($contribPackages as $project) {
             $packageName = sprintf('drupal/%s', $project['name']);
             $packageVersion = sprintf('^%s', $project['version']);
@@ -112,6 +119,7 @@ EOD
                 $this->getGit()->commit(sprintf('Add %s (%s) project to Composer', $packageName, $packageVersion));
                 $this->log()->notice(sprintf('%s (%s) is added', $packageName, $packageVersion));
             } catch (Throwable $t) {
+                $errors++;
                 $this->log()->warning(
                     sprintf(
                         'Failed adding %s (%s) composer package: %s',
@@ -121,6 +129,9 @@ EOD
                     )
                 );
             }
+        }
+        if ($errors) {
+            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
         }
     }
 
@@ -207,6 +218,7 @@ EOD
      */
     private function addComposerPackages(array $packages): void
     {
+        $errors = 0;
         foreach ($packages as $project) {
             if (is_string($project)) {
                 $project = [
@@ -225,10 +237,14 @@ EOD
                 $this->getGit()->commit(sprintf('Add %s project to Composer', $package));
                 $this->log()->notice(sprintf('%s is added', $package));
             } catch (Throwable $t) {
+                $errors++;
                 $this->log()->warning(
                     sprintf('Failed adding %s composer package: %s', $package, $t->getMessage())
                 );
             }
+        }
+        if ($errors) {
+            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
         }
     }
 
