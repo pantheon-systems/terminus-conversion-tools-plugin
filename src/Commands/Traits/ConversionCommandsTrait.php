@@ -550,6 +550,13 @@ EOD,
         if (false !== strpos($composerJsonContent, 'drupal/core-recommended')) {
             return false;
         }
+
+        // Repository contents matches "drupal-recommended" upstream.
+        $this->getGit()->addRemote(
+            self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
+            self::DRUPAL_RECOMMENDED_UPSTREAM_ID
+        );
+        return $this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
     }
 
     /**
