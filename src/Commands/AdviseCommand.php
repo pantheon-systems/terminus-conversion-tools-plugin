@@ -34,6 +34,7 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
      * @option skip-upgrade-checks Skip upgrade checks during this command run.
      *
      * @param string $siteId
+     *   The name or UUID of a site to operate on
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException

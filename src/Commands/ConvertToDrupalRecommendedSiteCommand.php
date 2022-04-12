@@ -37,6 +37,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      * @option target-upstream-git-url The target upstream git repository URL.
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on
      * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException

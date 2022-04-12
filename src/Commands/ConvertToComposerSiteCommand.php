@@ -46,6 +46,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @option dry-run Skip creating multidev and pushing composerify branch.
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on
      * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
