@@ -149,12 +149,10 @@ EOD
     private function getDrupalComposerDependencies(string $forceDrupalVersion = null): array
     {
 
-        $drupalConstraint = $forceDrupalVersion;
-        if (!$drupalConstraint) {
-            $drupalConstraint = $this->sourceComposerJson['require']['drupal/core-recommended']
-                ?? $this->sourceComposerJson['require']['drupal/core']
-                ?? '^8.9';
-        }
+        $drupalConstraint = $forceDrupalVersion
+            ?? $this->sourceComposerJson['require']['drupal/core-recommended']
+            ?? $this->sourceComposerJson['require']['drupal/core']
+            ?? '^8.9';
 
         $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
 

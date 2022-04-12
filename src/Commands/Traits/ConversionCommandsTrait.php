@@ -542,19 +542,14 @@ EOD,
     {
         $localPath = $this->getLocalSitePath(false);
         $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-        if (is_file($upstreamConfComposerJsonPath)) {
-            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
-            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
-                // Repository contents matches "drupal-recommended" upstream.
-
-                $this->getGit()->addRemote(
-                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
-                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
-                );
-                return $this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-            }
+        if (!is_file($upstreamConfComposerJsonPath)) {
+            return false;
         }
-        return false;
+
+        $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
+        if (false !== strpos($composerJsonContent, 'drupal/core-recommended')) {
+            return false;
+        }
     }
 
     /**

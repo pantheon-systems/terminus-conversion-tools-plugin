@@ -41,6 +41,7 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     public function upgradeToD9(
         string $site_id,
@@ -69,7 +70,10 @@ EOD
 
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
         if (file_exists(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml'))) {
-            $pantheonYmlContent = array_merge($pantheonYmlContent, Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml')));
+            $pantheonYmlContent = array_merge(
+                $pantheonYmlContent,
+                Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml'))
+            );
         }
         if (false === ($pantheonYmlContent['build_step'] ?? false)) {
             throw new TerminusException(
@@ -145,6 +149,9 @@ EOD
 
     /**
      * Require updated packages from a fixed list if they are installed in current site.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     protected function requireUpdatedPackages()
     {
@@ -177,6 +184,8 @@ EOD
      *
      * @return string
      *   SSH connection string.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function getConnectionString()
     {
