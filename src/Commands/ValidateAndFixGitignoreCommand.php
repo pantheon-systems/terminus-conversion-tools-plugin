@@ -50,6 +50,7 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      * @command conversion:validate-gitignore
      *
      * @param string $site_id
+     *   The name or UUID of a site to operate on.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
