@@ -2,6 +2,9 @@
 
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Filesystem\Filesystem;
+use Pantheon\TerminusConversionTools\Utils\Files;
 use Throwable;
 use Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException;
 
@@ -19,6 +22,11 @@ trait MigrateComposerJsonTrait
     private array $sourceComposerJson;
 
     /**
+     * @var string
+     */
+    private string $projectPath;
+
+    /**
      * Migrates composer.json components.
      *
      * @param array $sourceComposerJson
@@ -29,6 +37,8 @@ trait MigrateComposerJsonTrait
      *   Drupal contrib dependencies.
      * @param array $libraryProjects
      *   Drupal library dependencies.
+     * @param string $librariesBackupPath
+     *   Path to backup of libraries.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -38,11 +48,13 @@ trait MigrateComposerJsonTrait
         array  $sourceComposerJson,
         string $projectPath,
         array  $contribProjects = [],
-        array  $libraryProjects = []
+        array  $libraryProjects = [],
+        string $librariesBackupPath = null
     ): void {
         $this->log()->notice('Migrating Composer project components...');
 
         $this->sourceComposerJson = $sourceComposerJson;
+        $this->projectPath = $projectPath;
         $this->setComposer($projectPath);
 
         $this->copyMinimumStability();
@@ -63,6 +75,40 @@ EOD
         );
 
         $this->copyComposerPackagesConfiguration();
+
+        if ($librariesBackupPath && is_dir($librariesBackupPath)) {
+            $this->restoreLibraries($librariesBackupPath);
+        }
+    }
+
+    /**
+     * Restore libraries from the backup path and commit them.
+     *
+     * @param string $librariesBackupPath
+     *   Path to backup of libraries.
+     */
+    private function restoreLibraries(string $librariesBackupPath): void
+    {
+        $finder = new Finder();
+        $filesystem = new Filesystem();
+        $gitignoreContent = file_get_contents(Files::buildPath($this->localSitePath, '.gitignore'));
+        $gitignoreContentUpdated = str_replace('/web/libraries/', '/web/libraries/*', $gitignoreContent);
+        if ($gitignoreContent !== $gitignoreContentUpdated) {
+            file_put_contents(Files::buildPath($this->localSitePath, '.gitignore'), $gitignoreContentUpdated);
+            $this->getGit()->commit(sprintf('Fix libraries in .gitignore,'), ['.gitignore']);
+        }
+        foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
+            $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
+            $libraryPath = Files::buildPath('web/libraries', $folder->getRelativePathname());
+            if ($this->getGit()->isIgnoredPath($libraryPath)) {
+                $this->getGit()->appendToIgnore(sprintf('!%s', $libraryPath));
+            }
+            $this->getGit()->commit(sprintf('Copy library %s', $folder->getRelativePathname()), [$libraryPath]);
+        }
+        $filesystem->remove($librariesBackupPath);
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Remove libraries backup folder.');
+        }
     }
 
     /**

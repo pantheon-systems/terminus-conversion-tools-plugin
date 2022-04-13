@@ -3,6 +3,7 @@
 namespace Pantheon\TerminusConversionTools\Utils;
 
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * Class DrupalProjects.
@@ -14,12 +15,24 @@ class DrupalProjects
      */
     private string $siteRootPath;
 
+    private const PACKAGIST_URL_PATTERN = 'https://packagist.org/packages/{package}.json';
+
     /**
      * DrupalProjects constructor.
      */
     public function __construct(string $siteRootPath)
     {
         $this->siteRootPath = $siteRootPath;
+    }
+
+    /**
+     * Returns site root path.
+     *
+     * @return string
+     */
+    public function getSiteRootPath(): string
+    {
+        return $this->siteRootPath;
     }
 
     /**
@@ -100,8 +113,9 @@ class DrupalProjects
     {
         $composerJsonFiles = [];
         $finder = new Finder();
-        foreach ($this->getLibrariesDirectories() as $librariesDir) {
-            $finder->files()->in($librariesDir . DIRECTORY_SEPARATOR . '*');
+        $filesystem = new Filesystem();
+        foreach ($this->getLibrariesDirectories() as $librariesDirectory) {
+            $finder->files()->in($librariesDirectory . DIRECTORY_SEPARATOR . '*');
             $finder->files()->name('composer.json');
             if (!$finder->hasResults()) {
                 continue;
@@ -123,10 +137,42 @@ class DrupalProjects
                 continue;
             }
 
-            $packages[] = $composerJsonFileContent['name'];
+            $packagistUrl = str_replace('{package}', $composerJsonFileContent['name'], self::PACKAGIST_URL_PATTERN);
+            if (file_get_contents($packagistUrl)) {
+                $packages[] = $composerJsonFileContent['name'];
+            } else {
+                $this->backupLibrary($filePath);
+            }
+        }
+
+        $finder = new Finder();
+        foreach ($this->getLibrariesDirectories() as $librariesDirectory) {
+            $finder->directories()->in($librariesDirectory)->depth(0);
+            if (!$finder->hasResults()) {
+                continue;
+            }
+
+            foreach ($finder as $directory) {
+                if (!file_exists($directory->getPathname() . DIRECTORY_SEPARATOR . 'composer.json')) {
+                    $this->backupLibrary($directory->getPathname());
+                }
+            }
         }
 
         return $packages;
+    }
+
+    /**
+     * Backup given library folder.
+     */
+    private function backupLibrary(string $filePath): void
+    {
+        $filesystem = new Filesystem();
+        $backupPath = Files::buildPath($this->siteRootPath, 'libraries-backup');
+        if (!$filesystem->exists($backupPath)) {
+            $filesystem->mkdir($backupPath);
+        }
+        $filesystem->mirror($filePath, Files::buildPath($this->siteRootPath, 'libraries-backup', basename($filePath)));
     }
 
     /**
