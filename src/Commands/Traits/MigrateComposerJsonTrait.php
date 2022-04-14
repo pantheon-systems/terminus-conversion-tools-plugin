@@ -90,29 +90,26 @@ EOD
     private function copyComposerRepositories(): void
     {
         $sourceRepositories = $this->sourceComposerJson['repositories'] ?? [];
-
-        $currentComposerJson = $this->getComposer()->getComposerJsonData();
-        $currentRepositories = &$currentComposerJson['repositories'] ?? [];
-
-        foreach ($sourceRepositories as $repository) {
-            $type = $repository['type'];
-            $url = $repository['url'] ?? null;
-            if (!$url) {
-                continue;
-            }
-            $found = false;
-            foreach ($currentRepositories as $currentRepository) {
-                if ($currentRepository['type'] === $type && $currentRepository['url'] === $url) {
-                    $found = true;
-                    break;
-                }
-            }
-            if (!$found) {
-                $currentRepositories[] = $repository;
-            }
+        if (!$sourceRepositories) {
+            return;
         }
 
-        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+        $composerJson = $this->getComposer()->getComposerJsonData();
+        $repositories = $composerJson['repositories'] ?? [];
+
+        $diff = array_filter(
+            $sourceRepositories,
+            fn($sourceRepository) => !array_filter(
+                $repositories,
+                fn($repository) => $repository == $sourceRepository
+            )
+        );
+        if (!$diff) {
+            return;
+        }
+
+        $composerJson['repositories'] = array_values(array_merge($repositories, $diff));
+        $this->getComposer()->writeComposerJsonData($composerJson);
     }
 
     /**
