@@ -58,6 +58,7 @@ trait MigrateComposerJsonTrait
         $this->setComposer($projectPath);
 
         $this->copyMinimumStability();
+        $this->copyComposerRepositories();
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
@@ -65,12 +66,12 @@ trait MigrateComposerJsonTrait
         $this->addComposerPackages($missingPackages);
         $this->log()->notice(
             <<<EOD
-Composer require and require-dev sections have been migrated. Look at the logs for any errors in the process.
+Composer repositories, require and require-dev sections have been migrated. Look at the logs for any errors in the process.
 EOD
         );
         $this->log()->notice(
             <<<EOD
-Please note that other composer.json sections: repositories, config, extra, etc. should be manually migrated if needed.
+Please note that other composer.json sections: config, extra, etc. should be manually migrated if needed.
 EOD
         );
 
@@ -79,6 +80,36 @@ EOD
         if ($librariesBackupPath && is_dir($librariesBackupPath)) {
             $this->restoreLibraries($librariesBackupPath);
         }
+    }
+
+    /**
+     * Copy extra composer repositories if they exist.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    private function copyComposerRepositories(): void
+    {
+        $sourceRepositories = $this->sourceComposerJson['repositories'] ?? [];
+        if (!$sourceRepositories) {
+            return;
+        }
+
+        $composerJson = $this->getComposer()->getComposerJsonData();
+        $repositories = $composerJson['repositories'] ?? [];
+
+        $diff = array_filter(
+            $sourceRepositories,
+            fn($sourceRepository) => !array_filter(
+                $repositories,
+                fn($repository) => $repository == $sourceRepository
+            )
+        );
+        if (!$diff) {
+            return;
+        }
+
+        $composerJson['repositories'] = array_values(array_merge($repositories, $diff));
+        $this->getComposer()->writeComposerJsonData($composerJson);
     }
 
     /**
