@@ -29,9 +29,9 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     private const DRUPAL_PROJECT_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
 
     /**
-     * Converts a "drupal-project" upstream-based site into "drupal-recommended" upstream-based one.
+     * Converts a "drupal-project" upstream-based site (Drupal 9 site created before November 30, 2021) into "drupal-recommended" upstream-based one.
      *
-     * @command conversion:drupal-recommended
+     * @command conversion:update-from-deprecated-upstream
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.

@@ -20,12 +20,12 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
     private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
-     * Releases a converted Drupal site managed by Composer to the master git branch:
-     * 1) creates a backup for the master git branch;
-     * 2) replaces the master git branch and its commit history with the source Multidev's commit history (a converted
+     * Releases a converted Drupal site managed by Composer to the dev environment :
+     * 1) creates a backup for the dev environment branch;
+     * 2) replaces the dev environment git branch and its commit history with the source Multidev's commit history (a converted
      * Drupal site).
      *
-     * @command conversion:release-to-master
+     * @command conversion:release-to-dev
      *
      * @option branch The source git branch name (Multidev environment name).
      *
