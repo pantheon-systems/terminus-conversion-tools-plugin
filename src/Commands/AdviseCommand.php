@@ -93,41 +93,6 @@ EOD,
     }
 
     /**
-     * Determines whether the current site is a drupal-recommended site or not.
-     */
-    protected function isDrupalRecommendedSite(): bool
-    {
-        $localPath = $this->getLocalSitePath(false);
-        $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-        if (is_file($upstreamConfComposerJsonPath)) {
-            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
-            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
-                // Repository contents matches "drupal-recommended" upstream.
-
-                $this->getGit()->addRemote(
-                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
-                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
-                );
-                return $this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Determines whether the current site is a drupal-project site or not.
-     */
-    protected function isDrupalProjectSite(): bool
-    {
-        if (!$this->isDrupalRecommendedSite()) {
-            $localPath = $this->getLocalSitePath(false);
-            $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-            return is_file($upstreamConfComposerJsonPath);
-        }
-        return false;
-    }
-
-    /**
      * Print advise for dev environment already on Drupal Recommended.
      */
     private function adviseDevAlreadyOnDrupalRecommended(): void
@@ -160,7 +125,7 @@ Advice: We recommend that this site be converted to use "drupal-recommended" Pan
 
 This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You could also delete the multidev environment:
@@ -247,7 +212,7 @@ An automated process to convert this site is available. To begin, run:
 
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
@@ -281,11 +246,11 @@ This process may be done manually by following the instructions in the guide:
 
 An automated process to convert this site is available. To begin, run:
 
-    {$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
 
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
@@ -337,11 +302,11 @@ This process may be done manually by following the instructions in the guide:
 
 An automated process to convert this site is available. To begin, run:
 
-    {$this->getTerminusExecutable()} conversion:drupal-recommended {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
 
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
@@ -372,7 +337,7 @@ An automated process to convert this site is available. To begin, run:
 
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
@@ -402,7 +367,7 @@ An automated process to convert this site is available. To begin, run:
 
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
-    {$this->getTerminusExecutable()} conversion:release-to-master {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
