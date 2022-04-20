@@ -39,6 +39,8 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
 
         $this->pushTargetBranch();
 
+        // @todo Run updb, run cr.
+
         $this->log()->notice('Done!');
     }
 }

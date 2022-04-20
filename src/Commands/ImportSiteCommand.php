@@ -170,6 +170,8 @@ EOD,
             $this->importFiles($devEnv, $filesComponentPath);
         }
 
+        // @todo Run cr.
+
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
     }

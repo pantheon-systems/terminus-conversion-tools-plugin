@@ -40,6 +40,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      */
     public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
+        // @todo Run updb
+        // @todo Run cr.
         $this->setSite($site_id);
         $sourceBranch = $options['branch'];
         $localPath = $this->getLocalSitePath();

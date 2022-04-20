@@ -59,6 +59,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
     ): void {
+        // @todo: Run cr
+        // @todo: Run updb (in case there were any modules version changes)
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
 

@@ -41,6 +41,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH]
     ): void {
+        // @todo: Run CR.
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
         $localSitePath = $this->getLocalSitePath();
