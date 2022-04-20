@@ -7,6 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -21,6 +22,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 {
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -54,7 +56,6 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
         ]
     ): void {
-        // @todo Run cr.
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
 
@@ -125,6 +126,9 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
+            // @todo Wait!
+            // @todo Add options to control this?
+            $this->runDrushCommand('cr');
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }

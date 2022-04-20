@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Filesystem\Exception\IOException;
@@ -18,6 +19,7 @@ use Symfony\Component\Yaml\Yaml;
 class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
 
@@ -41,7 +43,6 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH]
     ): void {
-        // @todo: Run CR.
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
         $localSitePath = $this->getLocalSitePath();
@@ -64,6 +65,10 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->updatePantheonYmlConfig();
         $this->pushTargetBranch();
         $this->addCommitToTriggerBuild();
+
+        // @todo Wait!
+        // @todo Add options to control this?
+        $this->runDrushCommand('cr');
 
         $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
         $this->log()->notice(

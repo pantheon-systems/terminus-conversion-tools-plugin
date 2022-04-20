@@ -5,6 +5,7 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 
 /**
  * Class PushToMultidevCommand.
@@ -12,6 +13,7 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
 
@@ -39,7 +41,10 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
 
         $this->pushTargetBranch();
 
-        // @todo Run updb, run cr.
+        // @todo Wait!
+        // @todo Add options to control this?
+        $this->runDrushCommand('updb -y');
+        $this->runDrushCommand('cr');
 
         $this->log()->notice('Done!');
     }

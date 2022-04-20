@@ -9,6 +9,7 @@ use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
@@ -21,6 +22,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
     use MigrateComposerJsonTrait;
+    use DrushCommandsTrait;
 
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -170,7 +172,9 @@ EOD,
             $this->importFiles($devEnv, $filesComponentPath);
         }
 
-        // @todo Run cr.
+        // @todo Wait!
+        // @todo Add options to control this?
+        $this->runDrushCommand('cr');
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');

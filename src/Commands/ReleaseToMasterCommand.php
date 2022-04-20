@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -14,6 +15,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_ID = 'drupal-recommended';
@@ -40,8 +42,6 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      */
     public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
     {
-        // @todo Run updb
-        // @todo Run cr.
         $this->setSite($site_id);
         $sourceBranch = $options['branch'];
         $localPath = $this->getLocalSitePath();
@@ -110,6 +110,11 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $this->getGit()->checkout(Git::DEFAULT_BRANCH);
         $this->getGit()->reset('--hard', $targetCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
+
+        // @todo Wait!
+        // @todo Add options to control this?
+        $this->runDrushCommand('updb -y');
+        $this->runDrushCommand('cr');
 
         if (self::EMPTY_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')
             || $this->input()->getOption('yes')

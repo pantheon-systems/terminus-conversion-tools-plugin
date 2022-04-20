@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -14,6 +15,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     /**
      * Restore the dev environment branch to the state before converting a standard Drupal site into a Drupal site managed by
@@ -31,7 +33,6 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      */
     public function restoreMaster(string $site_id): void
     {
-        // @todo Run cr.
         $this->setSite($site_id);
 
         $localPath = $this->getLocalSitePath();
@@ -75,6 +76,10 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $this->getGit()->checkout(Git::DEFAULT_BRANCH);
         $this->getGit()->reset('--hard', $backupMasterCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
+
+        // @todo Wait!
+        // @todo Add options to control this?
+        $this->runDrushCommand('cr');
 
         $this->switchUpstream($this->getSourceUpstreamIdByBackupBranchName($backupBranchName));
 
