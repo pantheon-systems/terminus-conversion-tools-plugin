@@ -93,14 +93,14 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
         );
 
         $this->assertCommand(
-            sprintf('conversion:release-to-master %s --branch=%s', $this->siteName, $this->branch),
+            sprintf('conversion:release-to-dev %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
 
         $this->assertAdviseAfterCommand();
 
         $this->assertCommand(
-            sprintf('conversion:restore-master %s', $this->siteName),
+            sprintf('conversion:restore-dev %s', $this->siteName),
             self::DEV_ENV
         );
     }
