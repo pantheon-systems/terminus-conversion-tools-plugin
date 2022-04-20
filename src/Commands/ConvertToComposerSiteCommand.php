@@ -7,6 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\DrupalProjects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
@@ -20,6 +21,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 {
     use ConversionCommandsTrait;
     use MigrateComposerJsonTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -59,8 +61,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         string $site_id,
         array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
     ): void {
-        // @todo: Run cr
-        // @todo: Run updb (in case there were any modules version changes)
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
 
@@ -122,6 +122,10 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
+            // @todo Wait!
+            // @todo: Add options to control this?
+            $this->runDrushCommand('updb -y');
+            $this->runDrushCommand('cr');
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }
