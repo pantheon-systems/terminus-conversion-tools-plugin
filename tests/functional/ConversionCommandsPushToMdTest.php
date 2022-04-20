@@ -25,7 +25,7 @@ class ConversionCommandsPushToMdTest extends ConversionCommandsDrupalProjectUpst
     protected function executeConvertCommand(): void
     {
         $this->terminus(
-            sprintf('conversion:drupal-recommended %s --branch=%s --dry-run', $this->siteName, $this->branch)
+            sprintf('conversion:update-from-deprecated-upstream %s --branch=%s --dry-run', $this->siteName, $this->branch)
         );
 
         $this->assertCommand(

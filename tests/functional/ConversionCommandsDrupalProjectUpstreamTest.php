@@ -66,7 +66,7 @@ EOD;
     protected function executeConvertCommand(): void
     {
         $this->assertCommand(
-            sprintf('conversion:drupal-recommended %s --branch=%s', $this->siteName, $this->branch),
+            sprintf('conversion:update-from-deprecated-upstream %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
     }
