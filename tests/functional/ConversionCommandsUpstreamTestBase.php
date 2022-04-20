@@ -40,7 +40,7 @@ abstract class ConversionCommandsUpstreamTestBase extends ConversionCommandsTest
         $this->executeConvertCommand();
 
         $this->assertCommand(
-            sprintf('conversion:release-to-master %s --branch=%s', $this->siteName, $this->branch),
+            sprintf('conversion:release-to-dev %s --branch=%s', $this->siteName, $this->branch),
             $this->branch
         );
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
@@ -51,7 +51,7 @@ abstract class ConversionCommandsUpstreamTestBase extends ConversionCommandsTest
         $this->assertAdviseAfterCommand();
 
         $this->assertCommand(
-            sprintf('conversion:restore-master %s', $this->siteName),
+            sprintf('conversion:restore-dev %s', $this->siteName),
             self::DEV_ENV
         );
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
