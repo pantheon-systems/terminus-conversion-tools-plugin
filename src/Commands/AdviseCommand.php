@@ -93,41 +93,6 @@ EOD,
     }
 
     /**
-     * Determines whether the current site is a drupal-recommended site or not.
-     */
-    protected function isDrupalRecommendedSite(): bool
-    {
-        $localPath = $this->getLocalSitePath(false);
-        $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-        if (is_file($upstreamConfComposerJsonPath)) {
-            $composerJsonContent = file_get_contents($upstreamConfComposerJsonPath);
-            if (false === strpos($composerJsonContent, 'drupal/core-recommended')) {
-                // Repository contents matches "drupal-recommended" upstream.
-
-                $this->getGit()->addRemote(
-                    self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
-                    self::DRUPAL_RECOMMENDED_UPSTREAM_ID
-                );
-                return $this->areGitReposWithCommonCommits(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Determines whether the current site is a drupal-project site or not.
-     */
-    protected function isDrupalProjectSite(): bool
-    {
-        if (!$this->isDrupalRecommendedSite()) {
-            $localPath = $this->getLocalSitePath(false);
-            $upstreamConfComposerJsonPath = Files::buildPath($localPath, 'upstream-configuration', 'composer.json');
-            return is_file($upstreamConfComposerJsonPath);
-        }
-        return false;
-    }
-
-    /**
      * Print advise for dev environment already on Drupal Recommended.
      */
     private function adviseDevAlreadyOnDrupalRecommended(): void
