@@ -122,8 +122,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
-            // @todo Wait!
             // @todo: Add options to control this?
+            $this->waitForSyncCodeWorkflow($options['branch']);
             $this->runDrushCommand('updb -y');
             $this->runDrushCommand('cr');
         } else {

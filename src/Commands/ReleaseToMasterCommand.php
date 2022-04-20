@@ -111,8 +111,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $this->getGit()->reset('--hard', $targetCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
-        // @todo Wait!
         // @todo Add options to control this?
+        $this->waitForSyncCodeWorkflow('dev');
         $this->runDrushCommand('updb -y');
         $this->runDrushCommand('cr');
 
