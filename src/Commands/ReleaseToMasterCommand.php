@@ -117,15 +117,9 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $this->getGit()->reset('--hard', $targetCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
-        if ($options['run-updb'] || $options['run-cr']) {
-            $this->waitForSyncCodeWorkflow('dev');
-            if ($options['run-updb']) {
-                $this->runDrushCommand('updb -y');
-            }
-            if ($options['run-cr']) {
-                $this->runDrushCommand('cr');
-            }
-        }
+        $this->executeDrushDatabaseUpdates($options, 'dev');
+        $this->executeDrushCacheRebuild($options, 'dev');
+
 
         if (self::EMPTY_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')
             || $this->input()->getOption('yes')

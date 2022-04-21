@@ -129,15 +129,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
-            if ($options['run-updb'] || $options['run-cr']) {
-                $this->waitForSyncCodeWorkflow($options['branch']);
-                if ($options['run-updb']) {
-                    $this->runDrushCommand('updb -y');
-                }
-                if ($options['run-cr']) {
-                    $this->runDrushCommand('cr');
-                }
-            }
+            $this->executeDrushDatabaseUpdates($options);
+            $this->executeDrushCacheRebuild($options);
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }

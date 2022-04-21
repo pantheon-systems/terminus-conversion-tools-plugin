@@ -70,10 +70,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->pushTargetBranch();
         $this->addCommitToTriggerBuild();
 
-        if ($options['run-cr']) {
-            $this->waitForSyncCodeWorkflow($options['branch']);
-            $this->runDrushCommand('cr');
-        }
+        $this->executeDrushCacheRebuild($options);
 
         $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
         $this->log()->notice(

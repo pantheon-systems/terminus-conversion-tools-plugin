@@ -174,10 +174,7 @@ EOD,
             $this->importFiles($devEnv, $filesComponentPath);
         }
 
-        if ($options['run-cr']) {
-            $this->waitForSyncCodeWorkflow('dev');
-            $this->runDrushCommand('cr');
-        }
+        $this->executeDrushCacheRebuild($options, 'dev');
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');

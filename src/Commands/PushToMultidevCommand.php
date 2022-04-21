@@ -49,15 +49,8 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
 
         $this->pushTargetBranch();
 
-        if ($options['run-updb'] || $options['run-cr']) {
-            $this->waitForSyncCodeWorkflow($options['branch']);
-            if ($options['run-updb']) {
-                $this->runDrushCommand('updb -y');
-            }
-            if ($options['run-cr']) {
-                $this->runDrushCommand('cr');
-            }
-        }
+        $this->executeDrushDatabaseUpdates($options);
+        $this->executeDrushCacheRebuild($options);
 
         $this->log()->notice('Done!');
     }

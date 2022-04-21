@@ -80,10 +80,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $this->getGit()->reset('--hard', $backupMasterCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
 
-        if ($options['run-cr']) {
-            $this->waitForSyncCodeWorkflow('dev');
-            $this->runDrushCommand('cr');
-        }
+        $this->executeDrushCacheRebuild($options, 'dev');
 
         $this->switchUpstream($this->getSourceUpstreamIdByBackupBranchName($backupBranchName));
 

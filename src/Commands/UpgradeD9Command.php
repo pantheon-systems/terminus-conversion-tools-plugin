@@ -107,7 +107,7 @@ EOD
         if (!$options['skip-upgrade-status']) {
             $this->log()->notice('Checking if site is ready for upgrade to Drupal 9');
             $command = 'upgrade_status:analyze --all';
-            $result = $this->runDrushCommand($command);
+            $result = $this->runDrushCommand($command, 'dev');
 
             if (0 !== $result['exit_code']) {
                 throw new TerminusException(
@@ -145,15 +145,8 @@ EOD
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
-            if ($options['run-updb'] || $options['run-cr']) {
-                $this->waitForSyncCodeWorkflow($options['branch']);
-                if ($options['run-updb']) {
-                    $this->runDrushCommand('updb -y');
-                }
-                if ($options['run-cr']) {
-                    $this->runDrushCommand('cr');
-                }
-            }
+            $this->executeDrushDatabaseUpdates($options);
+            $this->executeDrushCacheRebuild($options);
         } else {
             $this->log()->warning('Push to multidev has been skipped.');
         }

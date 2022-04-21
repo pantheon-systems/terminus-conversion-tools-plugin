@@ -11,12 +11,52 @@ trait DrushCommandsTrait
 {
 
     /**
+     * Run drush updb -y after waiting for the site to be synced.
+     *
+     * @param array $options
+     *   The options passed to the original command.
+     * @param string $env
+     *   The environment to wait for code sync.
+     */
+    protected function executeDrushDatabaseUpdates(array $options, ?string $env = null): void
+    {
+        if (!($options['run-updb'] ?? false)) {
+            return;
+        }
+
+        $env = $env ?? $options['branch'] ?? 'dev';
+        $this->waitForSyncCodeWorkflow($env);
+
+        $this->runDrushCommand('updb -y', $env);
+    }
+
+    /**
+     * Run drush cr after waiting for the site to be synced.
+     *
+     * @param array $options
+     *   The options passed to the original command.
+     * @param string $env
+     *   The environment to wait for code sync.
+     */
+    protected function executeDrushCacheRebuild(array $options, ?string $env = null): void
+    {
+        if (!($options['run-cr'] ?? false)) {
+            return;
+        }
+
+        $env = $env ?? $options['branch'] ?? 'dev';
+        $this->waitForSyncCodeWorkflow($env);
+
+        $this->runDrushCommand('cr -y', $env);
+    }
+
+    /**
      * Run given drush command in current site.
      */
-    private function runDrushCommand($command)
+    private function runDrushCommand($command, $env = 'dev')
     {
         $fullCommand = sprintf('drush %s', $command);
-        $sshCommand = $this->getConnectionString() . ' ' . escapeshellarg($fullCommand);
+        $sshCommand = $this->getConnectionString($env) . ' ' . escapeshellarg($fullCommand);
         $this->logger->debug('shell command: {command}', [ 'command' => $fullCommand ]);
         $result = $this->getContainer()->get(LocalMachineHelper::class)->exec($sshCommand);
     }
@@ -24,14 +64,17 @@ trait DrushCommandsTrait
     /**
      * Returns the connection string.
      *
+     * @param string $env
+     *   Environment to get the connection string for.
+     *
      * @return string
      *   SSH connection string.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function getConnectionString()
+    private function getConnectionString(string $env)
     {
-        $environment = $this->getEnv(sprintf('%s.dev', $this->site()->getName()));
+        $environment = $this->getEnv(sprintf('%s.%s', $this->site()->getName(), $env));
         $sftp = $environment->sftpConnectionInfo();
         $command = $this->getConfig()->get('ssh_command');
 
