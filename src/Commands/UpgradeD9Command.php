@@ -51,6 +51,8 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
             'branch' => self::TARGET_GIT_BRANCH,
             'skip-upgrade-status' => false,
             'dry-run' => false,
+            'run-updb' => true,
+            'run-cr' => true,
         ]
     ): void {
         $this->setSite($site_id);
@@ -139,7 +141,15 @@ EOD
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
-            // @todo: Run updb/cr.
+            if ($options['run-updb'] || $options['run-cr']) {
+                $this->waitForSyncCodeWorkflow($options['branch']);
+                if ($options['run-updb']) {
+                    $this->runDrushCommand('updb -y');
+                }
+                if ($options['run-cr']) {
+                    $this->runDrushCommand('cr');
+                }
+            }
         } else {
             $this->log()->warning('Push to multidev has been skipped.');
         }
