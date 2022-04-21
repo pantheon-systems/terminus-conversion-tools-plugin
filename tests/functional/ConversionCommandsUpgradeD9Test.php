@@ -11,6 +11,15 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  */
 final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTestBase
 {
+
+    /**
+     * @inheritdoc
+     */
+    protected function tearDown(): void
+    {
+        echo "Delete site $this->siteName\n";
+    }
+
     /**
      * @inheritdoc
      */
