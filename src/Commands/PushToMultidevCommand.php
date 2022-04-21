@@ -22,6 +22,10 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
      *
      * @command conversion:push-to-multidev
      *
+     * @option branch The target branch name for multidev env.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
+     *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
      * @param array $options

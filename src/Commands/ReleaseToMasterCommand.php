@@ -30,6 +30,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      * @command conversion:release-to-dev
      *
      * @option branch The source git branch name (Multidev environment name).
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.

@@ -23,6 +23,8 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @command conversion:restore-dev
      *
+     * @option run-cr Run `drush cr` after conversion.
+     *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
      * @param array $options

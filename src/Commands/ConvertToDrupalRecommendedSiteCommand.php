@@ -38,6 +38,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.
      * @option target-upstream-git-url The target upstream git repository URL.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on

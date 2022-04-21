@@ -46,6 +46,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing composerify branch.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on

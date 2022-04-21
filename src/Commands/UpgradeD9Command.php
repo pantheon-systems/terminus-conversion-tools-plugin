@@ -34,6 +34,10 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
      * @command conversion:upgrade-d9
      *
      * @option branch The target branch name for multidev env.
+     * @option skip-upgrade-status Skip upgrade status checks.
+     * @option dry-run Skip creating multidev and pushing the branch.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.

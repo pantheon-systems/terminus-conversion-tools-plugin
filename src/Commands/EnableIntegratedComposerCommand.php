@@ -29,6 +29,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      * @command conversion:enable-ic
      *
      * @option branch The target branch name for multidev env.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
