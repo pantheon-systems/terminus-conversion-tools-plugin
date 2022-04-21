@@ -54,6 +54,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             'branch' => self::TARGET_GIT_BRANCH,
             'dry-run' => false,
             'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
+            'run-cr' => true,
         ]
     ): void {
         $this->setSite($site_id);

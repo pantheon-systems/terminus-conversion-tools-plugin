@@ -25,13 +25,14 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
+     * @param array $options
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function restoreMaster(string $site_id): void
+    public function restoreMaster(string $site_id, $options = ['run-cr' => true]): void
     {
         $this->setSite($site_id);
 

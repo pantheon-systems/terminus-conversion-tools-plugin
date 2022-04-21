@@ -93,6 +93,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             'db_path' => null,
             'files' => null,
             'files_path' => null,
+            'run-cr' => true,
         ]
     ): void {
         $extractDir = null;

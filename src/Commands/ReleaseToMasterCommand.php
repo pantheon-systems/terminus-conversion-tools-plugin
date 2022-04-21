@@ -40,7 +40,11 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
+    public function releaseToMaster(string $site_id, array $options = [
+        'branch' => self::TARGET_GIT_BRANCH,
+        'run-updb' => true,
+        'run-cr' => true,
+    ]): void
     {
         $this->setSite($site_id);
         $sourceBranch = $options['branch'];
