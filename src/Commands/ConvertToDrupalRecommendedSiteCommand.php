@@ -127,9 +127,10 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
-            // @todo Add options to control this?
-            $this->waitForSyncCodeWorkflow($options['branch']);
-            $this->runDrushCommand('cr');
+            if ($options['run-cr']) {
+                $this->waitForSyncCodeWorkflow($options['branch']);
+                $this->runDrushCommand('cr');
+            }
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }

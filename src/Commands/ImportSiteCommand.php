@@ -173,9 +173,10 @@ EOD,
             $this->importFiles($devEnv, $filesComponentPath);
         }
 
-        // @todo Add options to control this?
-        $this->waitForSyncCodeWorkflow('dev');
-        $this->runDrushCommand('cr');
+        if ($options['run-cr']) {
+            $this->waitForSyncCodeWorkflow('dev');
+            $this->runDrushCommand('cr');
+        }
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
