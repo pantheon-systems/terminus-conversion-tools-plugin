@@ -52,13 +52,21 @@ trait DrushCommandsTrait
 
     /**
      * Run given drush command in current site.
+     *
+     * @param string $command
+     *   Command to run.
+     * @param string $env
+     *  Environment to run command in.
+     *
+     * @return array
+     *   The output and exit code of the command.
      */
-    private function runDrushCommand($command, $env = 'dev')
+    private function runDrushCommand($command, $env = 'dev'): array
     {
         $fullCommand = sprintf('drush %s', $command);
         $sshCommand = $this->getConnectionString($env) . ' ' . escapeshellarg($fullCommand);
         $this->logger->debug('shell command: {command}', [ 'command' => $fullCommand ]);
-        $result = $this->getContainer()->get(LocalMachineHelper::class)->exec($sshCommand);
+        return $this->getContainer()->get(LocalMachineHelper::class)->exec($sshCommand);
     }
 
     /**
@@ -72,7 +80,7 @@ trait DrushCommandsTrait
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function getConnectionString(string $env)
+    private function getConnectionString(string $env): string
     {
         $environment = $this->getEnv(sprintf('%s.%s', $this->site()->getName(), $env));
         $sftp = $environment->sftpConnectionInfo();
