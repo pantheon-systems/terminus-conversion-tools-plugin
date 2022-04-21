@@ -15,14 +15,6 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
     /**
      * @inheritdoc
      */
-    protected function tearDown(): void
-    {
-        echo "Delete site $this->siteName\n";
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function getUpstreamIdEnvName(): string
     {
         return 'TERMINUS_TEST_SITE_UPGRADE_D9_UPSTREAM_ID';
@@ -107,10 +99,5 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
         );
 
         $this->assertAdviseAfterCommand();
-
-        $this->assertCommand(
-            sprintf('conversion:restore-dev %s', $this->siteName),
-            self::DEV_ENV
-        );
     }
 }
