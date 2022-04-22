@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Filesystem\Exception\IOException;
@@ -18,6 +19,7 @@ use Symfony\Component\Yaml\Yaml;
 class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
 
@@ -27,6 +29,7 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      * @command conversion:enable-ic
      *
      * @option branch The target branch name for multidev env.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
@@ -39,7 +42,10 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      */
     public function enableIntegratedComposer(
         string $site_id,
-        array $options = ['branch' => self::TARGET_GIT_BRANCH]
+        array $options = [
+            'branch' => self::TARGET_GIT_BRANCH,
+            'run-cr' => true,
+        ]
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
@@ -63,6 +69,8 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
         $this->updatePantheonYmlConfig();
         $this->pushTargetBranch();
         $this->addCommitToTriggerBuild();
+
+        $this->executeDrushCacheRebuild($options);
 
         $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
         $this->log()->notice(

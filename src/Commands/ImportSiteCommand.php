@@ -9,6 +9,7 @@ use Pantheon\Terminus\Models\Environment;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
@@ -21,6 +22,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
     use MigrateComposerJsonTrait;
+    use DrushCommandsTrait;
 
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -58,6 +60,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @option db_path Import database from specified dump file. Has higher priority over "path" argument.
      * @option files Import Drupal files.
      * @option files_path Import Drupal files from specified directory. Has higher priority over "path" argument.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_name
      *   The name or UUID of a site to operate on.
@@ -91,6 +94,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             'db_path' => null,
             'files' => null,
             'files_path' => null,
+            'run-cr' => true,
         ]
     ): void {
         $extractDir = null;
@@ -169,6 +173,8 @@ EOD,
             $filesComponentPath = $options['files_path'] ?? Files::buildPath($extractDir, self::COMPONENT_FILES);
             $this->importFiles($devEnv, $filesComponentPath);
         }
+
+        $this->executeDrushCacheRebuild($options, 'dev');
 
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');

@@ -5,6 +5,7 @@ namespace Pantheon\TerminusConversionTools\Commands;
 use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 
 /**
  * Class PushToMultidevCommand.
@@ -12,6 +13,7 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
 
@@ -19,6 +21,10 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
      * Push the converted site to a multidev environment.
      *
      * @command conversion:push-to-multidev
+     *
+     * @option branch The target branch name for multidev env.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
@@ -29,7 +35,11 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function pushToMd(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
+    public function pushToMd(string $site_id, array $options = [
+        'branch' => self::TARGET_GIT_BRANCH,
+        'run-updb' => true,
+        'run-cr' => true,
+    ]): void
     {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
@@ -38,6 +48,9 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
         $this->setGit($localPath);
 
         $this->pushTargetBranch();
+
+        $this->executeDrushDatabaseUpdates($options);
+        $this->executeDrushCacheRebuild($options);
 
         $this->log()->notice('Done!');
     }

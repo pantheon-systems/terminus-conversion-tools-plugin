@@ -6,6 +6,7 @@ use Pantheon\Terminus\Commands\TerminusCommand;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Git;
 
 /**
@@ -14,6 +15,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterface
 {
     use ConversionCommandsTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_ID = 'drupal-recommended';
@@ -28,6 +30,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      * @command conversion:release-to-dev
      *
      * @option branch The source git branch name (Multidev environment name).
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
@@ -38,7 +42,11 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function releaseToMaster(string $site_id, array $options = ['branch' => self::TARGET_GIT_BRANCH]): void
+    public function releaseToMaster(string $site_id, array $options = [
+        'branch' => self::TARGET_GIT_BRANCH,
+        'run-updb' => true,
+        'run-cr' => true,
+    ]): void
     {
         $this->setSite($site_id);
         $sourceBranch = $options['branch'];
@@ -108,6 +116,10 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $this->getGit()->checkout(Git::DEFAULT_BRANCH);
         $this->getGit()->reset('--hard', $targetCommitHash);
         $this->getGit()->push(Git::DEFAULT_BRANCH, '--force');
+
+        $this->executeDrushDatabaseUpdates($options, 'dev');
+        $this->executeDrushCacheRebuild($options, 'dev');
+
 
         if (self::EMPTY_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')
             || $this->input()->getOption('yes')

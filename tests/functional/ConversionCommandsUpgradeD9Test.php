@@ -11,6 +11,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  */
 final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTestBase
 {
+
     /**
      * @inheritdoc
      */
@@ -98,10 +99,5 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
         );
 
         $this->assertAdviseAfterCommand();
-
-        $this->assertCommand(
-            sprintf('conversion:restore-dev %s', $this->siteName),
-            self::DEV_ENV
-        );
     }
 }

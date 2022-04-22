@@ -7,6 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\DrupalProjects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
@@ -20,6 +21,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 {
     use ConversionCommandsTrait;
     use MigrateComposerJsonTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -44,6 +46,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing composerify branch.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
@@ -57,7 +61,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     public function convert(
         string $site_id,
-        array $options = ['branch' => self::TARGET_GIT_BRANCH, 'dry-run' => false]
+        array $options = [
+            'branch' => self::TARGET_GIT_BRANCH,
+            'dry-run' => false,
+            'run-updb' => true,
+            'run-cr' => true,
+        ]
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
@@ -120,6 +129,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
             $this->addCommitToTriggerBuild();
+            $this->executeDrushDatabaseUpdates($options);
+            $this->executeDrushCacheRebuild($options);
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }

@@ -574,4 +574,25 @@ EOD,
         }
         return false;
     }
+
+    /**
+     * Wait for sync_code workflow to finish.
+     */
+    protected function waitForSyncCodeWorkflow(string $environment): void
+    {
+        $workflows = $this->site->getWorkflows();
+        $workflows->reset();
+        $workflowItems = $workflows->fetch(['paged' => false,])->all();
+        $workflowToSearch = 'sync_code';
+        foreach (array_slice($workflowItems, 0, 5) as $workflowItem) {
+            $workflowType = str_replace('"', '', $workflowItem->get('type'));
+            $firstWorkflowType = $firstWorkflowType ?? $workflowType;
+            if (strpos($workflowType, $workflowToSearch) !== false && $workflowItem->get('environment_id') === $environment) {
+                $this->processWorkflow($workflowItem);
+                return;
+            }
+        }
+
+        $this->log()->notice("Current workflow is '{current}'; waiting for '{expected}'. Giving up searching for the right workflow.", ['current' => $firstWorkflowType, 'expected' => $workflowToSearch]);
+    }
 }

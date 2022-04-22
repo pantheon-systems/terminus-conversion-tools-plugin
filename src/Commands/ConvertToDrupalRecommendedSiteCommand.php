@@ -7,6 +7,7 @@ use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitMergeConflictException;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitNoDiffException;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -21,6 +22,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 {
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -36,6 +38,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.
      * @option target-upstream-git-url The target upstream git repository URL.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
@@ -52,6 +55,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             'branch' => self::TARGET_GIT_BRANCH,
             'dry-run' => false,
             'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
+            'run-cr' => true,
         ]
     ): void {
         $this->setSite($site_id);
@@ -124,6 +128,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
+            $this->executeDrushCacheRebuild($options);
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }

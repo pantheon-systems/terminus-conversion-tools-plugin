@@ -12,7 +12,7 @@ use Pantheon\TerminusConversionTools\Utils\Files;
 use Composer\Semver\Comparator;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\MigrateComposerJsonTrait;
-use Pantheon\Terminus\Helpers\LocalMachineHelper;
+use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 
 /**
  * Class UpgradeD9Command.
@@ -22,6 +22,7 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
     use MigrateComposerJsonTrait;
+    use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
@@ -33,6 +34,10 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
      * @command conversion:upgrade-d9
      *
      * @option branch The target branch name for multidev env.
+     * @option skip-upgrade-status Skip upgrade status checks.
+     * @option dry-run Skip creating multidev and pushing the branch.
+     * @option run-updb Run `drush updb` after conversion.
+     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
@@ -50,6 +55,8 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
             'branch' => self::TARGET_GIT_BRANCH,
             'skip-upgrade-status' => false,
             'dry-run' => false,
+            'run-updb' => true,
+            'run-cr' => true,
         ]
     ): void {
         $this->setSite($site_id);
@@ -99,10 +106,9 @@ EOD
 
         if (!$options['skip-upgrade-status']) {
             $this->log()->notice('Checking if site is ready for upgrade to Drupal 9');
-            $command = 'drush upgrade_status:analyze --all';
-            $ssh_command = $this->getConnectionString() . ' ' . escapeshellarg($command);
-            $this->logger->debug('shell command: {command}', [ 'command' => $command ]);
-            $result = $this->getContainer()->get(LocalMachineHelper::class)->exec($ssh_command);
+            $command = 'upgrade_status:analyze --all';
+            $result = $this->runDrushCommand($command, 'dev');
+
             if (0 !== $result['exit_code']) {
                 throw new TerminusException(
                     'Upgrade status command not found or not successful. Error: {error}',
@@ -139,6 +145,8 @@ EOD
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
+            $this->executeDrushDatabaseUpdates($options);
+            $this->executeDrushCacheRebuild($options);
         } else {
             $this->log()->warning('Push to multidev has been skipped.');
         }
@@ -178,25 +186,5 @@ EOD
                 $this->log()->notice(sprintf('%s (%s) is added', $package['package'], $package['version']));
             }
         }
-    }
-
-    /**
-     * Returns the connection string.
-     *
-     * @return string
-     *   SSH connection string.
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     */
-    private function getConnectionString()
-    {
-        $environment = $this->getEnv(sprintf('%s.dev', $this->site()->getName()));
-        $sftp = $environment->sftpConnectionInfo();
-        $command = $this->getConfig()->get('ssh_command');
-
-        return vsprintf(
-            '%s -T %s@%s -p %s -o "StrictHostKeyChecking=no" -o "AddressFamily inet"',
-            [$command, $sftp['username'], $sftp['host'], $sftp['port'],]
-        );
     }
 }
