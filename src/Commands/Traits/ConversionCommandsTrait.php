@@ -299,12 +299,15 @@ EOD,
      * the git remote.
      *
      * @param string $remoteUrl
+     *   Url from remote repository.
+     * @param string $remoteBranch
+     *   Branch name from remote repository.
      *
      * @return string
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function createLocalGitBranchFromRemote(string $remoteUrl): string
+    protected function createLocalGitBranchFromRemote(string $remoteUrl, ?string $remoteBranch): string
     {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
@@ -316,7 +319,7 @@ EOD,
             '--no-track',
             '-b',
             $this->getBranch(),
-            $targetGitRemoteName . '/' . Git::DEFAULT_BRANCH
+            $targetGitRemoteName . '/' . ($remoteBranch ?? Git::DEFAULT_BRANCH)
         );
 
         return $targetGitRemoteName;
