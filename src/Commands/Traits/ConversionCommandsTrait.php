@@ -307,7 +307,7 @@ EOD,
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function createLocalGitBranchFromRemote(string $remoteUrl, string $remoteBranch = ''): string
+    protected function createLocalGitBranchFromRemote(string $remoteUrl, string $remoteBranch = Git::DEFAULT_BRANCH): string
     {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
@@ -319,7 +319,7 @@ EOD,
             '--no-track',
             '-b',
             $this->getBranch(),
-            $targetGitRemoteName . '/' . ($remoteBranch ?? Git::DEFAULT_BRANCH)
+            $targetGitRemoteName . '/' . $remoteBranch
         );
 
         return $targetGitRemoteName;
