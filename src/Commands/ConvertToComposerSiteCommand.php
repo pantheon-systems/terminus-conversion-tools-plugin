@@ -24,7 +24,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
+    private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-composer-managed.git';
     private const MODULES_SUBDIR = 'modules';
     private const THEMES_SUBDIR = 'themes';
     private const WEB_ROOT = 'web';

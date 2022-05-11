@@ -25,8 +25,8 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
     use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
-    private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
+    private const DRUPAL_TARGET_UPSTREAM_ID = 'drupal-composer-managed';
+    private const DRUPAL_TARGET_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-composer-managed.git';
 
     /**
      * Upgrade a Drupal 8 with IC site to Drupal 9.
@@ -65,11 +65,12 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
         $this->setGit($localSitePath);
         $this->setComposer($localSitePath);
 
-        if (!$this->isDrupalRecommendedSite() && !$this->isDrupalProjectSite()) {
+        if (!$this->isDrupalRecommendedSite() && !$this->isDrupalProjectSite() && !$this->isDrupalComposerManagedSite()) {
             $this->log()->warning(
                 <<<EOD
 Site does not seem to match the expected upstream repos:
 
+    https://github.com/pantheon-systems/drupal-composer-managed or
     https://github.com/pantheon-systems/drupal-recommended or
     https://github.com/pantheon-systems/drupal-project
 EOD

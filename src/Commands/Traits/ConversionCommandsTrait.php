@@ -542,6 +542,25 @@ EOD,
     }
 
     /**
+     * Determines whether the current site is a drupal-composer-managed site or not.
+     */
+    protected function isDrupalComposerManagedSite(): bool
+    {
+        $localPath = $this->getLocalSitePath(false);
+        $upstreamConfScriptsFilePath = Files::buildPath($localPath, 'upstream-configuration', 'scripts', 'ComposerScripts.php');
+        if (!is_file($upstreamConfScriptsFilePath)) {
+            return false;
+        }
+
+        // Repository contents matches "drupal-recommended" upstream.
+        $this->getGit()->addRemote(
+            self::DRUPAL_TARGET_GIT_REMOTE_URL,
+            self::DRUPAL_TARGET_UPSTREAM_ID
+        );
+        return $this->areGitReposWithCommonCommits(self::DRUPAL_TARGET_UPSTREAM_ID);
+    }
+
+    /**
      * Determines whether the current site is a drupal-recommended site or not.
      */
     protected function isDrupalRecommendedSite(): bool

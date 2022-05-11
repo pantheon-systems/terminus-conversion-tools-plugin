@@ -26,6 +26,9 @@ class AdviseCommand extends TerminusCommand implements SiteAwareInterface
     private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
     private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
+    private const DRUPAL_TARGET_UPSTREAM_ID = 'drupal-composer-managed';
+    private const DRUPAL_TARGET_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-composer-managed.git';
+
     /**
      * Analyze the current state of the site and give advice on the next steps.
      *
@@ -59,7 +62,7 @@ EOD,
         );
 
 
-        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
+        if (self::DRUPAL_TARGET_UPSTREAM_ID === $upstreamId) {
             $this->writeln('No conversion is necessary.');
             return;
         }
@@ -222,6 +225,44 @@ EOD
     }
 
     /**
+     * Prints advice related to "drupal-recommended" upstream.
+     */
+    private function adviseOnDrupalRecommended(): void
+    {
+        $localPath = $this->getLocalSitePath(false);
+        $this->setGit($localPath);
+
+        if ($this->isDrupalRecommendedSite()) {
+            $this->adviseDevAlreadyOnDrupalRecommended();
+        } elseif ($this->isConversionMultidevExist()) {
+            $this->adviseConversionMultidevExists();
+        } else {
+            $this->output()->writeln(
+                <<<EOD
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
+
+    Drupal Composer Managed (drupal-composer-managed)
+
+This process may be done manually by following the instructions in the guide:
+
+    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
+
+An automated process to convert this site is available. To begin, run:
+
+    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
+
+This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
+
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+            );
+        }
+    }
+
+    /**
      * Prints advice related to "drupal-project" upstream.
      */
     private function adviseOnDrupalProject(): void
@@ -236,9 +277,9 @@ EOD
         } else {
             $this->output()->writeln(
                 <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
-    Drupal Recommended (drupal-recommended)
+    Drupal Composer Managed (drupal-composer-managed)
 
 This process may be done manually by following the instructions in the guide:
 
@@ -251,7 +292,7 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD

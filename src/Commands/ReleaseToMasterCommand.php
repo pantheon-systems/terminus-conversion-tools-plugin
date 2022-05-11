@@ -18,7 +18,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
     use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const TARGET_UPSTREAM_ID = 'drupal-recommended';
+    private const TARGET_UPSTREAM_ID = 'drupal-composer-managed';
     private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
