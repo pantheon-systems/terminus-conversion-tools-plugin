@@ -34,7 +34,7 @@ class ConversionCommandsDrupalProjectUpstreamTest extends ConversionCommandsUpst
     {
         return
             <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream
 EOD;
     }
 

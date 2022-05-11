@@ -25,7 +25,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
 
     private const SITE_NAME = 'site-archive-d9';
     private const SITE_ARCHIVE_FILE_NAME = 'site-archive-d9.tar.gz';
-    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
+    private const DRUPAL_TARGET_UPSTREAM_ID = 'drupal-composer-managed';
     private const EMPTY_UPSTREAM_ID = 'empty';
 
     /**
@@ -66,7 +66,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
             'site:create %s %s %s',
             $this->siteName,
             $this->siteName,
-            self::DRUPAL_RECOMMENDED_UPSTREAM_ID
+            self::DRUPAL_TARGET_UPSTREAM_ID
         );
         $this->terminus(
             $command,
@@ -146,7 +146,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
         [, $exitCode, $error] = self::callTerminus(sprintf('%s --overwrite --yes', $command));
         $this->assertNotEquals(0, $exitCode);
         $this->assertStringContainsString(
-            sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID),
+            sprintf('A site on "%s" upstream is required.', self::DRUPAL_TARGET_UPSTREAM_ID),
             $error
         );
     }
