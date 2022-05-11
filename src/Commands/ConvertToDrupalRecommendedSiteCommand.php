@@ -199,7 +199,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composerJson['extra']['installer-paths']['web/profiles/custom/{$name}'] = ['type:drupal-custom-profile'];
         $composerJson['extra']['installer-paths']['web/themes/custom/{$name}'] = ['type:drupal-custom-theme'];
 
-        foreach (['autoload', 'scripts', 'scripts-description'] as $item) {
+        foreach (['autoload', 'scripts', 'scripts-descriptions'] as $item) {
             if (!isset($composerManagedComposerJson[$item])) {
                 throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: %s; can not continue.', $item));
             }
