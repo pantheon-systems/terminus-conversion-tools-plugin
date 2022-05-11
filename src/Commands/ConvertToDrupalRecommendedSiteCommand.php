@@ -131,7 +131,11 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         );
         $this->log()->notice('composer.json updated to match "drupal-composer-managed" upstream');
 
-        $upstream_id === 'drupal9' ? $this->detectDrupalProjectDiff($localPath) : $this->detectDrupalRecommendedDiff($localPath);
+        if ($upstream_id === 'drupal9') {
+            $this->detectDrupalProjectDiff($localPath);
+        } else {
+            $this->detectDrupalRecommendedDiff($localPath);
+        }
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
@@ -195,11 +199,17 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composerJson['extra']['installer-paths']['web/profiles/custom/{$name}'] = ['type:drupal-custom-profile'];
         $composerJson['extra']['installer-paths']['web/themes/custom/{$name}'] = ['type:drupal-custom-theme'];
 
-        foreach (['autoload', 'scripts', 'scripts-description'] as $item) {
+        foreach (['autoload', 'scripts', 'scripts-descriptions'] as $item) {
+            if (!isset($composerManagedComposerJson[$item])) {
+                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: %s; can not continue.', $item));
+            }
             $composerJson[$item] = $composerManagedComposerJson[$item];
         }
 
         foreach (['sort-packages', 'allow-plugins'] as $item) {
+            if (!isset($composerManagedComposerJson['config'][$item])) {
+                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: config.%s; can not continue.', $item));
+            }
             $composerJson['config'][$item] = $composerManagedComposerJson['config'][$item];
         }
 
@@ -247,31 +257,39 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     }
 
     /**
-     * Detects the differences between the site's code and "drupal-project" upstream code.
+     * Detects the differences between the site's code and the given upstream code.
      *
      * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
      * Otherwise - apply the patch and commit the changes.
      *
      * @param string $localPath
+     *   The local path to the site's code.
+     * @param string $remoteUrl
+     *   The git remote url for the upstream.
+     * @param string $upstreamId
+     *   The upstream id.
+     * @param string $upstreamName
+     *   The upstream name.
      */
-    private function detectDrupalProjectDiff(string $localPath): void
+    private function detectUpstreamDiff(string $localPath, string $remoteUrl, string $upstreamId, string $upstreamName): void
     {
-        $this->log()->notice(
+        $this->log()->notice(sprintf(
             <<<EOD
-Detecting and applying the differences between the site code and its upstream ("drupal-project")...
-EOD
-        );
+Detecting and applying the differences between the site code and its upstream ("%s")...
+EOD,
+            $upstreamName
+        ));
 
         try {
-            $this->getGit()->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
-            $this->getGit()->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
+            $this->getGit()->addRemote($remoteUrl, $upstreamId);
+            $this->getGit()->fetch($upstreamId);
 
             try {
                 $this->getGit()->apply([
                     '--diff-filter=M',
                     sprintf(
                         '%s/%s..%s/%s',
-                        self::DRUPAL_PROJECT_UPSTREAM_ID,
+                        $upstreamId,
                         Git::DEFAULT_BRANCH,
                         Git::DEFAULT_REMOTE,
                         Git::DEFAULT_BRANCH
@@ -280,9 +298,10 @@ EOD
                     ':!composer.json',
                 ]);
             } catch (GitNoDiffException $e) {
-                $this->log()->notice(
-                    'No differences between the site code and its upstream ("drupal-project") are detected'
-                );
+                $this->log()->notice(sprintf(
+                    'No differences between the site code and its upstream ("%s") are detected',
+                    $upstreamName
+                ));
 
                 return;
             } catch (GitMergeConflictException $e) {
@@ -292,12 +311,13 @@ EOD
 Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
 1. resolve code merge conflicts found in %s files: %s
-2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
+2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "%s" upstream'`
 3. run `{$this->getTerminusExecutable()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $localPath,
                         implode(', ', $e->getUnmergedFiles()),
+                        $upstreamName,
                         $this->site()->getName()
                     )
                 );
@@ -305,7 +325,7 @@ EOD,
                 exit;
             }
 
-            $this->getGit()->commit('Copy site-specific code related to "drupal-project" upstream');
+            $this->getGit()->commit(sprintf('Copy site-specific code related to "%s" upstream', $upstreamName));
             $this->log()->notice(
                 sprintf('The code differences have been copied onto %s branch...', self::TARGET_GIT_BRANCH)
             );
@@ -320,6 +340,19 @@ EOD,
     }
 
     /**
+     * Detects the differences between the site's code and "drupal-project" upstream code.
+     *
+     * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
+     * Otherwise - apply the patch and commit the changes.
+     *
+     * @param string $localPath
+     */
+    private function detectDrupalProjectDiff(string $localPath): void
+    {
+        $this->detectUpstreamDiff($localPath, self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID, 'drupal-project');
+    }
+
+    /**
      * Detects the differences between the site's code and "drupal-recommended" upstream code.
      *
      * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
@@ -329,66 +362,6 @@ EOD,
      */
     private function detectDrupalRecommendedDiff(string $localPath): void
     {
-        $this->log()->notice(
-            <<<EOD
-Detecting and applying the differences between the site code and its upstream ("drupal-recommended")...
-EOD
-        );
-
-        try {
-            $this->getGit()->addRemote(self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-            $this->getGit()->fetch(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
-
-            try {
-                $this->getGit()->apply([
-                    '--diff-filter=M',
-                    sprintf(
-                        '%s/%s..%s/%s',
-                        self::DRUPAL_RECOMMENDED_UPSTREAM_ID,
-                        Git::DEFAULT_BRANCH,
-                        Git::DEFAULT_REMOTE,
-                        Git::DEFAULT_BRANCH
-                    ),
-                    '--',
-                    ':!composer.json',
-                ]);
-            } catch (GitNoDiffException $e) {
-                $this->log()->notice(
-                    'No differences between the site code and its upstream ("drupal-recommended") are detected'
-                );
-
-                return;
-            } catch (GitMergeConflictException $e) {
-                $this->log()->warning(
-                    sprintf(
-                        <<<EOD
-Automatic merge has failed!
-The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
-1. resolve code merge conflicts found in %s files: %s
-2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-recommended" upstream'`
-3. run `{$this->getTerminusExecutable()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
-EOD,
-                        self::TARGET_GIT_BRANCH,
-                        $localPath,
-                        implode(', ', $e->getUnmergedFiles()),
-                        $this->site()->getName()
-                    )
-                );
-
-                exit;
-            }
-
-            $this->getGit()->commit('Copy site-specific code related to "drupal-recommended" upstream');
-            $this->log()->notice(
-                sprintf('The code differences have been copied onto %s branch...', self::TARGET_GIT_BRANCH)
-            );
-        } catch (Throwable $t) {
-            $this->log()->error(
-                sprintf(
-                    'Failed detecting/applying differences between the site code and its upstream: %s',
-                    $t->getMessage()
-                )
-            );
-        }
+        $this->detectUpstreamDiff($localPath, self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID, 'drupal-recommended');
     }
 }
