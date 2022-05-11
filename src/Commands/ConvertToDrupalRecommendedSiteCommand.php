@@ -131,7 +131,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         );
         $this->log()->notice('composer.json updated to match "drupal-composer-managed" upstream');
 
-        $upstream_id === 'drupal-project' ? $this->detectDrupalProjectDiff($localPath) : $this->detectDrupalRecommendedDiff($localPath);
+        $upstream_id === 'drupal9' ? $this->detectDrupalProjectDiff($localPath) : $this->detectDrupalRecommendedDiff($localPath);
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
