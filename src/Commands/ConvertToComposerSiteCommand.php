@@ -103,7 +103,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $libraryProjects = $this->getLibraries();
         $customProjectsDirs = $this->getCustomProjectsDirectories();
 
-        $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL);
+        $this->createLocalGitBranchFromRemote(self::TARGET_UPSTREAM_GIT_REMOTE_URL, 'main');
         if ($isDefaultConfigFilesExist) {
             $this->copyConfigurationFiles();
         } else {
