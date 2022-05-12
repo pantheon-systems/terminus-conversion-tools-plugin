@@ -25,19 +25,24 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     use DrushCommandsTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
-    private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
+    private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-composer-managed.git';
+    private const TARGET_UPSTREAM_GIT_BRANCH = 'main';
 
     private const DRUPAL_PROJECT_UPSTREAM_ID = 'drupal9';
     private const DRUPAL_PROJECT_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-project.git';
 
+    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
+    private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
+
     /**
-     * Converts a "drupal-project" upstream-based site (Drupal 9 site created before November 30, 2021) into "drupal-recommended" upstream-based one.
+     * Converts a deprecated Drupal 9 upstream-based site (drupal-project or drupal-recommended) into "drupal-composer-managed" upstream-based one.
      *
      * @command conversion:update-from-deprecated-upstream
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing "drupal-rec" branch.
      * @option target-upstream-git-url The target upstream git repository URL.
+     * @option target-upstream-git-branch The target upstream git repository branch.
      * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
@@ -55,6 +60,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
             'branch' => self::TARGET_GIT_BRANCH,
             'dry-run' => false,
             'target-upstream-git-url' => self::TARGET_UPSTREAM_GIT_REMOTE_URL,
+            'target-upstream-git-branch' => self::TARGET_UPSTREAM_GIT_BRANCH,
             'run-cr' => true,
         ]
     ): void {
@@ -62,9 +68,9 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->setBranch($options['branch']);
 
         $upstream_id = $this->site()->getUpstream()->get('machine_name');
-        if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id) {
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id && self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $upstream_id) {
             throw new TerminusException(
-                'The site {site_name} is not a "drupal-project" upstream-based site.',
+                'The site {site_name} is not a "drupal-project" or "drupal-recommended" upstream-based site.',
                 ['site_name' => $this->site()->getName()]
             );
         }
@@ -74,24 +80,25 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->setGit($localPath);
         $this->setComposer($localPath);
 
-        $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url']);
-        if (!$this->areGitReposWithCommonCommits($targetGitRemoteName)) {
+        $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url'], $options['target-upstream-git-branch']);
+        if (!$this->areGitReposWithCommonCommits($targetGitRemoteName, 'origin', $options['target-upstream-git-branch'], 'master')) {
             throw new TerminusException(
-                'The site repository and "drupal-recommended" upstream repository have unrelated histories.'
+                'The site repository and "drupal-composer-managed" upstream repository have unrelated histories.'
             );
         }
 
-        $drupalRecommendedComposerDependencies = $this->getComposerDependencies($localPath);
+        $drupalComposerManagedComposerDependencies = $this->getComposerDependencies($localPath);
 
         $this->copySiteSpecificFiles();
 
-        $this->log()->notice('Updating composer.json to match "drupal-recommended" upstream...');
+        $this->log()->notice('Updating composer.json to match "drupal-composer-managed" upstream...');
 
         $errors = 0;
+        $composerManagedComposerJson = json_decode(file_get_contents($localPath . '/composer.json'), true);
         $this->getGit()->checkout(Git::DEFAULT_BRANCH, 'composer.json');
         $this->getGit()->commit('Update composer.json to include site-specific changes', ['composer.json']);
-        $this->updateComposerJsonMeta($localPath);
-        foreach ($drupalRecommendedComposerDependencies as $dependency) {
+        $this->updateComposerJsonMeta($localPath, $composerManagedComposerJson);
+        foreach ($drupalComposerManagedComposerDependencies as $dependency) {
             $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
             if ($dependency['is_dev']) {
                 $arguments[] = '--dev';
@@ -119,12 +126,16 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->log()->notice('Updating composer dependencies...');
         $this->getComposer()->update();
         $this->getGit()->commit(
-            'Update composer.json to match "drupal-recommended" upstream and install dependencies',
+            'Update composer.json to match "drupal-composer-managed" upstream and install dependencies',
             ['composer.json', 'composer.lock']
         );
-        $this->log()->notice('composer.json updated to match "drupal-recommended" upstream');
+        $this->log()->notice('composer.json updated to match "drupal-composer-managed" upstream');
 
-        $this->detectDrupalProjectDiff($localPath);
+        if ($upstream_id === 'drupal9') {
+            $this->detectDrupalProjectDiff($localPath);
+        } else {
+            $this->detectDrupalRecommendedDiff($localPath);
+        }
 
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
@@ -165,14 +176,15 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *  - ["require"]["pantheon-upstreams/upstream-configuration"]
      *
      * @param string $localPath
+     * @param array $composerManagedComposerJson
      */
-    private function updateComposerJsonMeta(string $localPath): void
+    private function updateComposerJsonMeta(string $localPath, array $composerManagedComposerJson): void
     {
         $composerJson = file_get_contents(Files::buildPath($localPath, 'composer.json'));
         $composerJson = json_decode($composerJson, true);
 
-        $composerJson['require']['pantheon-upstreams/upstream-configuration'] = 'self.version';
-        $composerJson['minimum-stability'] = 'stable';
+        $composerJson['require']['pantheon-upstreams/upstream-configuration'] = $composerManagedComposerJson['require']['pantheon-upstreams/upstream-configuration'];
+        $composerJson['require']['drush/drush'] = $composerManagedComposerJson['require']['drush/drush'];
 
         // Change installer-paths for contrib projects.
         unset($composerJson['extra']['installer-paths']['web/modules/composer/{$name}']);
@@ -186,6 +198,20 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $composerJson['extra']['installer-paths']['web/modules/custom/{$name}'] = ['type:drupal-custom-module'];
         $composerJson['extra']['installer-paths']['web/profiles/custom/{$name}'] = ['type:drupal-custom-profile'];
         $composerJson['extra']['installer-paths']['web/themes/custom/{$name}'] = ['type:drupal-custom-theme'];
+
+        foreach (['autoload', 'scripts', 'scripts-descriptions'] as $item) {
+            if (!isset($composerManagedComposerJson[$item])) {
+                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: %s; can not continue.', $item));
+            }
+            $composerJson[$item] = $composerManagedComposerJson[$item];
+        }
+
+        foreach (['sort-packages', 'allow-plugins'] as $item) {
+            if (!isset($composerManagedComposerJson['config'][$item])) {
+                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: config.%s; can not continue.', $item));
+            }
+            $composerJson['config'][$item] = $composerManagedComposerJson['config'][$item];
+        }
 
         $file = fopen(Files::buildPath($localPath, 'composer.json'), 'w');
         fwrite($file, json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -231,31 +257,39 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     }
 
     /**
-     * Detects the differences between the site's code and "drupal-project" upstream code.
+     * Detects the differences between the site's code and the given upstream code.
      *
      * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
      * Otherwise - apply the patch and commit the changes.
      *
      * @param string $localPath
+     *   The local path to the site's code.
+     * @param string $remoteUrl
+     *   The git remote url for the upstream.
+     * @param string $upstreamId
+     *   The upstream id.
+     * @param string $upstreamName
+     *   The upstream name.
      */
-    private function detectDrupalProjectDiff(string $localPath): void
+    private function detectUpstreamDiff(string $localPath, string $remoteUrl, string $upstreamId, string $upstreamName): void
     {
-        $this->log()->notice(
+        $this->log()->notice(sprintf(
             <<<EOD
-Detecting and applying the differences between the site code and its upstream ("drupal-project")...
-EOD
-        );
+Detecting and applying the differences between the site code and its upstream ("%s")...
+EOD,
+            $upstreamName
+        ));
 
         try {
-            $this->getGit()->addRemote(self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID);
-            $this->getGit()->fetch(self::DRUPAL_PROJECT_UPSTREAM_ID);
+            $this->getGit()->addRemote($remoteUrl, $upstreamId);
+            $this->getGit()->fetch($upstreamId);
 
             try {
                 $this->getGit()->apply([
                     '--diff-filter=M',
                     sprintf(
                         '%s/%s..%s/%s',
-                        self::DRUPAL_PROJECT_UPSTREAM_ID,
+                        $upstreamId,
                         Git::DEFAULT_BRANCH,
                         Git::DEFAULT_REMOTE,
                         Git::DEFAULT_BRANCH
@@ -264,9 +298,10 @@ EOD
                     ':!composer.json',
                 ]);
             } catch (GitNoDiffException $e) {
-                $this->log()->notice(
-                    'No differences between the site code and its upstream ("drupal-project") are detected'
-                );
+                $this->log()->notice(sprintf(
+                    'No differences between the site code and its upstream ("%s") are detected',
+                    $upstreamName
+                ));
 
                 return;
             } catch (GitMergeConflictException $e) {
@@ -276,12 +311,13 @@ EOD
 Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
 1. resolve code merge conflicts found in %s files: %s
-2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "drupal-project" upstream'`
+2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "%s" upstream'`
 3. run `{$this->getTerminusExecutable()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
                         self::TARGET_GIT_BRANCH,
                         $localPath,
                         implode(', ', $e->getUnmergedFiles()),
+                        $upstreamName,
                         $this->site()->getName()
                     )
                 );
@@ -289,7 +325,7 @@ EOD,
                 exit;
             }
 
-            $this->getGit()->commit('Copy site-specific code related to "drupal-project" upstream');
+            $this->getGit()->commit(sprintf('Copy site-specific code related to "%s" upstream', $upstreamName));
             $this->log()->notice(
                 sprintf('The code differences have been copied onto %s branch...', self::TARGET_GIT_BRANCH)
             );
@@ -301,5 +337,31 @@ EOD,
                 )
             );
         }
+    }
+
+    /**
+     * Detects the differences between the site's code and "drupal-project" upstream code.
+     *
+     * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
+     * Otherwise - apply the patch and commit the changes.
+     *
+     * @param string $localPath
+     */
+    private function detectDrupalProjectDiff(string $localPath): void
+    {
+        $this->detectUpstreamDiff($localPath, self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID, 'drupal-project');
+    }
+
+    /**
+     * Detects the differences between the site's code and "drupal-recommended" upstream code.
+     *
+     * If the differences are found, try to apply the patch and ask the user to resolve merge conflicts if found.
+     * Otherwise - apply the patch and commit the changes.
+     *
+     * @param string $localPath
+     */
+    private function detectDrupalRecommendedDiff(string $localPath): void
+    {
+        $this->detectUpstreamDiff($localPath, self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID, 'drupal-recommended');
     }
 }
