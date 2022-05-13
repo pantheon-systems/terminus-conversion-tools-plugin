@@ -89,6 +89,8 @@ EOD,
             return;
         }
 
+        // @todo AdviseOnDrupalRecommended?
+
         if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnEmpty();
             return;
@@ -101,6 +103,7 @@ EOD,
     private function adviseDevAlreadyOnDrupalRecommended(): void
     {
         $this->output()->writeln(
+            // @todo Update advise.
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
 
@@ -120,6 +123,7 @@ EOD
      */
     private function adviseConversionMultidevExists(): void
     {
+        // @todo Update advise.
         $this->output()->writeln(
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
@@ -199,6 +203,7 @@ EOD
         } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
+            // @todo Update advise.
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
@@ -229,6 +234,7 @@ EOD
      */
     private function adviseOnDrupalRecommended(): void
     {
+        // @todo Use this function? Or integrate into drupal-project?
         $localPath = $this->getLocalSitePath(false);
         $this->setGit($localPath);
 
@@ -318,6 +324,7 @@ EOD
 
         if ($this->isDrupalRecommendedSite()) {
             $this->output()->writeln(
+                // @todo Update advise.
                 <<<EOD
 Advice: switch the upstream to "drupal-recommended" with Terminus:
 
@@ -332,6 +339,7 @@ EOD
             } else {
                 // Upstream is drupal-project.
                 $this->output()->writeln(
+                    // @todo Update advise.
                     <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
 
@@ -364,6 +372,7 @@ EOD
             } else {
                 // Build artifact created by Terminus Build Tools plugin is present.
                 $this->output()->writeln(
+                    // @todo Update advise.
                     <<<EOD
 Advice: you might want to convert to drupal-recommended if you are NOT using Continuous Integration (e.g. running tests, compiling css, etc).
 Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
@@ -393,6 +402,7 @@ EOD
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
+                // @todo Update advise.
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
 

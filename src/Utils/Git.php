@@ -20,6 +20,7 @@ class Git
     private string $repoPath;
 
     public const DEFAULT_REMOTE = 'origin';
+    // @todo Should this change?
     public const DEFAULT_BRANCH = 'master';
 
     /**

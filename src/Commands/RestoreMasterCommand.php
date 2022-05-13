@@ -47,6 +47,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         }
 
         $backupMasterCommitHash = $this->getGit()->getHeadCommitHash($backupBranchName);
+        // @todo Fix it!
         $masterCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($backupMasterCommitHash === $masterCommitHash) {
             $this->log()->warning(
