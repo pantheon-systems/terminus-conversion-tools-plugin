@@ -140,7 +140,7 @@ EOD,
             ? $this->cloneSiteGitRepository()
             : $this->cloneSiteGitRepository($force);
 
-        $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout master', $this->localSitePath));
+        $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
         $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
 
         return $this->localSitePath;
