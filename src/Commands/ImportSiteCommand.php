@@ -221,7 +221,7 @@ EOD,
             $workflow = $env->changeConnectionMode('git');
             $this->processWorkflow($workflow);
         }
-        $this->getGit()->push(Git::DEFAULT_BRANCH);
+        $this->getGit()->push('main');
     }
 
     /**
