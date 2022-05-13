@@ -85,7 +85,7 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
      */
     protected function tearDown(): void
     {
-        parent::tearDown();
+        //parent::tearDown();
 
         $fs = new Filesystem();
         if (is_file($this->archiveFilePath)) {
