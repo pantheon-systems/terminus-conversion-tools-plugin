@@ -41,7 +41,7 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream';
+        return 'No conversion is necessary.';
     }
 
     /**
