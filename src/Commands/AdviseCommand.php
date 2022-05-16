@@ -84,9 +84,8 @@ EOD,
             return;
         }
 
-        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
-            $this->adviseOnDrupalProject();
-            return;
+        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnEmpty();
         }
 
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
@@ -331,11 +330,11 @@ EOD
             );
 
             return;
-        } elseif ($this->isDrupalProjectSite()) {
+        } elseif ($this->isDrupalProjectSite() || $this->isDrupalRecommendedSite()) {
             if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
-                // Upstream is drupal-project.
+                // Upstream is drupal-project or drupal-recommended.
                 $this->output()->writeln(
                     <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
