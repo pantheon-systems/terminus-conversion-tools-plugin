@@ -84,10 +84,6 @@ EOD,
             return;
         }
 
-        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
-            $this->adviseOnEmpty();
-        }
-
         if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrupalProject();
             return;
@@ -96,6 +92,10 @@ EOD,
         if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnDrupalRecommended();
             return;
+        }
+
+        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnEmpty();
         }
     }
 
