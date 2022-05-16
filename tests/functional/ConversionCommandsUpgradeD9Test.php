@@ -33,7 +33,7 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'switch the upstream to "drupal-recommended" with Terminus';
+        return 'switch the upstream to "drupal-composer-managed" with Terminus';
     }
 
     /**
