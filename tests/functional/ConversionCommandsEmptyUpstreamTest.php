@@ -24,7 +24,7 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream';
+        return 'Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream';
     }
 
     /**
