@@ -58,7 +58,6 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         }
 
         $targetCommitHash = $this->getGit()->getHeadCommitHash($sourceBranch);
-        // @todo Fix it!
         $masterCommitHash = $this->getGit()->getHeadCommitHash(Git::DEFAULT_BRANCH);
         if ($targetCommitHash === $masterCommitHash) {
             $this->log()->warning(

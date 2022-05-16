@@ -89,10 +89,13 @@ EOD,
             return;
         }
 
-        // @todo AdviseOnDrupalRecommended?
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnDrupalProject();
+            return;
+        }
 
-        if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
-            $this->adviseOnEmpty();
+        if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID === $upstreamId) {
+            $this->adviseOnDrupalRecommended();
             return;
         }
     }
@@ -100,18 +103,17 @@ EOD,
     /**
      * Print advise for dev environment already on Drupal Recommended.
      */
-    private function adviseDevAlreadyOnDrupalRecommended(): void
+    private function adviseDevAlreadyOnTargetUpstream(): void
     {
         $this->output()->writeln(
-            // @todo Update advise.
             <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
-    Drupal Recommended (drupal-recommended)
+    Drupal Composer Managed (drupal-composer-managed)
 
 This process has already been started and seems to be ready in the dev environment. To finish it, you should change the upstream with the following command:
 
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to confirm the conversion completed successfully.
 EOD
@@ -123,17 +125,16 @@ EOD
      */
     private function adviseConversionMultidevExists(): void
     {
-        // @todo Update advise.
         $this->output()->writeln(
             <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
-    Drupal Recommended (drupal-recommended)
+    Drupal Composer Managed (drupal-composer-managed)
 
 This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You could also delete the multidev environment:
 
@@ -198,17 +199,16 @@ EOD
             $this->output()->writeln('Standard drupal 8 site.');
         }
 
-        if ($this->isDrupalRecommendedSite()) {
-            $this->adviseDevAlreadyOnDrupalRecommended();
+        if ($this->isDrupalComposerManagedSite()) {
+            $this->adviseDevAlreadyOnTargetUpstream();
         } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
-            // @todo Update advise.
             $this->output()->writeln(
                 <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
 
-    Drupal Recommended (drupal-recommended)
+   Drupal Composer Managed (drupal-composer-managed)
 
 This process may be done manually by following the instructions in the guide:
 
@@ -221,7 +221,7 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -234,12 +234,11 @@ EOD
      */
     private function adviseOnDrupalRecommended(): void
     {
-        // @todo Use this function? Or integrate into drupal-project?
         $localPath = $this->getLocalSitePath(false);
         $this->setGit($localPath);
 
-        if ($this->isDrupalRecommendedSite()) {
-            $this->adviseDevAlreadyOnDrupalRecommended();
+        if ($this->isDrupalComposerManagedSite()) {
+            $this->adviseDevAlreadyOnTargetUpstream();
         } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
@@ -276,8 +275,8 @@ EOD
         $localPath = $this->getLocalSitePath(false);
         $this->setGit($localPath);
 
-        if ($this->isDrupalRecommendedSite()) {
-            $this->adviseDevAlreadyOnDrupalRecommended();
+        if ($this->isDrupalComposerManagedSite()) {
+            $this->adviseDevAlreadyOnTargetUpstream();
         } elseif ($this->isConversionMultidevExist()) {
             $this->adviseConversionMultidevExists();
         } else {
@@ -322,13 +321,12 @@ EOD
             $this->writeln('Notice: This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
         }
 
-        if ($this->isDrupalRecommendedSite()) {
+        if ($this->isDrupalComposerManagedSite()) {
             $this->output()->writeln(
-                // @todo Update advise.
                 <<<EOD
-Advice: switch the upstream to "drupal-recommended" with Terminus:
+Advice: switch the upstream to "drupal-composer-managed" with Terminus:
 
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 EOD
             );
 
@@ -339,11 +337,10 @@ EOD
             } else {
                 // Upstream is drupal-project.
                 $this->output()->writeln(
-                    // @todo Update advise.
                     <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
-    Drupal Recommended (drupal-recommended)
+    Drupal Composer Managed (drupal-composer-managed)
 
 This process may be done manually by following the instructions in the guide:
 
@@ -356,7 +353,7 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -372,12 +369,11 @@ EOD
             } else {
                 // Build artifact created by Terminus Build Tools plugin is present.
                 $this->output()->writeln(
-                    // @todo Update advise.
                     <<<EOD
-Advice: you might want to convert to drupal-recommended if you are NOT using Continuous Integration (e.g. running tests, compiling css, etc).
+Advice: you might want to convert to drupal-composer-managed if you are NOT using Continuous Integration (e.g. running tests, compiling css, etc).
 Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
 
-If you wish to convert to drupal-recommended, this process may be done manually by following the instructions in the guide:
+If you wish to convert to drupal-composer-managed, this process may be done manually by following the instructions in the guide:
 
     https://pantheon.io/docs/guides/composer-convert-from-empty
 
@@ -388,7 +384,7 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -402,11 +398,10 @@ EOD
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
-                // @todo Update advise.
                 <<<EOD
-Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream:
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
-    Drupal Recommended (drupal-recommended)
+    Drupal Composer Managed (drupal-composer-managed)
 
 This process may be done manually by following the instructions in the guide:
 
@@ -419,7 +414,7 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-recommended
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 

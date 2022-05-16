@@ -54,7 +54,6 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
         $this->isValidSite();
 
-        // @todo How to make this work?
         $masterBranch = Git::DEFAULT_BRANCH;
         $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
 
