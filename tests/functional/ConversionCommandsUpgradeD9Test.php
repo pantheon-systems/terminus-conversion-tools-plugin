@@ -41,7 +41,7 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'No conversion is necessary.';
+        return 'We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream';
     }
 
     /**
@@ -87,16 +87,6 @@ final class ConversionCommandsUpgradeD9Test extends ConversionCommandsUpstreamTe
         $this->assertPagesExists(self::DEV_ENV);
 
         $this->assertAdviseBeforeCommand();
-
-        $this->assertCommand(
-            sprintf('conversion:update-from-deprecated-upstream %s --branch=%s', $this->siteName, $this->branch),
-            $this->branch
-        );
-
-        $this->assertCommand(
-            sprintf('conversion:release-to-dev %s --branch=%s', $this->siteName, $this->branch),
-            $this->branch
-        );
 
         $this->assertCommand(
             sprintf('conversion:upgrade-d9 --skip-upgrade-status %s --branch=%s', $this->siteName, $this->branch),
