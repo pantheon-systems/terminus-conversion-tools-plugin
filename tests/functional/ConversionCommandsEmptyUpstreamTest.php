@@ -46,7 +46,6 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     public function testConversionCommands(): void
     {
-        var_dump(getenv('TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID'));
         parent::testConversionCommands();
     }
 

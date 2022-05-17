@@ -101,4 +101,6 @@ jobs:
           ./terminus.phar conversion:composer -h
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
-        run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
+        run: |
+          echo $TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID
+          composer tests:functional:group -- ${{ matrix.testing_groups.group }}
