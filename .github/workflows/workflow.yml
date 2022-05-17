@@ -25,6 +25,8 @@ jobs:
         run: composer cs
       - name: Run unit tests
         run: composer tests:unit
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
   functional_tests:
     if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
@@ -101,6 +103,4 @@ jobs:
           ./terminus.phar conversion:composer -h
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
-        run: |
-          echo $TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID
-          composer tests:functional:group -- ${{ matrix.testing_groups.group }}
+        run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
