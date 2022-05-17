@@ -46,20 +46,8 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
      */
     public function testConversionCommands(): void
     {
+        var_dump(getenv('TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID'));
         parent::testConversionCommands();
-    }
-
-    /**
-     * Executes the conversion Terminus command.
-     *
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    protected function executeConvertCommand(): void
-    {
-        $this->assertCommand(
-            sprintf('conversion:composer %s --branch=%s --no-run-cr --no-run-updb', $this->siteName, $this->branch),
-            $this->branch
-        );
     }
 
     /**
