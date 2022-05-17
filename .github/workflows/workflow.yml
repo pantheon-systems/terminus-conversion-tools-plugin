@@ -11,9 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build
-    env:
-      TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID }}
-      TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -28,8 +25,6 @@ jobs:
         run: composer cs
       - name: Run unit tests
         run: composer tests:unit
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
   functional_tests:
     if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.functional_tests_are_enabled == 1 }}
