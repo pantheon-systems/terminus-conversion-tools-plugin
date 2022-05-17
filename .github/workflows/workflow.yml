@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build
+    env:
+      TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS8_UPSTREAM_ID }}
+      TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_EMPTY_UPSTREAM_ID }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
