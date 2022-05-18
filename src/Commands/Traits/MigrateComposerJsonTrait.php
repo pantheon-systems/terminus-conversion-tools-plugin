@@ -264,7 +264,7 @@ EOD
             ],
         ];
 
-        if (!preg_match('/^[^0-9]*9/', $drupalConstraint)) {
+        if (preg_match('/^[^0-9]*8/', $drupalConstraint)) {
             $packages[] = [
                 'package' => 'drush/drush',
                 'version' => '^10',
