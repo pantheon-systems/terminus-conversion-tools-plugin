@@ -13,6 +13,7 @@ use Pantheon\TerminusConversionTools\Utils\Files;
  */
 final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends ConversionCommandsUpstreamTestBase
 {
+    private const SCENARIO_ON_TOP_OF_DRUPAL_TARGET = 'on_top_of_drupal_target';
     private const SCENARIO_ON_TOP_OF_DRUPAL_RECOMMENDED = 'on_top_of_drupal_recommended';
     private const SCENARIO_ON_TOP_OF_DRUPAL_PROJECT = 'on_top_of_drupal_project';
 
@@ -43,10 +44,11 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
     protected function getExpectedAdviceBeforeConversion(): string
     {
         switch ($this->scenario) {
+            case self::SCENARIO_ON_TOP_OF_DRUPAL_TARGET:
+                return 'switch the upstream to "drupal-composer-managed" with Terminus';
             case self::SCENARIO_ON_TOP_OF_DRUPAL_RECOMMENDED:
-                return 'switch the upstream to "drupal-recommended" with Terminus';
             case self::SCENARIO_ON_TOP_OF_DRUPAL_PROJECT:
-                return 'Advice: We recommend that this site be converted to use "drupal-recommended" Pantheon upstream';
+                return 'Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream';
             default:
                 return '';
         }

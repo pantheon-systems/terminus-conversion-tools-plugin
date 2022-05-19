@@ -246,7 +246,7 @@ EOD
 
         $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
 
-        return [
+        $packages = [
             [
                 'package' => $drupalPackage,
                 'version' => $drupalConstraint,
@@ -263,6 +263,16 @@ EOD
                 'is_dev' => true,
             ],
         ];
+
+        if (preg_match('/^[^0-9]*8/', $drupalConstraint)) {
+            $packages[] = [
+                'package' => 'drush/drush',
+                'version' => '^10',
+                'is_dev' => false,
+            ];
+        }
+
+        return $packages;
     }
 
     /**

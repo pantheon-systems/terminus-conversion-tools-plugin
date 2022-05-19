@@ -33,7 +33,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     private const COMPONENT_FILES = 'files';
     private const COMPONENT_DATABASE = 'database';
 
-    private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
+    private const DRUPAL_TARGET_UPSTREAM_ID = 'drupal-composer-managed';
 
     /**
      * ImportSiteCommand constructor.
@@ -46,7 +46,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
     }
 
     /**
-     * Creates the site based on "drupal-recommended" upstream from imported code, database, and files.
+     * Creates the site based on "drupal-composer-managed" upstream from imported code, database, and files.
      *
      * @command conversion:import-site
      *
@@ -146,9 +146,9 @@ EOD,
             }
 
             $this->setSite($site_name);
-            if (self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')) {
+            if (self::DRUPAL_TARGET_UPSTREAM_ID !== $this->site()->getUpstream()->get('machine_name')) {
                 throw new TerminusException(
-                    sprintf('A site on "%s" upstream is required.', self::DRUPAL_RECOMMENDED_UPSTREAM_ID)
+                    sprintf('A site on "%s" upstream is required.', self::DRUPAL_TARGET_UPSTREAM_ID)
                 );
             }
         } else {
@@ -437,7 +437,7 @@ EOD,
         $workflow = $this->sites()->create($workflowOptions);
         $this->processWorkflow($workflow);
         $site = $this->getSite($workflow->get('waiting_for_task')->site_id);
-        $upstream = $user->getUpstreams()->get(self::DRUPAL_RECOMMENDED_UPSTREAM_ID);
+        $upstream = $user->getUpstreams()->get(self::DRUPAL_TARGET_UPSTREAM_ID);
         $this->processWorkflow($site->deployProduct($upstream->get('id')));
         $this->setSite($site->get('id'));
 

@@ -148,7 +148,7 @@ abstract class ConversionCommandsTestBase extends TestCase
         );
         $siteInfoUpstream = $this->terminusJsonResponse(sprintf('site:info %s', $this->siteName))['upstream'];
         $this->assertEquals(
-            '897fdf15-992e-4fa1-beab-89e2b5027e03: https://github.com/pantheon-upstreams/drupal-recommended',
+            'bde48795-b16d-443f-af01-8b1790caa1af: https://github.com/pantheon-upstreams/drupal-composer-managed.git',
             $siteInfoUpstream
         );
 

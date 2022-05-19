@@ -139,6 +139,8 @@ EOD,
         $this->localSitePath = null === $force
             ? $this->cloneSiteGitRepository()
             : $this->cloneSiteGitRepository($force);
+
+        $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
         $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
 
         return $this->localSitePath;
@@ -539,6 +541,25 @@ EOD,
     {
         $environments = $this->site()->getEnvironments()->fetch()->ids();
         return in_array('conversion', $environments, true);
+    }
+
+    /**
+     * Determines whether the current site is a drupal-composer-managed site or not.
+     */
+    protected function isDrupalComposerManagedSite(): bool
+    {
+        $localPath = $this->getLocalSitePath(false);
+        $upstreamConfScriptsFilePath = Files::buildPath($localPath, 'upstream-configuration', 'scripts', 'ComposerScripts.php');
+        if (!is_file($upstreamConfScriptsFilePath)) {
+            return false;
+        }
+
+        // Repository contents matches "drupal-recommended" upstream.
+        $this->getGit()->addRemote(
+            self::DRUPAL_TARGET_GIT_REMOTE_URL,
+            self::DRUPAL_TARGET_UPSTREAM_ID
+        );
+        return $this->areGitReposWithCommonCommits(self::DRUPAL_TARGET_UPSTREAM_ID);
     }
 
     /**
