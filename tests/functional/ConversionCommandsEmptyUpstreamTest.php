@@ -48,12 +48,4 @@ final class ConversionCommandsEmptyUpstreamTest extends ConversionCommandsUpstre
     {
         parent::testConversionCommands();
     }
-
-    /**
-     * @inheritdoc
-     */
-    protected function tearDown(): void
-    {
-        // Do nothing.
-    }
 }
