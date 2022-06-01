@@ -58,7 +58,7 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    protected function cloneSiteGitRepository(bool $force = true): string
+    protected function cloneSiteGitRepository(bool $force = true, string $remoteGitUrl = null): string
     {
         $siteDirName = sprintf('%s_terminus_conversion_plugin', $this->site->getName());
         $path = $this->site->getLocalCopyDir($siteDirName);
@@ -70,7 +70,11 @@ trait ConversionCommandsTrait
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
 
-        $this->getLocalMachineHelper()->cloneGitRepository($this->getRemoteGitUrl(), $path, true);
+        if (!$remoteGitUrl) {
+            $remoteGitUrl = $this->getRemoteGitUrl();
+        }
+
+        $this->getLocalMachineHelper()->cloneGitRepository($remoteGitUrl, $path, true);
 
         return $path;
     }
@@ -111,7 +115,7 @@ trait ConversionCommandsTrait
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function getLocalSitePath(?bool $force = null)
+    protected function getLocalSitePath(?bool $force = null, string $remoteGitUrl = null)
     {
         if (true !== $force && isset($this->localSitePath)) {
             return $this->localSitePath;
@@ -137,8 +141,8 @@ EOD,
         }
 
         $this->localSitePath = null === $force
-            ? $this->cloneSiteGitRepository()
-            : $this->cloneSiteGitRepository($force);
+            ? $this->cloneSiteGitRepository(false, $remoteGitUrl)
+            : $this->cloneSiteGitRepository($force, $remoteGitUrl);
 
         $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
         $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
@@ -334,21 +338,26 @@ EOD,
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function pushTargetBranch(): void
+    protected function pushTargetBranch(bool $createMultidev = true): void
     {
-        try {
-            $this->deleteMultidevIfExists($this->getBranch());
-        } catch (TerminusCancelOperationException $e) {
-            return;
+        if ($createMultidev) {
+            try {
+                $this->deleteMultidevIfExists($this->getBranch());
+            } catch (TerminusCancelOperationException $e) {
+                return;
+            }
         }
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
         $this->getGit()->push($this->getBranch());
-        $mdEnv = $this->createMultidev($this->getBranch());
 
-        $this->log()->notice(
-            sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
-        );
+        if ($createMultidev) {
+            $mdEnv = $this->createMultidev($this->getBranch());
+
+            $this->log()->notice(
+                sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
+            );
+        }
     }
 
     /**
