@@ -156,6 +156,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if (!$options['dry-run']) {
             if ($treatAsBuildToolsSite) {
                 $this->pushTargetBranch(false);
+                $this->log()->notice('Push done to external VCS repository.');
+                $this->log()->notice('Please wait for CI to finish and then test in the created multidev environment.');
             }
             else {
                 $this->pushTargetBranch();
@@ -209,7 +211,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $fs->touch($this->getLocalSitePath() . "/web/themes/custom/.gitkeep");
 
         $this->getGit()->commit('Add CI template.');
-
     }
 
     /**
