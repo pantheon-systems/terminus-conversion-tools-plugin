@@ -115,6 +115,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 );
             }
             $this->setGit($this->getLocalSitePath(true, $remoteGitUrl));
+            $this->getLocalMachineHelper()->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
         }
         $sourceComposerJson = $this->getComposerJson();
 
@@ -151,13 +152,35 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->getGit()->commit('Copy build-providers.json');
 
             $this->copyCiTemplate();
+
+            // @todo Make sure php is at least 7.4 plus maybe other pantheon.yml changes.
         }
 
         if (!$options['dry-run']) {
             if ($treatAsBuildToolsSite) {
-                $this->pushTargetBranch(false);
+                $this->pushTargetBranch(false, true);
                 $this->log()->notice('Push done to external VCS repository.');
-                $this->log()->notice('Please wait for CI to finish and then test in the created multidev environment.');
+                $this->log()->notice('Please create a pull/merge request and wait for CI to finish.');
+                $this->log()->notice('Then, come back to the repo and update pantheon.yml file to enable Integrated Composer (maybe a new command?). Push to Github again.');
+                // @todo Current status
+                // If we ask users to create PR and wait for CI to finish before running this command
+                // Then this sort of works. However, at the end of the CI run, the env gets deleted because when you push
+                // a totally unrelated history to git, it closes the PR and then deploy/dev-multidev deletes environments for closed PRs
+                // Also, this makes impossible for a user to reopen the PR or even create a new one in case they want to make any tweaks to the multidev env before merging.
+                // How to overcome these limitations?
+                // Is it somehow possible to create a PR with unrelated histories?
+                // How to avoid Github closing PR with unrelated histories?
+
+                // Maybe this?
+                // git checkout -b convertme4-backup
+                // git checkout convertme4
+                // git pull origin master --allow-unrelated-histories
+                // # Stupidly fix merge conflicts
+                // git add . ; git commit -m "Fix merge conflicts"
+                            // 
+                // # Back to convertme4 code
+                // git checkout convertme4-backup .
+                // git commit -m "Back to convertme4"
             }
             else {
                 $this->pushTargetBranch();
@@ -410,16 +433,26 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYmlContent = Yaml::parseFile($path);
-        if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
-            return;
+
+        $changed = false;
+
+        if (isset($pantheonYmlContent['php_version']) && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
+            $pantheonYmlContent['php_version'] = 7.4;
+            $changed = true;
         }
 
-        $pantheonYmlContent['build_step'] = true;
-        $pantheonYmlFile = fopen($path, 'wa+');
-        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
-        fclose($pantheonYmlFile);
+        if (!isset($pantheonYmlContent['build_step']) && true !== $pantheonYmlContent['build_step']) {
+            $pantheonYmlContent['build_step'] = true;
+            $changed = true;
+        }
 
-        $this->getGit()->commit('Add build_step:true to pantheon.yml');
+        if ($changed) {
+            $pantheonYmlFile = fopen($path, 'wa+');
+            fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+            fclose($pantheonYmlFile);
+
+            $this->getGit()->commit('Add build_step:true to pantheon.yml');
+        }
     }
 
     /**

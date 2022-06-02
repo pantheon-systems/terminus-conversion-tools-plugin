@@ -338,7 +338,7 @@ EOD,
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function pushTargetBranch(bool $createMultidev = true): void
+    protected function pushTargetBranch(bool $createMultidev = true, bool $forcePush = false): void
     {
         if ($createMultidev) {
             try {
@@ -348,8 +348,13 @@ EOD,
             }
         }
 
+        $options = '';
+        if ($forcePush) {
+            $options = '-f';
+        }
+
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
-        $this->getGit()->push($this->getBranch());
+        $this->getGit()->push($this->getBranch(), $options);
 
         if ($createMultidev) {
             $mdEnv = $this->createMultidev($this->getBranch());
