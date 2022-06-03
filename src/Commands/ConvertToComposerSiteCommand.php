@@ -163,8 +163,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             if ($treatAsBuildToolsSite) {
                 $this->pushTargetBranchBuildTools();
                 $this->log()->notice('Push done to external VCS repository.');
-            }
-            else {
+            } else {
                 $this->pushTargetBranch();
                 $this->addCommitToTriggerBuild();
                 $this->executeDrushDatabaseUpdates($options);
