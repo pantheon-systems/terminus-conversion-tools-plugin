@@ -420,6 +420,19 @@ class Git
     }
 
     /**
+     * Runs git branch command.
+     *
+     * @param $options
+     *   The branch to create and git-add options.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function branch(...$options): void
+    {
+        $this->execute(['branch', ...$options]);
+    }
+
+    /**
      * Executes the Git command.
      *
      * @param array|string $command

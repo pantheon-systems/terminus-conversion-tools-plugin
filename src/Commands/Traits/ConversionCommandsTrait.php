@@ -12,6 +12,7 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
 
 /**
  * Trait ConversionCommandsTrait.
@@ -366,6 +367,33 @@ EOD,
     }
 
     /**
+     * Pushes the target branch to the site repository for a build tools site.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function pushTargetBranchBuildTools(): void
+    {
+
+        $backupBranch = sprintf('%s-backup', $this->getBranch());
+        $this->getGit()->branch($backupBranch);
+        $this->getGit()->fetch(Git::DEFAULT_REMOTE);
+        try {
+            $this->getGit()->merge('master', '--allow-unrelated-histories');
+        } catch (GitException $e) {
+            // Do nothing because this is expected to fail.
+            $this->getGit()->commit('Fix merge conflicts.');
+        }
+        // Fix merge conflicts in a dumb way.
+        $this->getGit()->checkout($backupBranch, '.');
+        $this->getGit()->commit('Restore content from converted branch.');
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
+        $this->getGit()->push($this->getBranch(), '-f');
+    }
+
+    /**
      * Returns TRUE if two repositories' branches have a common history.
      *
      * @param string $repo1Remote
@@ -527,6 +555,20 @@ EOD,
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
+    }
+
+    /**
+     * Get external vcs from build-metadata file.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    protected function getExternalVcsUrl(): ?string
+    {
+        $buildMetadataFile = Files::buildPath($this->getLocalSitePath(), 'build-metadata.json');
+        $buildMetadataContent = json_decode(file_get_contents($buildMetadataFile), true);
+        if (isset($buildMetadataContent['url'])) {
+            return $buildMetadataContent['url'];
+        }
     }
 
     /**

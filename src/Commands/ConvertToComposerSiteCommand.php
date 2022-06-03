@@ -52,7 +52,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @option ignore-build-tools If true, a Build Tools Pantheon site will be treated as a regular Pantheon site.
      * @option run-updb Run `drush updb` after conversion.
      * @option run-cr Run `drush cr` after conversion.
-     * @option vcs-repo External VCS repository (used for build tools sites).
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
@@ -72,7 +71,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             'ignore-build-tools' => false,
             'run-updb' => true,
             'run-cr' => true,
-            'vcs-repo' => null,
         ]
     ): void {
         $this->setSite($site_id);
@@ -109,9 +107,16 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $isBuildToolsSite = $this->isBuildToolsSite();
         $treatAsBuildToolsSite = $isBuildToolsSite && !$ignoreBuildTools;
         if ($treatAsBuildToolsSite) {
+            $this->log()->warning(
+                sprintf(
+                    'A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.',
+                    $options['branch']
+                )
+            );
+            $remoteGitUrl = $this->getExternalVcsUrl();
             if (!$remoteGitUrl) {
                 throw new TerminusException(
-                    'The --vcs-repo option is required for build tools sites.'
+                    'Unable to get external vcs url from build-metadata.json file in the Pantheon site.'
                 );
             }
             $this->setGit($this->getLocalSitePath(true, $remoteGitUrl));
@@ -152,35 +157,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->getGit()->commit('Copy build-providers.json');
 
             $this->copyCiTemplate();
-
-            // @todo Make sure php is at least 7.4 plus maybe other pantheon.yml changes.
         }
 
         if (!$options['dry-run']) {
             if ($treatAsBuildToolsSite) {
-                $this->pushTargetBranch(false, true);
+                $this->pushTargetBranchBuildTools();
                 $this->log()->notice('Push done to external VCS repository.');
-                $this->log()->notice('Please create a pull/merge request and wait for CI to finish.');
-                $this->log()->notice('Then, come back to the repo and update pantheon.yml file to enable Integrated Composer (maybe a new command?). Push to Github again.');
-                // @todo Current status
-                // If we ask users to create PR and wait for CI to finish before running this command
-                // Then this sort of works. However, at the end of the CI run, the env gets deleted because when you push
-                // a totally unrelated history to git, it closes the PR and then deploy/dev-multidev deletes environments for closed PRs
-                // Also, this makes impossible for a user to reopen the PR or even create a new one in case they want to make any tweaks to the multidev env before merging.
-                // How to overcome these limitations?
-                // Is it somehow possible to create a PR with unrelated histories?
-                // How to avoid Github closing PR with unrelated histories?
-
-                // Maybe this?
-                // git checkout -b convertme4-backup
-                // git checkout convertme4
-                // git pull origin master --allow-unrelated-histories
-                // # Stupidly fix merge conflicts
-                // git add . ; git commit -m "Fix merge conflicts"
-                            // 
-                // # Back to convertme4 code
-                // git checkout convertme4-backup .
-                // git commit -m "Back to convertme4"
             }
             else {
                 $this->pushTargetBranch();
@@ -200,7 +182,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      */
     private function copyCiTemplate(): void
     {
-        // @todo: Build only PRs setting by default in CircleCI.
         $path = Files::buildPath($this->getLocalCopiesDir(), 'tbt-ci-templates');
         $this->getLocalMachineHelper()->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
 
