@@ -99,4 +99,19 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
     {
         return [];
     }
+
+    /**
+     * Adds site's Git host to known_hosts file.
+     */
+    protected function addGitHostToKnownHosts(): void
+    {
+        parent::addGitHostToKnownHosts();
+
+        $addGitHostToKnownHostsCommand = sprintf(
+            'ssh-keyscan -p %d %s 2>/dev/null >> ~/.ssh/known_hosts',
+            '22',
+            'github.com'
+        );
+        exec($addGitHostToKnownHostsCommand);
+    }
 }
