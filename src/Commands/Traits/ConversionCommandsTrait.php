@@ -339,31 +339,21 @@ EOD,
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function pushTargetBranch(bool $createMultidev = true, bool $forcePush = false): void
+    protected function pushTargetBranch(): void
     {
-        if ($createMultidev) {
-            try {
-                $this->deleteMultidevIfExists($this->getBranch());
-            } catch (TerminusCancelOperationException $e) {
-                return;
-            }
-        }
-
-        $options = '';
-        if ($forcePush) {
-            $options = '-f';
+        try {
+            $this->deleteMultidevIfExists($this->getBranch());
+        } catch (TerminusCancelOperationException $e) {
+            return;
         }
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
-        $this->getGit()->push($this->getBranch(), $options);
+        $this->getGit()->push($this->getBranch());
 
-        if ($createMultidev) {
-            $mdEnv = $this->createMultidev($this->getBranch());
-
-            $this->log()->notice(
-                sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
-            );
-        }
+        $mdEnv = $this->createMultidev($this->getBranch());
+        $this->log()->notice(
+            sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
+        );
     }
 
     /**
