@@ -2,6 +2,8 @@
 
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
+use Symfony\Component\HttpClient\HttpClient;
+
 /**
  * Class ConversionCommandsBuildToolsUpstreamTest.
  *
@@ -63,6 +65,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
         // Do nothing but setting up branch name.
         $this->branch = 'convertbt';
         $this->siteName = 'convertbtfixture';
+        $this->httpClient = HttpClient::create();
     }
 
     /**
