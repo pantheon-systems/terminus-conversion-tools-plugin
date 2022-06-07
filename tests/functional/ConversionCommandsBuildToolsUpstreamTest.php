@@ -42,7 +42,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'No conversion is necessary.';
+        return 'This process has already been started and a conversion multidev environment exists';
     }
 
     /**
@@ -53,7 +53,9 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
     public function testConversionCommands(): void
     {
         $this->assertPagesExists(self::DEV_ENV);
+        $this->assertAdviseBeforeCommand();
         $this->executeConvertCommand();
+        $this->assertAdviseAfterCommand();
     }
 
     /**
@@ -64,7 +66,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
     protected function setUp(): void
     {
         // Do nothing but setting up branch name.
-        $this->branch = 'convertbt';
+        $this->branch = 'conversion';
         $this->siteName = 'convertbtfixture';
         $this->httpClient = HttpClient::create();
         if ($this->isCiEnv()) {
