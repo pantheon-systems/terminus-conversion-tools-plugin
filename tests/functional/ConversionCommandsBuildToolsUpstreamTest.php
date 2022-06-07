@@ -52,7 +52,8 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
      */
     public function testConversionCommands(): void
     {
-        parent::testConversionCommands();
+        $this->assertPagesExists(self::DEV_ENV);
+        $this->executeConvertCommand();
     }
 
     /**
@@ -116,5 +117,20 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
             'github.com'
         );
         exec($addGitHostToKnownHostsCommand);
+    }
+
+    /**
+     * Asserts the command executes as expected.
+     *
+     * @param string $command
+     * @param string $env
+     *
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    protected function assertCommand(string $command, string $env): void
+    {
+        $this->terminus($command);
+        sleep(30);
+        $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
     }
 }
