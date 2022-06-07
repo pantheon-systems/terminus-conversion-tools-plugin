@@ -34,7 +34,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'Advice: We recommend that this site be converted to a Composer-managed upstream';
+        return 'you might want to convert to drupal-composer-managed if you are NOT using Continuous Integration';
     }
 
     /**
@@ -66,6 +66,9 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
         $this->branch = 'convertbt';
         $this->siteName = 'convertbtfixture';
         $this->httpClient = HttpClient::create();
+        if ($this->isCiEnv()) {
+            $this->addGitHostToKnownHosts();
+        }
     }
 
     /**
