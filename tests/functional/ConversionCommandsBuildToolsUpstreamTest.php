@@ -42,7 +42,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'This process has already been started and a conversion multidev environment exists';
+        return '';
     }
 
     /**
@@ -55,7 +55,6 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
         $this->assertPagesExists(self::DEV_ENV);
         $this->assertAdviseBeforeCommand();
         $this->executeConvertCommand();
-        $this->assertAdviseAfterCommand();
     }
 
     /**
