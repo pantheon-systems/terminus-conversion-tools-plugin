@@ -101,6 +101,8 @@ jobs:
           ./terminus.phar self:plugin:install terminus-conversion-tools-plugin
           ./terminus.phar self:plugin:list
           ./terminus.phar conversion:composer -h
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
