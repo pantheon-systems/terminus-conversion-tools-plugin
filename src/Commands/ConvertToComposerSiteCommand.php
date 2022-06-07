@@ -145,7 +145,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->migrateComposerJson(
             $sourceComposerJson,
-            $this->getLocalSitePath(null, $remoteGitUrl),
+            $this->getLocalSitePath(),
             $contribProjects,
             $libraryProjects,
             Files::buildPath($this->drupalProjects->getSiteRootPath(), 'libraries-backup'),
