@@ -7,6 +7,10 @@ on:
         description: Include functonal tests
         required: true
         default: 1
+      tmate_enabled:
+        description: Enable tmate debugging
+        required: true
+        default: 0
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -102,6 +106,7 @@ jobs:
           ./terminus.phar self:plugin:list
           ./terminus.phar conversion:composer -h
       - name: Setup tmate session
+        if: ${{ github.event.inputs.tmate_enabled == 1 }}
         uses: mxschmitt/action-tmate@v3
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
