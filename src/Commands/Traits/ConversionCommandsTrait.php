@@ -71,9 +71,7 @@ trait ConversionCommandsTrait
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
 
-        if (!$remoteGitUrl) {
-            $remoteGitUrl = $this->getRemoteGitUrl();
-        }
+        $remoteGitUrl = $remoteGitUrl ?: $this->getRemoteGitUrl();
 
         $this->getLocalMachineHelper()->cloneGitRepository($remoteGitUrl, $path, true);
 
@@ -109,6 +107,7 @@ trait ConversionCommandsTrait
      * Clones the site and returns the path to the local site copy.
      *
      * @param null|bool $force
+     * @param string $remoteGitUrl
      *
      * @return string
      *
@@ -550,15 +549,15 @@ EOD,
     /**
      * Get external vcs from build-metadata file.
      *
+     * @return string|void External VCS url if found, null otherwise.
+     *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     protected function getExternalVcsUrl(): ?string
     {
         $buildMetadataFile = Files::buildPath($this->getLocalSitePath(), 'build-metadata.json');
         $buildMetadataContent = json_decode(file_get_contents($buildMetadataFile), true);
-        if (isset($buildMetadataContent['url'])) {
-            return $buildMetadataContent['url'];
-        }
+        return $buildMetadataContent['url'] ?? null;
     }
 
     /**

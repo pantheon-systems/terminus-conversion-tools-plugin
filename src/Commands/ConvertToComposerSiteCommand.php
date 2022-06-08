@@ -168,6 +168,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $this->addCommitToTriggerBuild();
                 $this->executeDrushDatabaseUpdates($options);
                 $this->executeDrushCacheRebuild($options);
+                $this->log()->notice('Target branch pushed to Pantheon.');
             }
         } else {
             $this->log()->warning('Push to multidev has skipped');
@@ -412,21 +413,17 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->getGit()->commit('Copy pantheon.yml');
 
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
-        $pantheonYmlContent = Yaml::parseFile($path);
-
-        $changed = false;
+        $pantheonYmlContent = $pantheonYmlContentOriginal = Yaml::parseFile($path);
 
         if (isset($pantheonYmlContent['php_version']) && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
             $pantheonYmlContent['php_version'] = 7.4;
-            $changed = true;
         }
 
         if (!isset($pantheonYmlContent['build_step']) && true !== $pantheonYmlContent['build_step']) {
             $pantheonYmlContent['build_step'] = true;
-            $changed = true;
         }
 
-        if ($changed) {
+        if (array_diff($pantheonYmlContent, $pantheonYmlContentOriginal)) {
             $pantheonYmlFile = fopen($path, 'wa+');
             fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
             fclose($pantheonYmlFile);
