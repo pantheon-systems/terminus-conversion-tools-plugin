@@ -12,6 +12,8 @@ use Pantheon\TerminusConversionTools\Utils\DrupalProjects;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
+use Pantheon\Terminus\Friends\LocalCopiesTrait;
+use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
 /**
@@ -22,6 +24,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     use ConversionCommandsTrait;
     use MigrateComposerJsonTrait;
     use DrushCommandsTrait;
+    use LocalCopiesTrait;
 
     private const TARGET_GIT_BRANCH = 'conversion';
     private const TARGET_UPSTREAM_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-composer-managed.git';
@@ -46,6 +49,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @option branch The target branch name for multidev env.
      * @option dry-run Skip creating multidev and pushing composerify branch.
+     * @option ignore-build-tools If true, a Build Tools Pantheon site will be treated as a regular Pantheon site.
      * @option run-updb Run `drush updb` after conversion.
      * @option run-cr Run `drush cr` after conversion.
      *
@@ -64,12 +68,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         array $options = [
             'branch' => self::TARGET_GIT_BRANCH,
             'dry-run' => false,
+            'ignore-build-tools' => false,
             'run-updb' => true,
             'run-cr' => true,
         ]
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
+        $remoteGitUrl = $options['vcs-repo'];
+        $ignoreBuildTools = $options['ignore-build-tools'];
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
@@ -97,6 +104,24 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
+        $isBuildToolsSite = $this->isBuildToolsSite();
+        $treatAsBuildToolsSite = $isBuildToolsSite && !$ignoreBuildTools;
+        if ($treatAsBuildToolsSite) {
+            $this->log()->warning(
+                sprintf(
+                    'A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.',
+                    $options['branch']
+                )
+            );
+            $remoteGitUrl = $this->getExternalVcsUrl();
+            if (!$remoteGitUrl) {
+                throw new TerminusException(
+                    'Unable to get external vcs url from build-metadata.json file in the Pantheon site.'
+                );
+            }
+            $this->setGit($this->getLocalSitePath(true, $remoteGitUrl));
+            $this->getLocalMachineHelper()->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
+        }
         $sourceComposerJson = $this->getComposerJson();
 
         $contribProjects = $this->getContribDrupalProjects();
@@ -126,16 +151,70 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             Files::buildPath($this->drupalProjects->getSiteRootPath(), 'libraries-backup'),
         );
 
+        if ($treatAsBuildToolsSite) {
+            // Restore build-providers.json file.
+            $this->getGit()->checkout(Git::DEFAULT_BRANCH, 'build-providers.json');
+            $this->getGit()->commit('Copy build-providers.json');
+
+            $this->copyCiTemplate();
+        }
+
         if (!$options['dry-run']) {
-            $this->pushTargetBranch();
-            $this->addCommitToTriggerBuild();
-            $this->executeDrushDatabaseUpdates($options);
-            $this->executeDrushCacheRebuild($options);
+            if ($treatAsBuildToolsSite) {
+                $this->pushTargetBranchBuildTools();
+                $this->log()->notice('Push done to external VCS repository.');
+            } else {
+                $this->pushTargetBranch();
+                $this->addCommitToTriggerBuild();
+                $this->executeDrushDatabaseUpdates($options);
+                $this->executeDrushCacheRebuild($options);
+                $this->log()->notice('Target branch pushed to Pantheon.');
+            }
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }
 
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Copy and commit CI files based on build-providers.json content.
+     */
+    private function copyCiTemplate(): void
+    {
+        $path = Files::buildPath($this->getLocalCopiesDir(), 'tbt-ci-templates');
+        $this->getLocalMachineHelper()->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
+
+        $buildProvidersPath = Files::buildPath($this->getLocalSitePath(), 'build-providers.json');
+        $buildProvidersJson = json_decode(file_get_contents($buildProvidersPath), true);
+        $ci = $buildProvidersJson['ci'];
+
+        $fs = new Filesystem();
+        $fs->mirror($path . '/d9/.ci', $this->getLocalSitePath() . '/.ci');
+        // Folder?
+        $fs->mirror($path . '/d9/tests', $this->getLocalSitePath() . '/tests');
+        $fs->mirror($path . '/d9/providers/' . $ci, $this->getLocalSitePath());
+
+        $composerJson = $this->composer->getComposerJsonData();
+        if (!isset($composerJson['scripts']['unit-test'])) {
+            $composerJson['scripts']['unit-test'] = "echo 'No unit test step defined.'";
+            $composerJson['scripts']['lint'] = "find web/modules/custom web/themes/custom -name '*.php' -exec php -l {} \\;";
+            $composerJson['scripts']['code-sniff'] = [
+                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
+                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
+                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
+                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
+            ];
+            $composerJson['extra']['build-env']['export-configuration'] = "drush config-export --yes";
+            $this->composer->writeComposerJsonData($composerJson);
+        }
+        $fs->mkdir($this->getLocalSitePath() . "/web/modules/custom");
+        $fs->touch($this->getLocalSitePath() . "/web/modules/custom/.gitkeep");
+
+        $fs->mkdir($this->getLocalSitePath() . "/web/themes/custom");
+        $fs->touch($this->getLocalSitePath() . "/web/themes/custom/.gitkeep");
+
+        $this->getGit()->commit('Add CI template.');
     }
 
     /**
@@ -334,17 +413,23 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->getGit()->commit('Copy pantheon.yml');
 
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
-        $pantheonYmlContent = Yaml::parseFile($path);
-        if (isset($pantheonYmlContent['build_step']) && true === $pantheonYmlContent['build_step']) {
-            return;
+        $pantheonYmlContent = $pantheonYmlContentOriginal = Yaml::parseFile($path);
+
+        if (isset($pantheonYmlContent['php_version']) && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
+            $pantheonYmlContent['php_version'] = 7.4;
         }
 
-        $pantheonYmlContent['build_step'] = true;
-        $pantheonYmlFile = fopen($path, 'wa+');
-        fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
-        fclose($pantheonYmlFile);
+        if (!isset($pantheonYmlContent['build_step']) && true !== $pantheonYmlContent['build_step']) {
+            $pantheonYmlContent['build_step'] = true;
+        }
 
-        $this->getGit()->commit('Add build_step:true to pantheon.yml');
+        if (array_diff($pantheonYmlContent, $pantheonYmlContentOriginal)) {
+            $pantheonYmlFile = fopen($path, 'wa+');
+            fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+            fclose($pantheonYmlFile);
+
+            $this->getGit()->commit('Add build_step:true to pantheon.yml');
+        }
     }
 
     /**

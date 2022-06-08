@@ -12,6 +12,7 @@ use Pantheon\Terminus\Site\SiteAwareTrait;
 use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
+use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
 
 /**
  * Trait ConversionCommandsTrait.
@@ -58,7 +59,7 @@ trait ConversionCommandsTrait
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    protected function cloneSiteGitRepository(bool $force = true): string
+    protected function cloneSiteGitRepository(bool $force = true, string $remoteGitUrl = null): string
     {
         $siteDirName = sprintf('%s_terminus_conversion_plugin', $this->site->getName());
         $path = $this->site->getLocalCopyDir($siteDirName);
@@ -70,7 +71,9 @@ trait ConversionCommandsTrait
             sprintf('Cloning %s site repository into "%s"...', $this->site->getName(), $path)
         );
 
-        $this->getLocalMachineHelper()->cloneGitRepository($this->getRemoteGitUrl(), $path, true);
+        $remoteGitUrl = $remoteGitUrl ?: $this->getRemoteGitUrl();
+
+        $this->getLocalMachineHelper()->cloneGitRepository($remoteGitUrl, $path, true);
 
         return $path;
     }
@@ -104,6 +107,7 @@ trait ConversionCommandsTrait
      * Clones the site and returns the path to the local site copy.
      *
      * @param null|bool $force
+     * @param string $remoteGitUrl
      *
      * @return string
      *
@@ -111,7 +115,7 @@ trait ConversionCommandsTrait
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function getLocalSitePath(?bool $force = null)
+    protected function getLocalSitePath(?bool $force = null, string $remoteGitUrl = null)
     {
         if (true !== $force && isset($this->localSitePath)) {
             return $this->localSitePath;
@@ -137,8 +141,8 @@ EOD,
         }
 
         $this->localSitePath = null === $force
-            ? $this->cloneSiteGitRepository()
-            : $this->cloneSiteGitRepository($force);
+            ? $this->cloneSiteGitRepository(false, $remoteGitUrl)
+            : $this->cloneSiteGitRepository($force, $remoteGitUrl);
 
         $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
         $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
@@ -344,11 +348,38 @@ EOD,
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
         $this->getGit()->push($this->getBranch());
-        $mdEnv = $this->createMultidev($this->getBranch());
 
+        $mdEnv = $this->createMultidev($this->getBranch());
         $this->log()->notice(
             sprintf('Link to "%s" multidev environment dashboard: %s', $this->getBranch(), $mdEnv->dashboardUrl())
         );
+    }
+
+    /**
+     * Pushes the target branch to the site repository for a build tools site.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     */
+    protected function pushTargetBranchBuildTools(): void
+    {
+
+        $backupBranch = sprintf('%s-backup', $this->getBranch());
+        $this->getGit()->branch($backupBranch);
+        $this->getGit()->fetch(Git::DEFAULT_REMOTE);
+        try {
+            $this->getGit()->merge('master', '--allow-unrelated-histories');
+        } catch (GitException $e) {
+            // Do nothing because this is expected to fail.
+            $this->getGit()->commit('Fix merge conflicts.');
+        }
+        // Fix merge conflicts in a dumb way.
+        $this->getGit()->checkout($backupBranch, '.');
+        $this->getGit()->commit('Restore content from converted branch.');
+
+        $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
+        $this->getGit()->push($this->getBranch(), '-f');
     }
 
     /**
@@ -513,6 +544,20 @@ EOD,
     {
         $files = $this->getGit()->diffFileList('HEAD^1', 'HEAD');
         return in_array('build-metadata.json', $files);
+    }
+
+    /**
+     * Get external vcs from build-metadata file.
+     *
+     * @return string|void External VCS url if found, null otherwise.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    protected function getExternalVcsUrl(): ?string
+    {
+        $buildMetadataFile = Files::buildPath($this->getLocalSitePath(), 'build-metadata.json');
+        $buildMetadataContent = json_decode(file_get_contents($buildMetadataFile), true);
+        return $buildMetadataContent['url'] ?? null;
     }
 
     /**

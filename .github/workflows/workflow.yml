@@ -7,6 +7,10 @@ on:
         description: Include functonal tests
         required: true
         default: 1
+      tmate_enabled:
+        description: Enable tmate debugging
+        required: true
+        default: 0
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,6 +38,8 @@ jobs:
         testing_groups:
           - name: on drops-8 upstream
             group: upstream_drops8
+          - name: from build tools site
+            group: upstream_build_tools
           - name: on drops-9 upstream
             group: upstream_drops9
           - name: on empty upstream
@@ -99,6 +105,9 @@ jobs:
           ./terminus.phar self:plugin:install terminus-conversion-tools-plugin
           ./terminus.phar self:plugin:list
           ./terminus.phar conversion:composer -h
+      - name: Setup tmate session
+        if: ${{ github.event.inputs.tmate_enabled == 1 }}
+        uses: mxschmitt/action-tmate@v3
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}

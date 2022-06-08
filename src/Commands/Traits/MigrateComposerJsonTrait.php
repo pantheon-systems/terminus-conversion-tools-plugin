@@ -320,7 +320,11 @@ EOD
                 ];
             }
             $package = $project['package'];
-            $arguments = [$project['package'], $project['version']];
+            // Workaround build tools D8 issue with specific package.
+            if ($package === 'symfony/css-selector') {
+                $project['version'] = '^3.4';
+            }
+            $arguments = [$package, $project['version']];
             $options = $project['is_dev'] ? ['--dev'] : [];
             $options[] = '-n';
             $options[] = '-W';
