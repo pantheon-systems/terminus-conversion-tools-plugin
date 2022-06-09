@@ -604,7 +604,7 @@ EOD,
             self::DRUPAL_TARGET_GIT_REMOTE_URL,
             self::DRUPAL_TARGET_UPSTREAM_ID
         );
-        return $this->areGitReposWithCommonCommits(self::DRUPAL_TARGET_UPSTREAM_ID);
+        return $this->areGitReposWithCommonCommits(self::DRUPAL_TARGET_UPSTREAM_ID, Git::DEFAULT_REMOTE, 'main');
     }
 
     /**
