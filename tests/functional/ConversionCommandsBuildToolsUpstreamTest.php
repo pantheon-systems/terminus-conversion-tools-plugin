@@ -34,7 +34,7 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'you might want to convert to drupal-composer-managed if you are NOT using Continuous Integration';
+        return 'If you wish to preserve your Build Tools Workflow';
     }
 
     /**
