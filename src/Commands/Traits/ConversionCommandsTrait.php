@@ -358,18 +358,24 @@ EOD,
     /**
      * Pushes the target branch to the site repository for a build tools site.
      *
+     * @param string $remote
+     *   Remote name to push to.
+     * @param string $upstreamBranch
+     *   Upstream branch name.
+     *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function pushTargetBranchBuildTools(): void
+    protected function pushExternalRepository($remote = Git::DEFAULT_REMOTE, $upstreamBranch = Git::DEFAULT_BRANCH): void
     {
 
         $backupBranch = sprintf('%s-backup', $this->getBranch());
         $this->getGit()->branch($backupBranch);
-        $this->getGit()->fetch(Git::DEFAULT_REMOTE);
+        $this->getGit()->fetch($remote);
         try {
-            $this->getGit()->merge('master', '--allow-unrelated-histories');
+            $this->getGit()->clean('-dfx', '.');
+            $this->getGit()->merge($upstreamBranch, '--allow-unrelated-histories');
         } catch (GitException $e) {
             // Do nothing because this is expected to fail.
             $this->getGit()->commit('Fix merge conflicts.');
@@ -379,7 +385,7 @@ EOD,
         $this->getGit()->commit('Restore content from converted branch.');
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
-        $this->getGit()->push($this->getBranch(), '-f');
+        $this->getGit()->pushToRemote($remote, $this->getBranch(), '-f');
     }
 
     /**

@@ -145,7 +145,19 @@ class Git
     }
 
     /**
-     * Performs force push of the branch.
+     * Runs git clean.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function clean(...$options): void
+    {
+        $this->execute(['clean', ...$options]);
+    }
+
+    /**
+     * Performs push of the branch.
      *
      * @param string $branchName
      *   The branch name.
@@ -156,6 +168,22 @@ class Git
     public function push(string $branchName, ...$options): void
     {
         $this->execute(['push', self::DEFAULT_REMOTE, $branchName, ...$options]);
+    }
+
+    /**
+     * Performs push of the branch to an arbitrary remote.
+     *
+     * @param string $remote
+     *   The remote name.
+     * @param string $branchName
+     *   The branch name.
+     * @param array $options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public function pushToRemote(string $remote, string $branchName, ...$options): void
+    {
+        $this->execute(['push', $remote, $branchName, ...$options]);
     }
 
     /**
