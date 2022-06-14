@@ -102,6 +102,10 @@ final class ConversionCommandsCustomUpstreamTest extends ConversionCommandsUpstr
      */
     public function testConversionCommands(): void
     {
-        parent::testConversionCommands();
+        $this->assertPagesExists(self::DEV_ENV);
+
+        $this->assertAdviseBeforeCommand();
+        $this->executeConvertCommand();
+        $this->assertAdviseAfterCommand();
     }
 }
