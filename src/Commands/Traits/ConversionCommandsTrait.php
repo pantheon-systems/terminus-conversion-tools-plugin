@@ -362,12 +362,14 @@ EOD,
      *   Remote name to push to.
      * @param string $upstreamBranch
      *   Upstream branch name.
+     * @param bool dryRun
+     *   Whether to do a dry run.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function pushExternalRepository($remote = Git::DEFAULT_REMOTE, $upstreamBranch = Git::DEFAULT_BRANCH): void
+    protected function pushExternalRepository(string $remote = Git::DEFAULT_REMOTE, string $upstreamBranch = Git::DEFAULT_BRANCH, bool $dryRun = false): void
     {
 
         $backupBranch = sprintf('%s-backup', $this->getBranch());
@@ -396,6 +398,10 @@ EOD,
         $this->getGit()->commit('Cleanup now unused files.');
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
+        if ($dryRun) {
+            $this->log()->notice('Dry run, not pushing changes.');
+            return;
+        }
         $this->getGit()->pushToRemote($remote, $this->getBranch(), '-f');
     }
 

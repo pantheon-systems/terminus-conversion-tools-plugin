@@ -164,7 +164,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $this->log()->notice('Push done to external VCS repository.');
             } else {
                 if ($isCustomUpstream) {
-                    $this->pushExternalRepository('upstream', $upstreamBranch);
+                    // Do not push to upstream repo if running tests in CI.
+                    $dryRun = (bool) getenv('CI');
+                    $this->pushExternalRepository('upstream', $upstreamBranch, $dryRun);
                     $this->log()->notice('Push to upstream repo done.');
                 }
                 $this->pushTargetBranch();
