@@ -11,6 +11,52 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
  */
 final class ConversionCommandsCustomUpstreamTest extends ConversionCommandsUpstreamTestBase
 {
+
+    /**
+     * Creates a fixture site and sets up upstream, and SSH keys on CI env.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     */
+    protected function setUpFixtureSite(): void
+    {
+        $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
+        $this->httpClient = HttpClient::create();
+
+        $this->siteName = uniqid(sprintf('fixture-term3-conv-plugin-drupal8-'));
+        $command = sprintf(
+            'site:create %s %s %s',
+            $this->siteName,
+            $this->siteName,
+            $this->getUpstreamId()
+        );
+        $this->terminus(
+            $command,
+            [sprintf('--org=%s', $this->getOrg())]
+        );
+
+        $installCommand = sprintf('-y drush %s.%s -- site-install demo_umami -y', $this->siteName, self::DEV_ENV);
+        $this->assertEqualsInAttempts(
+            function () use ($installCommand) {
+                [, $exitCode] = self::callTerminus($installCommand);
+                return $exitCode;
+            },
+            0,
+            sprintf('Failed installing fixture site (%s)', $installCommand)
+        );
+
+        $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, self::DEV_ENV, 'git'));
+
+        $this->terminus(sprintf('site:upstream:set %s %s', $this->siteName, $this->getRealUpstreamId()));
+        $this->expectedSiteInfoUpstream = $this->terminusJsonResponse(
+            sprintf('site:info %s', $this->siteName)
+        )['upstream'];
+        sleep(15);
+
+        if ($this->isCiEnv()) {
+            $this->addGitHostToKnownHosts();
+        }
+    }
+
     /**
      * @inheritdoc
      */
