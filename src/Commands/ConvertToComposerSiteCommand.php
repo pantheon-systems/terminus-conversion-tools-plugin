@@ -77,7 +77,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->setBranch($options['branch']);
         $remoteGitUrl = $options['vcs-repo'];
         $ignoreBuildTools = $options['ignore-build-tools'];
-        $customUpstream = false;
+        $isCustomUpstream = false;
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
@@ -97,7 +97,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             $this->getSupportedSourceUpstreamIds(),
             true
         )) {
-            $customUpstream = true;
+            $isCustomUpstream = true;
             $remoteGitUrl = $this->site()->getUpstream()->get('url');
             $upstreamBranch = $this->site()->getUpstream()->get('branch');
             $this->getGit()->addRemote($remoteGitUrl, 'upstream');
@@ -163,7 +163,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 $this->pushExternalRepository();
                 $this->log()->notice('Push done to external VCS repository.');
             } else {
-                if ($customUpstream) {
+                if ($isCustomUpstream) {
                     $this->pushExternalRepository('upstream', $upstreamBranch);
                     $this->log()->notice('Push to upstream repo done.');
                 }
@@ -194,7 +194,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $fs = new Filesystem();
         $fs->mirror($path . '/d9/.ci', $this->getLocalSitePath() . '/.ci');
-        // Folder?
         $fs->mirror($path . '/d9/tests', $this->getLocalSitePath() . '/tests');
         $fs->mirror($path . '/d9/providers/' . $ci, $this->getLocalSitePath());
 

@@ -377,12 +377,23 @@ EOD,
             $this->getGit()->clean('-dfx', '.');
             $this->getGit()->merge($upstreamBranch, '--allow-unrelated-histories');
         } catch (GitException $e) {
-            // Do nothing because this is expected to fail.
+            // Fix merge conflicts in a dumb way.
             $this->getGit()->commit('Fix merge conflicts.');
         }
-        // Fix merge conflicts in a dumb way.
+
+        $this->log()->notice('Restore content from backed up branch...');
         $this->getGit()->checkout($backupBranch, '.');
         $this->getGit()->commit('Restore content from converted branch.');
+
+        $this->log()->notice('Cleaning up gitignored files...');
+        $this->getGit()->remove('-r', '--cached', '.');
+        $this->getGit()->commit('Cleanup gitignored files.');
+
+        $this->log()->notice('Deleting unused files from the old branch...');
+        $diffFilesString = $this->getGit()->diff($backupBranch, $this->getBranch(), '--name-only', '--diff-filter=A');
+        file_put_contents('/tmp/diff-files.txt', $diffFilesString);
+        $this->getGit()->remove('--pathspec-from-file=/tmp/diff-files.txt');
+        $this->getGit()->commit('Cleanup now unused files.');
 
         $this->log()->notice(sprintf('Pushing changes to "%s" git branch...', $this->getBranch()));
         $this->getGit()->pushToRemote($remote, $this->getBranch(), '-f');
