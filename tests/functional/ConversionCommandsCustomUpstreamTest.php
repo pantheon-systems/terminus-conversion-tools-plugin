@@ -80,7 +80,7 @@ final class ConversionCommandsCustomUpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceBeforeConversion(): string
     {
-        return 'Advice: We recommend that this site be converted to a Composer-managed upstream';
+        return 'This site seems to be using a custom upstream';
     }
 
     /**
@@ -88,7 +88,7 @@ final class ConversionCommandsCustomUpstreamTest extends ConversionCommandsUpstr
      */
     protected function getExpectedAdviceAfterConversion(): string
     {
-        return 'No conversion is necessary.';
+        return 'This site seems to be using a custom upstream';
     }
 
     /**
