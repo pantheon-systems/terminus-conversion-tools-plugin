@@ -2,6 +2,8 @@
 
 namespace Pantheon\TerminusConversionTools\Tests\Functional;
 
+use Symfony\Component\HttpClient\HttpClient;
+
 /**
  * Class ConversionCommandsCustomUpstreamTest.
  *
