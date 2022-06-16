@@ -36,6 +36,7 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
      */
     public function convertUpstream(string $site_id, array $options = [
         'commit-message' => null,
+        'dry-run' => false,
         'repo' => '',
     ]): void
     {
@@ -68,11 +69,12 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
         }
         $this->getComposer()->writeComposerJsonData($composerJsonData);
 
-        $commitMessage = $options['commit-message'] ?? 'Converted upstream from exemplar site.';
-        $this->getGit()->commit($commitMessage);
-        $upstreamBranch = $this->pushToUpstream();
-
-        $this->log()->notice(sprintf('Changes have been pushed to the upstream branch %s.', $upstreamBranch));
+        if (!$options['dry-run']) {
+            $commitMessage = $options['commit-message'] ?? 'Converted upstream from exemplar site.';
+            $this->getGit()->commit($commitMessage);
+            $upstreamBranch = $this->pushToUpstream();
+            $this->log()->notice(sprintf('Changes have been pushed to the upstream branch %s.', $upstreamBranch));
+        }
 
         $this->log()->notice('Done!');
     }
