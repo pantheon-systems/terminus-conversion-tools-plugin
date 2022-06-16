@@ -38,6 +38,8 @@ jobs:
         testing_groups:
           - name: on drops-8 upstream
             group: upstream_drops8
+          - name: on custom upstream
+            group: custom_upstream
           - name: from build tools site
             group: upstream_build_tools
           - name: on drops-9 upstream

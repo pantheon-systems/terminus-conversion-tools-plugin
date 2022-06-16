@@ -77,6 +77,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->setBranch($options['branch']);
         $remoteGitUrl = $options['vcs-repo'];
         $ignoreBuildTools = $options['ignore-build-tools'];
+        $isCustomUpstream = false;
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
@@ -85,25 +86,23 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             );
         }
 
-        if (!in_array(
-            $this->site()->getUpstream()->get('machine_name'),
-            $this->getSupportedSourceUpstreamIds(),
-            true
-        )) {
-            throw new TerminusException(
-                'Unsupported upstream {upstream}. Supported upstreams are: {supported_upstreams}.',
-                [
-                    'upstream' => $this->site()->getUpstream()->get('machine_name'),
-                    'supported_upstreams' => implode(', ', $this->getSupportedSourceUpstreamIds())
-                ]
-            );
-        }
-
         $defaultConfigFilesDir = Files::buildPath($this->getDrupalAbsolutePath(), 'sites', 'default', 'config');
         $isDefaultConfigFilesExist = is_dir($defaultConfigFilesDir);
 
         $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
+
+        if (!in_array(
+            $this->site()->getUpstream()->get('machine_name'),
+            $this->getSupportedSourceUpstreamIds(),
+            true
+        )) {
+            $isCustomUpstream = true;
+            $remoteGitUrl = $this->site()->getUpstream()->get('url');
+            $upstreamBranch = $this->site()->getUpstream()->get('branch');
+            $this->getGit()->addRemote($remoteGitUrl, 'upstream');
+        }
+
         $isBuildToolsSite = $this->isBuildToolsSite();
         $treatAsBuildToolsSite = $isBuildToolsSite && !$ignoreBuildTools;
         if ($treatAsBuildToolsSite) {
@@ -161,9 +160,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         if (!$options['dry-run']) {
             if ($treatAsBuildToolsSite) {
-                $this->pushTargetBranchBuildTools();
+                $this->pushExternalRepository();
                 $this->log()->notice('Push done to external VCS repository.');
             } else {
+                if ($isCustomUpstream) {
+                    // Do not push to upstream repo if running tests in CI.
+                    $dryRun = (bool) getenv('CI');
+                    $this->pushExternalRepository('upstream', $upstreamBranch, $dryRun);
+                    $this->log()->notice('Push to upstream repo done.');
+                }
                 $this->pushTargetBranch();
                 $this->addCommitToTriggerBuild();
                 $this->executeDrushDatabaseUpdates($options);
@@ -191,7 +196,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
         $fs = new Filesystem();
         $fs->mirror($path . '/d9/.ci', $this->getLocalSitePath() . '/.ci');
-        // Folder?
         $fs->mirror($path . '/d9/tests', $this->getLocalSitePath() . '/tests');
         $fs->mirror($path . '/d9/providers/' . $ci, $this->getLocalSitePath());
 

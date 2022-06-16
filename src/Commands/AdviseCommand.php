@@ -96,7 +96,42 @@ EOD,
 
         if (self::EMPTY_UPSTREAM_ID === $upstreamId) {
             $this->adviseOnEmpty();
+            return;
         }
+
+        $this->adviseOnUnknownUpstream();
+    }
+
+    /**
+     * Print advise for unknown upstream.
+     */
+    private function adviseOnUnknownUpstream(): void
+    {
+        $this->output()->writeln(
+            <<<EOD
+This site seems to be using a custom upstream.
+
+Advice: We recommend that this site's upstream be converted to a Composer-managed based upstream:
+
+    Drupal Composer Managed (drupal-composer-managed)
+
+This process may be done manually by following the instructions in the guide:
+
+    https://pantheon.io/docs/guides/drupal-9-hosted-createcustom
+
+An automated process to convert this site is available. To begin, run:
+
+    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+
+This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. It will also push a branch to your upstream repo.
+Once you have tested this environment, the follow-on steps will be:
+
+    1) Merge the conversion branch into your upstream's main branch
+    2) Apply the update to a pilot site and ensure everything is ok.
+
+You may run the conversion:advise command again to print this advise and see the next steps again.
+EOD
+        );
     }
 
     /**

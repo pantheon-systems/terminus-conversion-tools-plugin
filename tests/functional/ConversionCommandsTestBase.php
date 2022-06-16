@@ -315,7 +315,7 @@ abstract class ConversionCommandsTestBase extends TestCase
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function getUpstreamId(): string
+    protected function getUpstreamId(): string
     {
         if (!getenv($this->getUpstreamIdEnvName())) {
             throw new TerminusException(sprintf('Missing "%s" env var', $this->getUpstreamIdEnvName()));
