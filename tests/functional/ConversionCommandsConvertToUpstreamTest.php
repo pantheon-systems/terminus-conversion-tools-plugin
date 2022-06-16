@@ -119,9 +119,6 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
      */
     protected function executeConvertCommand(): void
     {
-        $this->assertCommand(
-            sprintf('conversion:convert-upstream-from-site %s --repo=%s --dry-run', $this->siteName, 'git@github.com:/foo/bar.git'),
-            $this->branch
-        );
+        $this->terminus(sprintf('conversion:convert-upstream-from-site %s --repo=%s --dry-run', $this->siteName, 'git@github.com:/foo/bar.git'));
     }
 }
