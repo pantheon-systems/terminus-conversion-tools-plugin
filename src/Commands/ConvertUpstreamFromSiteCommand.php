@@ -109,5 +109,4 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
         $this->getGit()->pushToRemote('upstream', sprintf('%s:%s', $this->getBranch(), $upstreamBranch));
         return $upstreamBranch;
     }
-
 }
