@@ -363,27 +363,47 @@ EOD
         }
 
         if ($isBuildTools) {
+            // @todo: Accept different branch name than default.
             if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
             } else {
                 // Build artifact created by Terminus Build Tools plugin is present.
                 $this->output()->writeln(
                     <<<EOD
-Advice: you might want to convert to drupal-composer-managed if you are NOT using Continuous Integration (e.g. running tests, compiling css, etc).
-Otherwise, you should stay on "empty" upstream and the Terminus Build Tools (https://pantheon.io/docs/guides/build-tools/) workflow.
+Advice: convert to drupal-composer-managed either by preserving your Build Tools Workflow or by removing it if you are
+NOT using Continuous Integration (e.g. running tests, compiling css, etc).
 
-If you wish to convert to drupal-composer-managed, this process may be done manually by following the instructions in the guide:
+
+
+If you wish to preserve your Build Tools Workflow, you first need to push a branch to your source repository and
+create a Pull/Merge request there and wait for CI to push that to Pantheon. Once done, you should run the following command:
+
+    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()} --branch=<branch-name>
+
+This command will update the existing multidev with the new upstream structure. Once you have tested this environment, the follow-on steps will be:
+
+    1) Merge the Pull/Merge request in your external VCS (e.g. GitHub)
+    2) Wait for CI to complete and push the branch to Pantheon
+    3) Set the right upstream using Terminus:
+
+        {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
+
+
+
+If you wish to remove your Build Tools Workflow, this process may be done manually by following the instructions in the guide:
 
     https://pantheon.io/docs/guides/composer-convert-from-empty
 
 An automated process to convert this site is available. To begin, run:
 
-    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()}
+    {$this->getTerminusExecutable()} conversion:composer {$this->site()->getName()} --ignore-build-tools
 
-This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
     {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
+
+
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
