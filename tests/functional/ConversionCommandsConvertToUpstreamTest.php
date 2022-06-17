@@ -102,7 +102,7 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
 
         $this->executeConvertCommand();
 
-        $composerJsonLocation = sprintf('~/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json', $this->siteName);
+        $composerJsonLocation = sprintf('%s/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json', getenv('HOME'), $this->siteName);
         $composerJsonData = json_decode(file_get_contents($composerJsonLocation), true);
 
         $this->assertEquals(
