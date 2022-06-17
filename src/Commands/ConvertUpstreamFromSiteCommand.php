@@ -37,7 +37,7 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
     public function convertUpstream(string $site_id, array $options = [
         'commit-message' => null,
         'dry-run' => false,
-        'repo' => '',
+        'repo' => null,
     ]): void
     {
         $this->setSite($site_id);
