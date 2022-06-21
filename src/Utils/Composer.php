@@ -49,7 +49,8 @@ class Composer
      * @param array $options
      *   Additional options.
      */
-    public static function createProject(string $package, string $projectPath, ...$options) {
+    public static function createProject(string $package, string $projectPath, ...$options)
+    {
 
         if (is_dir($projectPath)) {
             throw new TerminusException(
