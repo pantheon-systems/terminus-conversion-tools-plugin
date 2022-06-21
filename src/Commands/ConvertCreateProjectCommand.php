@@ -173,6 +173,15 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         $this->getGit()->commit('Require some composer packages and configure them.');
 
+        $this->log()->notice('Adding paths to .gitignore file...');
+        $pathsToIgnore = $this->getPathsToIgnore();
+        if (count($pathsToIgnore) > 0) {
+            $this->addGitignorePaths($pathsToIgnore);
+            $this->deletePaths($pathsToIgnore);
+        } else {
+            $this->log()->notice('No paths detected to add to .gitignore file.');
+        }
+
         $devEnv = $this->site->getEnvironments()->get('dev');
         $devEnv->changeConnectionMode('git');
         $connectionInfo = $devEnv->connectionInfo();
