@@ -18,7 +18,7 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
     use ComposerAwareTrait;
 
     /**
-     * Push the converted site to a multidev environment.
+     * Convert an exemplar site to an upstream.
      *
      * @command conversion:convert-upstream-from-site
      *
