@@ -158,6 +158,15 @@ class Composer
     }
 
     /**
+     * Returns current composer.lock as an array.
+     */
+    public function getComposerLockData(): array
+    {
+        $filePath = Files::buildPath($this->projectPath, 'composer.lock');
+        return json_decode(file_get_contents($filePath), true);
+    }
+
+    /**
      * Writes given array as composer.json file.
      *
      * @param array $data
