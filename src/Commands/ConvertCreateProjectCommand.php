@@ -8,11 +8,11 @@ use Pantheon\Terminus\Site\SiteAwareInterface;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Pantheon\TerminusConversionTools\Utils\Composer;
 use Pantheon\TerminusConversionTools\Utils\Files;
-
 use Pantheon\Terminus\Friends\LocalCopiesTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
 /**
@@ -94,7 +94,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
             foreach (self::WEBROOT_FOLDERS_TO_FIX as $folder) {
                 if ($filesystem->exists(Files::buildPath($path, $folder))) {
                     $filesystem->symlink(
-                        Files::buildPath($path, $folder),
+                        $folder,
                         Files::buildPath($path, self::WEB_ROOT)
                     );
                     $webrootFixed = true;
@@ -127,7 +127,14 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
             Files::buildPath($path, 'pantheon.upstream.yml')
         );
 
-        // @todo Set php version to currently used version.
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($path, 'pantheon.upstream.yml'));
+        $phpVersion = substr(phpversion(), 0, 3);
+        if ($phpVersion !== $pantheonYmlContent['php_version']) {
+            $pantheonYmlContent['php_version'] = (float) $phpVersion;
+            $pantheonYmlFile = fopen(Files::buildPath($path, 'pantheon.upstream.yml'), 'wa+');
+            fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+            fclose($pantheonYmlFile);
+        }
 
         // Create config folder and empty file in it.
         $filesystem->mkdir(Files::buildPath($path, 'config'));
