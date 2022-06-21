@@ -106,6 +106,17 @@ trait ConversionCommandsTrait
     }
 
     /**
+     * Set local site path variable..
+     *
+     * @param string $localSitePath
+     *
+     */
+    protected function setLocalSitePath(string $localSitePath): void
+    {
+        $this->localSitePath = $localSitePath;
+    }
+
+    /**
      * Clones the site and returns the path to the local site copy.
      *
      * @param null|bool $force
@@ -747,7 +758,7 @@ EOD,
         }
         fwrite(
             $gitignoreFile,
-            '# Ignored paths added by Terminus Conversion Tools Plugin `conversion:enable-ic`' . PHP_EOL
+            "\n# Ignored paths added by Terminus Conversion Tools Plugin." . PHP_EOL
         );
         fwrite($gitignoreFile, implode(PHP_EOL, $paths));
         fwrite($gitignoreFile, PHP_EOL);
@@ -812,7 +823,9 @@ EOD,
                 continue;
             }
 
-            $this->getGit()->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
+            if ($this->getGit()->isAnythingToCommit()) {
+                $this->getGit()->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
+            }
 
             $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
         }

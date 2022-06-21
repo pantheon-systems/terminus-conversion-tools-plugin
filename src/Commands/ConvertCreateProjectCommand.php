@@ -127,6 +127,8 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
             Files::buildPath($path, 'pantheon.upstream.yml')
         );
 
+        // @todo Set php version to currently used version.
+
         // Create config folder and empty file in it.
         $filesystem->mkdir(Files::buildPath($path, 'config'));
         $filesystem->touch(Files::buildPath($path, 'config', '.gitkeep'));
@@ -136,7 +138,10 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         // Composer require and configurations.
         $this->getComposer()->config('repositories.upstream-configuration', 'path', 'upstream-configuration');
         $this->getComposer()->require('pantheon-systems/drupal-integrations');
-        $this->getComposer()->require('drush/drush');
+
+        if (!$filesystem->exists(Files::buildPath($path, 'vendor', 'drush', 'drush'))) {
+            $this->getComposer()->require('drush/drush');
+        }
 
         // Edit composer.json file.
         $composerJson = $this->getComposer()->getComposerJsonData();
@@ -174,6 +179,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         $this->getGit()->commit('Require some composer packages and configure them.');
 
         $this->log()->notice('Adding paths to .gitignore file...');
+        $this->setLocalSitePath($path);
         $pathsToIgnore = $this->getPathsToIgnore();
         if (count($pathsToIgnore) > 0) {
             $this->addGitignorePaths($pathsToIgnore);
