@@ -38,7 +38,6 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
         $distros = getenv('TERMINUS_TEST_DISTROS_OVERRIDE') ? getenv('TERMINUS_TEST_DISTROS_OVERRIDE') : getenv('TERMINUS_TEST_DISTROS_TO_TEST');
         $this->distros = explode(',', $distros);
         $this->expectedOutput = 'Your new project is ready at';
-        putenv('COMPOSER_PROCESS_TIMEOUT=1800');
     }
 
     /**

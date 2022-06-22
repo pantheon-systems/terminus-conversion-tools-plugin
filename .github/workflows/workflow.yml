@@ -83,6 +83,7 @@ jobs:
       TERMINUS_TEST_DISTROS_OVERRIDE: ${{ github.event.inputs.distros_override }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      COMPOSER_PROCESS_TIMEOUT: 1800
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
