@@ -49,7 +49,7 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
     {
         foreach ($this->distros as $index => $distro) {
             $siteName = sprintf('%s-%s', $this->sitesBaseName, $index);
-            $command = sprintf('conversion:create %s %s', $distro, $name);
+            $command = sprintf('conversion:create %s %s', $distro, $siteName);
         }
         $output = $this->terminus(
             $command,
