@@ -72,7 +72,5 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
                 false
             );
         }
-
     }
-
 }
