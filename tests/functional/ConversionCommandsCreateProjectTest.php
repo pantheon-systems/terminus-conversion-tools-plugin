@@ -23,11 +23,6 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
     protected string $sitesBaseName;
 
     /**
-     * Expected string to assert in the output.
-     */
-    protected $expectedOutput;
-
-    /**
      * @inheritdoc
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
@@ -37,7 +32,6 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
         $this->sitesBaseName = uniqid(sprintf('fixture-term3-conv-plugin-%s-', $this->getRealUpstreamId()));
         $distros = getenv('TERMINUS_TEST_DISTROS_OVERRIDE') ? getenv('TERMINUS_TEST_DISTROS_OVERRIDE') : getenv('TERMINUS_TEST_DISTROS_TO_TEST');
         $this->distros = explode(',', $distros);
-        $this->expectedOutput = 'Your new project is ready at';
     }
 
     /**
@@ -55,8 +49,6 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
             $command,
             [sprintf('--org=%s', $this->getOrg())]
         );
-
-        $this->assertStringContainsString($this->expectedOutput, $output, sprintf('Command %s probably failed. Expected output to contain %s', $command, $this->expectedOutput));
     }
 
     /**
