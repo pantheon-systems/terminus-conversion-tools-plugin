@@ -28,7 +28,7 @@ class Git
      * @param string $repoPath
      *   The path to the repository.
      * @param bool $skipValidation
-     *  Skip git status validation.
+     *   Skip git status validation.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
@@ -51,7 +51,7 @@ class Git
     /**
      * Clone a remote repository.
      */
-    public static function clone(string $repoPath, string $repoUrl)
+    public static function clone(string $repoPath, string $repoUrl): void
     {
         if (is_dir($repoPath)) {
             throw new TerminusException(
@@ -61,7 +61,7 @@ class Git
         }
         mkdir($repoPath);
         $git = new static($repoPath, true);
-        return $git->execute(['clone', $repoUrl, '.']);
+        $git->execute(['clone', $repoUrl, '.']);
     }
 
     /**

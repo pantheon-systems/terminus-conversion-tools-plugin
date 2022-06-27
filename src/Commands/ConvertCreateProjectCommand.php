@@ -111,8 +111,6 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         }
 
         $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('target-upstream-repo-%s', bin2hex(random_bytes(2))));
-
-
         Git::clone($targetUpstreamRepoPath, self::TARGET_UPSTREAM_GIT_REMOTE_URL);
 
         // Mirror upstream-configuration folder.

@@ -51,7 +51,6 @@ class Composer
      */
     public static function createProject(string $package, string $projectPath, ...$options)
     {
-
         if (is_dir($projectPath)) {
             throw new TerminusException(
                 '{project_path} already exists.',
@@ -66,6 +65,9 @@ class Composer
 
     /**
      * Returns whether current composer project has a vendor folder or not.
+     *
+     * @return bool
+     *   True if vendor folder exists, false otherwise.
      */
     public function hasVendorFolder(): bool
     {
