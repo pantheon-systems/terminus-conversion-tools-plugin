@@ -65,50 +65,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         ]
     ): void {
         $filesystem = new Filesystem();
-        $label = $options['label'] ?? $siteId;
-
-        // @todo: What if site already exist and I want to overwrite it?
-        $this->createSite($siteId, $label, self::EMPTY_UPSTREAM_ID, $options);
-        $this->setSite($siteId);
-
-        $localCopiesPath = $this->getLocalCopiesDir();
-        $siteDirName = sprintf('%s_terminus_conversion_plugin', $siteId);
-
-        $path = Files::buildPath($localCopiesPath, $siteDirName);
-        $extraComposerOptions = $options['composer-options'] ?? '';
-        Composer::createProject($package, $path, '--no-interaction', $extraComposerOptions);
-        $this->setComposer($path);
-        if (!$this->getComposer()->hasVendorFolder()) {
-            $this->getComposer()->install();
-        }
-
-        Git::init($path, '-b', 'master');
-        $this->setGit($path);
-
-        // @todo Fix .gitignore.
-
-        $this->getGit()->commit('Initial commit.');
-
-        if (!$filesystem->exists(Files::buildPath($path, self::WEB_ROOT))) {
-            $webrootFixed = false;
-            foreach (self::WEBROOT_FOLDERS_TO_FIX as $folder) {
-                if ($filesystem->exists(Files::buildPath($path, $folder))) {
-                    $filesystem->symlink(
-                        $folder,
-                        Files::buildPath($path, self::WEB_ROOT)
-                    );
-                    $webrootFixed = true;
-                    $this->getGit()->commit('Add symlink to webroot.');
-                    break;
-                }
-            }
-            if (!$webrootFixed) {
-                $this->log()->warning(
-                    'Could not find a web root folder in the distro. ' .
-                    'Please manually create a symlink to the web root folder.'
-                );
-            }
-        }
+        $path = $this->initialize($package, $siteId, $options, $filesystem);
 
         $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('target-upstream-repo-%s', bin2hex(random_bytes(2))));
         Git::clone($targetUpstreamRepoPath, self::TARGET_UPSTREAM_GIT_REMOTE_URL);
@@ -140,6 +97,43 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         $this->getGit()->commit('Add files and folders from target upstream repository.');
 
+        $this->matchComposerFromUpstream($path, $filesystem);
+
+        $this->log()->notice('Adding paths to .gitignore file...');
+        $this->setLocalSitePath($path);
+        $pathsToIgnore = $this->getPathsToIgnore();
+        if (count($pathsToIgnore) > 0) {
+            $this->addGitignorePaths($pathsToIgnore);
+            $this->deletePaths($pathsToIgnore);
+        } else {
+            $this->log()->notice('No paths detected to add to .gitignore file.');
+        }
+
+        $devEnv = $this->site->getEnvironments()->get('dev');
+        $devEnv->changeConnectionMode('git');
+        $connectionInfo = $devEnv->connectionInfo();
+        $gitUrl = $connectionInfo['git_url'];
+
+        $this->getGit()->addRemote($gitUrl, 'origin');
+        $this->addGitHostToKnownHosts($connectionInfo['git_host'], $connectionInfo['git_port']);
+        $this->getGit()->push('master', '-f');
+
+        $dashboardUrl = $devEnv->dashboardUrl();
+        $this->log()->notice(sprintf('Your new project is ready at %s', $dashboardUrl));
+
+        $this->log()->notice('Done!');
+    }
+
+    /**
+     * Match composer requires and configurations from target upstream repo.
+     *
+     * @param string $path
+     *   Path to run everything in.
+     * @param \Symfony\Component\Filesystem\Filesystem $filesystem
+     *   Filesystem object.
+     */
+    private function matchComposerFromUpstream(string $path, Filesystem $filesystem): void
+    {
         // Composer require and configurations.
         $this->getComposer()->config('repositories.upstream-configuration', 'path', 'upstream-configuration');
         $this->getComposer()->require('pantheon-systems/drupal-integrations');
@@ -182,30 +176,66 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         }
 
         $this->getGit()->commit('Require some composer packages and configure them.');
+    }
 
-        $this->log()->notice('Adding paths to .gitignore file...');
-        $this->setLocalSitePath($path);
-        $pathsToIgnore = $this->getPathsToIgnore();
-        if (count($pathsToIgnore) > 0) {
-            $this->addGitignorePaths($pathsToIgnore);
-            $this->deletePaths($pathsToIgnore);
-        } else {
-            $this->log()->notice('No paths detected to add to .gitignore file.');
+    /**
+     * Initialize everything that is needed for this command.
+     *
+     * @param string $package
+     *   Template package (and optionally constraints) to use.
+     * @param string $siteId
+     *   Site id to create.
+     * @param array $options
+     *   Additional options.
+     * @param \Symfony\Component\Filesystem\Filesystem $filesystem
+     *   Filesystem object.
+     *
+     * @return string
+     *   The path to the new project.
+     */
+    private function initialize(string $package, string $siteId, array $options, Filesystem $filesystem): string
+    {
+        $label = $options['label'] ?? $siteId;
+
+        $this->createSite($siteId, $label, self::EMPTY_UPSTREAM_ID, $options);
+        $this->setSite($siteId);
+
+        $localCopiesPath = $this->getLocalCopiesDir();
+        $siteDirName = sprintf('%s_terminus_conversion_plugin', $siteId);
+
+        $path = Files::buildPath($localCopiesPath, $siteDirName);
+        $extraComposerOptions = $options['composer-options'] ?? '';
+        Composer::createProject($package, $path, '--no-interaction', $extraComposerOptions);
+        $this->setComposer($path);
+        if (!$this->getComposer()->hasVendorFolder()) {
+            $this->getComposer()->install();
         }
 
-        $devEnv = $this->site->getEnvironments()->get('dev');
-        $devEnv->changeConnectionMode('git');
-        $connectionInfo = $devEnv->connectionInfo();
-        $gitUrl = $connectionInfo['git_url'];
+        Git::init($path, '-b', 'master');
+        $this->setGit($path);
+        $this->getGit()->commit('Initial commit.');
 
-        $this->getGit()->addRemote($gitUrl, 'origin');
-        $this->addGitHostToKnownHosts($connectionInfo['git_host'], $connectionInfo['git_port']);
-        $this->getGit()->push('master', '-f');
-
-        $dashboardUrl = $devEnv->dashboardUrl();
-        $this->log()->notice(sprintf('Your new project is ready at %s', $dashboardUrl));
-
-        $this->log()->notice('Done!');
+        if (!$filesystem->exists(Files::buildPath($path, self::WEB_ROOT))) {
+            $webrootFixed = false;
+            foreach (self::WEBROOT_FOLDERS_TO_FIX as $folder) {
+                if ($filesystem->exists(Files::buildPath($path, $folder))) {
+                    $filesystem->symlink(
+                        $folder,
+                        Files::buildPath($path, self::WEB_ROOT)
+                    );
+                    $webrootFixed = true;
+                    $this->getGit()->commit('Add symlink to webroot.');
+                    break;
+                }
+            }
+            if (!$webrootFixed) {
+                $this->log()->warning(
+                    'Could not find a web root folder in the distro. ' .
+                    'Please manually create a symlink to the web root folder.'
+                );
+            }
+        }
+        return $path;
     }
 
     /**
