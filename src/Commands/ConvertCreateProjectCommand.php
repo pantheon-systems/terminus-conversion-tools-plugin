@@ -217,7 +217,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         Git::init($path, '-b', 'master');
         $this->setGit($path);
-        $this->getGit()->commit(sprintf('Create new Pantheon site using conversion tools "conversion:create-project" and package %s.', $package));
+        $this->getGit()->commit(sprintf('Create new Pantheon site using "conversion:create-project" command and package %s.', $package));
 
         if (!$filesystem->exists(Files::buildPath($path, self::WEB_ROOT))) {
             $webrootFixed = false;
