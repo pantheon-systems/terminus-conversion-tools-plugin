@@ -65,9 +65,10 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         ]
     ): void {
         $filesystem = new Filesystem();
-        $path = $this->initialize($package, $siteId, $options, $filesystem);
+        $localCopiesPath = $this->getLocalCopiesDir();
+        $path = $this->initialize($package, $siteId, $options, $filesystem, $localCopiesPath);
 
-        $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('target-upstream-repo-%s', bin2hex(random_bytes(2))));
+        $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('%s-%s', self::TARGET_UPSTREAM_GIT_REMOTE_URL, bin2hex(random_bytes(2))));
         Git::clone($targetUpstreamRepoPath, self::TARGET_UPSTREAM_GIT_REMOTE_URL);
 
         // Mirror upstream-configuration folder.
@@ -193,18 +194,19 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      *   Additional options.
      * @param \Symfony\Component\Filesystem\Filesystem $filesystem
      *   Filesystem object.
+     * @param string $localCopiesPath
+     *   Path to local copies folder.
      *
      * @return string
      *   The path to the new project.
      */
-    private function initialize(string $package, string $siteId, array $options, Filesystem $filesystem): string
+    private function initialize(string $package, string $siteId, array $options, Filesystem $filesystem, string $localCopiesPath): string
     {
         $label = $options['label'] ?? $siteId;
 
         $this->createSite($siteId, $label, self::EMPTY_UPSTREAM_ID, $options);
         $this->setSite($siteId);
 
-        $localCopiesPath = $this->getLocalCopiesDir();
         $siteDirName = sprintf('%s_terminus_conversion_plugin', $siteId);
 
         $path = Files::buildPath($localCopiesPath, $siteDirName);
