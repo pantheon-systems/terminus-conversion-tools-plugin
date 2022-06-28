@@ -29,6 +29,7 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
      */
     protected function setUp(): void
     {
+        $this->httpClient = HttpClient::create();
         $this->sitesBaseName = uniqid(sprintf('fixture-term3-conv-plugin-%s-', $this->getRealUpstreamId()));
         $distros = getenv('TERMINUS_TEST_DISTROS_OVERRIDE') ?: getenv('TERMINUS_TEST_DISTROS_TO_TEST');
         $this->distros = explode(',', $distros);
