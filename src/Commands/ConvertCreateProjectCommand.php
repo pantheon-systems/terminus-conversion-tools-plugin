@@ -68,7 +68,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         $localCopiesPath = $this->getLocalCopiesDir();
         $path = $this->initialize($package, $siteId, $options, $filesystem, $localCopiesPath);
 
-        $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('%s-%s', self::TARGET_UPSTREAM_GIT_REMOTE_URL, bin2hex(random_bytes(2))));
+        $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('%s-%s', basename(self::TARGET_UPSTREAM_GIT_REMOTE_URL), bin2hex(random_bytes(2))));
         Git::clone($targetUpstreamRepoPath, self::TARGET_UPSTREAM_GIT_REMOTE_URL);
 
         // Mirror upstream-configuration folder.
@@ -102,7 +102,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         $this->getGit()->commit('Add files and folders from target upstream repository.');
 
-        $this->matchComposerFromUpstream($path, $filesystem);
+        $this->matchComposerFromUpstream($path, $targetUpstreamRepoPath, $filesystem);
 
         $this->log()->notice('Adding paths to .gitignore file...');
         $this->setLocalSitePath($path);
@@ -134,37 +134,56 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      *
      * @param string $path
      *   Path to run everything in.
+     * @param string $targetUpstreamRepoPath
+     *   Path to target upstream repo.
      * @param \Symfony\Component\Filesystem\Filesystem $filesystem
      *   Filesystem object.
      */
-    private function matchComposerFromUpstream(string $path, Filesystem $filesystem): void
+    private function matchComposerFromUpstream(string $path, string $targetUpstreamRepoPath, Filesystem $filesystem): void
     {
         // Composer require and configurations.
         $this->getComposer()->config('repositories.upstream-configuration', 'path', 'upstream-configuration');
         $this->getComposer()->require('pantheon-systems/drupal-integrations');
 
         if (!$filesystem->exists(Files::buildPath($path, 'vendor', 'drush', 'drush'))) {
-            $this->getComposer()->require('drush/drush', '^11|^10', '-W');
+            $this->getComposer()->require('drush/drush', '^12|^11|^10', '-W');
         }
+
+        $targetUpstreamComposer = new Composer($targetUpstreamRepoPath);
+        $targetUpstreamComposerJson = $targetUpstreamComposer->getComposerJsonData();
 
         // Edit composer.json file.
         $composerJson = $this->getComposer()->getComposerJsonData();
         if (!isset($composerJson['extra']['drupal-scaffold']['allowed-packages'])) {
             $composerJson['extra']['drupal-scaffold']['allowed-packages'] = [];
         }
-        $composerJson['extra']['drupal-scaffold']['allowed-packages'][] = 'pantheon-systems/drupal-integrations';
-
-        if (!isset($composerJson['scripts']['pre-update-cmd'])) {
-            $composerJson['scripts']['pre-update-cmd'] = [];
+        $allowedPackagesDiff = array_diff($targetUpstreamComposerJson['extra']['drupal-scaffold']['allowed-packages'], $composerJson['extra']['drupal-scaffold']['allowed-packages']);
+        if (count($allowedPackagesDiff) > 0) {
+            $composerJson['extra']['drupal-scaffold']['allowed-packages'] = array_merge($composerJson['extra']['drupal-scaffold']['allowed-packages'], $allowedPackagesDiff);
         }
-        $composerJson['scripts']['pre-update-cmd'][] = 'DrupalComposerManaged\\ComposerScripts::preUpdate';
-        $composerJson['scripts']['upstream-require'] = ['DrupalComposerManaged\\ComposerScripts::upstreamRequire'];
-        $composerJson['scripts-descriptions']['upstream-require'] = 'Add a dependency to an upstream. See https://pantheon.io/docs/create-custom-upstream for information on creating custom upstreams.';
+
+        foreach ($targetUpstreamComposerJson['scripts'] as $scriptName => $contents) {
+            if (!isset($composerJson['scripts'][$scriptName])) {
+                $composerJson['scripts'][$scriptName] = [];
+            }
+            $diff = array_diff($contents, $composerJson['scripts'][$scriptName]);
+            if (count($diff) > 0) {
+                $composerJson['scripts'][$scriptName] = array_merge($composerJson['scripts'][$scriptName], $diff);
+            }
+        }
+
+        $scriptsDescriptionsDiff = array_diff($targetUpstreamComposerJson['scripts-descriptions'], $composerJson['scripts-descriptions'] ?? []);
+        if (count($scriptsDescriptionsDiff) > 0) {
+            $composerJson['scripts-descriptions'] = array_merge($composerJson['scripts-descriptions'] ?? [], $scriptsDescriptionsDiff);
+        }
 
         if (!isset($composerJson['autoload']['classmap'])) {
             $composerJson['autoload']['classmap'] = [];
         }
-        $composerJson['autoload']['classmap'][] = 'upstream-configuration/scripts/ComposerScripts.php';
+        $classmapDiff = array_diff($targetUpstreamComposerJson['autoload']['classmap'], $composerJson['autoload']['classmap']);
+        if (count($classmapDiff) > 0) {
+            $composerJson['autoload']['classmap'] = array_merge($composerJson['autoload']['classmap'], $classmapDiff);
+        }
 
         $composerJson['extra']['installer-paths']['web/private/scripts/quicksilver/{$name}/'] = ['type:quicksilver-script'];
 
