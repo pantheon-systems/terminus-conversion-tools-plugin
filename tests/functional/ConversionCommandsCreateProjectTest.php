@@ -44,11 +44,20 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
         foreach ($this->distros as $index => $distro) {
             $siteName = sprintf('%s-%s', $this->sitesBaseName, $index);
             $command = sprintf('conversion:create %s %s', $distro, $siteName);
+            $this->terminus(
+                $command,
+                [sprintf('--org=%s', $this->getOrg())]
+            );
+            $url = sprintf('https://dev-%s.pantheonsite.io/install.php', $siteName);
+            $this->assertEqualsInAttempts(
+                fn() => $this->httpClient->request('HEAD', $url)->getStatusCode(),
+                200,
+                sprintf(
+                    'Install page "%s" must return HTTP status code 200',
+                    $url
+                )
+            );
         }
-        $output = $this->terminus(
-            $command,
-            [sprintf('--org=%s', $this->getOrg())]
-        );
     }
 
     /**
