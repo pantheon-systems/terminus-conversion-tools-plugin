@@ -5,7 +5,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 use Symfony\Component\HttpClient\HttpClient;
 
 /**
- * Class ConversionCommandsCreateProjectTest.s
+ * Class ConversionCommandsCreateProjectTest.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
@@ -66,7 +66,7 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
      */
     protected function tearDown(): void
     {
-        for ($index = 0; $index < count($this->distros); $index++) {
+        foreach ($this->distros as $index => $distro) {
             $siteName = sprintf('%s-%s', $this->sitesBaseName, $index);
             $this->terminus(
                 sprintf('site:delete %s', $siteName),

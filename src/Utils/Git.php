@@ -36,15 +36,17 @@ class Git
     {
         $this->repoPath = $repoPath;
 
-        if (!$skipValidation) {
-            try {
-                $this->execute(['status']);
-            } catch (Throwable $t) {
-                throw new TerminusException(
-                    'Failed verify that {repo_path} is a valid Git repository: {error_message}',
-                    ['repo_path' => $repoPath, 'error_message' => $t->getMessage()]
-                );
-            }
+        if ($skipValidation) {
+            return;
+        }
+
+        try {
+            $this->execute(['status']);
+        } catch (Throwable $t) {
+            throw new TerminusException(
+                'Failed verify that {repo_path} is a valid Git repository: {error_message}',
+                ['repo_path' => $repoPath, 'error_message' => $t->getMessage()]
+            );
         }
     }
 

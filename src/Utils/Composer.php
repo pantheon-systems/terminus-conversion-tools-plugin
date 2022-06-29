@@ -29,14 +29,18 @@ class Composer
      */
     public function __construct(string $projectPath, bool $skipValidation = false)
     {
-        if (!$skipValidation && !is_file(Files::buildPath($projectPath, 'composer.json'))) {
+        $this->projectPath = $projectPath;
+
+        if ($skipValidation) {
+            return;
+        }
+
+        if (!is_file(Files::buildPath($projectPath, 'composer.json'))) {
             throw new TerminusException(
                 'composer.json file not found in {project_path}.',
                 ['project_path' => $projectPath]
             );
         }
-
-        $this->projectPath = $projectPath;
     }
 
     /**
@@ -48,8 +52,11 @@ class Composer
      *   Where to create this project.
      * @param array $options
      *   Additional options.
+     *
+     * @return Pantheon\TerminusConversionTools\Utils\Composer
+     *   Created instance.
      */
-    public static function createProject(string $package, string $projectPath, ...$options)
+    public static function createProject(string $package, string $projectPath, ...$options): static
     {
         if (is_dir($projectPath)) {
             throw new TerminusException(
