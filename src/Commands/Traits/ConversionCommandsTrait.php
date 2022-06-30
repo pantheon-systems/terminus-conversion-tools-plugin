@@ -331,7 +331,7 @@ EOD,
     {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
-            sprintf('Creating "%s" git branch based on "drupal-recommended" upstream...', $this->getBranch())
+            sprintf('Creating "%s" git branch based on the target upstream...', $this->getBranch())
         );
         $this->getGit()->addRemote($remoteUrl, $targetGitRemoteName);
         $this->getGit()->fetch($targetGitRemoteName);
