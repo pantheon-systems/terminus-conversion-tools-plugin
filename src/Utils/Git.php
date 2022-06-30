@@ -26,12 +26,19 @@ class Git
      * Git constructor.
      *
      * @param string $repoPath
+     *   The path to the repository.
+     * @param bool $skipValidation
+     *   Skip git status validation.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function __construct(string $repoPath)
+    public function __construct(string $repoPath, bool $skipValidation = false)
     {
         $this->repoPath = $repoPath;
+
+        if ($skipValidation) {
+            return;
+        }
 
         try {
             $this->execute(['status']);
@@ -41,6 +48,37 @@ class Git
                 ['repo_path' => $repoPath, 'error_message' => $t->getMessage()]
             );
         }
+    }
+
+    /**
+     * Clone a remote repository.
+     */
+    public static function clone(string $repoPath, string $repoUrl): void
+    {
+        if (is_dir($repoPath)) {
+            throw new TerminusException(
+                '{repoPath} already exists.',
+                ['repoPath' => $repoPath]
+            );
+        }
+        mkdir($repoPath);
+        $git = new static($repoPath, true);
+        $git->execute(['clone', $repoUrl, '.']);
+    }
+
+    /**
+     * Initialize git repository.
+     *
+     * @param array $options
+     *
+     * @return string
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     */
+    public static function init($repoPath, ...$options): string
+    {
+        $git = new static($repoPath, true);
+        return $git->execute(['init', ...$options]);
     }
 
     /**

@@ -11,6 +11,10 @@ on:
         description: Enable tmate debugging
         required: true
         default: 0
+      distros_override:
+        description: distros to test (separated by ,)
+        required: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,6 +66,8 @@ jobs:
             group: validate_and_fix_gitignore_command
           - name: conversion:upgrade-d9
             group: upgrade_d9_command
+          - name: create site from distro
+            group: from_distro
       fail-fast: false
     runs-on: ubuntu-latest
     name: Testing ${{ matrix.testing_groups.name }}
@@ -73,6 +79,8 @@ jobs:
       TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_NON_IC_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_DROPS9_UPSTREAM_ID }}
       TERMINUS_TEST_SITE_UPGRADE_D9_UPSTREAM_ID: ${{ secrets.TERMINUS_TEST_SITE_UPGRADE_D9_UPSTREAM_ID }}
+      TERMINUS_TEST_DISTROS_TO_TEST: ${{ secrets.TERMINUS_TEST_DISTROS_TO_TEST }}
+      TERMINUS_TEST_DISTROS_OVERRIDE: ${{ github.event.inputs.distros_override }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
     steps:

@@ -21,19 +21,64 @@ class Composer
      * Composer constructor.
      *
      * @param string $projectPath
+     *   The path to the project.
+     * @param bool $skipValidation
+     *   Skip composer.json file validation.
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public function __construct(string $projectPath)
+    public function __construct(string $projectPath, bool $skipValidation = false)
     {
+        $this->projectPath = $projectPath;
+
+        if ($skipValidation) {
+            return;
+        }
+
         if (!is_file(Files::buildPath($projectPath, 'composer.json'))) {
             throw new TerminusException(
                 'composer.json file not found in {project_path}.',
                 ['project_path' => $projectPath]
             );
         }
+    }
 
-        $this->projectPath = $projectPath;
+    /**
+     * Create a new Composer project.
+     *
+     * @param string $package
+     *   Template package (and optionally constraints) to use.
+     * @param string $projectPath
+     *   Where to create this project.
+     * @param array $options
+     *   Additional options.
+     *
+     * @return Pantheon\TerminusConversionTools\Utils\Composer
+     *   Created instance.
+     */
+    public static function createProject(string $package, string $projectPath, ...$options): static
+    {
+        if (is_dir($projectPath)) {
+            throw new TerminusException(
+                '{project_path} already exists.',
+                ['project_path' => $projectPath]
+            );
+        }
+        mkdir($projectPath);
+        $composer = new static($projectPath, true);
+        $composer->execute(['composer', 'create-project', $package, '.', ...$options]);
+        return $composer;
+    }
+
+    /**
+     * Returns whether current composer project has a vendor folder or not.
+     *
+     * @return bool
+     *   True if vendor folder exists, false otherwise.
+     */
+    public function hasVendorFolder(): bool
+    {
+        return is_dir(Files::buildPath($this->projectPath, 'vendor'));
     }
 
     /**
@@ -70,6 +115,18 @@ class Composer
         } else {
             $this->execute(['composer', 'require', $package, ...$options]);
         }
+    }
+
+    /**
+     * Executes `composer config` command.
+     *
+     * @param array $options
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    public function config(...$options): void
+    {
+        $this->execute(['composer', 'config', ...$options]);
     }
 
     /**

@@ -13,6 +13,8 @@ use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Trait ConversionCommandsTrait.
@@ -101,6 +103,17 @@ trait ConversionCommandsTrait
         }
 
         return $this->siteGitRemoteUrl = $connectionInfo['git_url'];
+    }
+
+    /**
+     * Set local site path variable..
+     *
+     * @param string $localSitePath
+     *
+     */
+    protected function setLocalSitePath(string $localSitePath): void
+    {
+        $this->localSitePath = $localSitePath;
     }
 
     /**
@@ -687,5 +700,135 @@ EOD,
         }
 
         $this->log()->notice("Current workflow is '{current}'; waiting for '{expected}'. Giving up searching for the right workflow.", ['current' => $firstWorkflowType, 'expected' => $workflowToSearch]);
+    }
+
+    /**
+     * Returns the list of paths to ignore by Git.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    protected function getPathsToIgnore(): array
+    {
+        $composerJsonContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'composer.json'));
+
+        $ignorePaths = array_map(
+            function ($path) {
+                $path = str_replace('{$name}', '', $path);
+                return sprintf('/%s/', trim($path, '/'));
+            },
+            array_keys($composerJsonContent['extra']['installer-paths'] ?? [])
+        );
+
+        array_unshift($ignorePaths, '/vendor/');
+
+        if (isset($composerJsonContent['extra']['drupal-scaffold'])) {
+            $ignorePaths[] = '/.editorconfig';
+            $ignorePaths[] = '/.gitattributes';
+            $ignorePaths[] = '/web/**/.gitignore';
+
+            $drupalScaffoldAllowedPackages = $composerJsonContent['extra']['drupal-scaffold']['allowed-packages'] ?? [];
+            if (in_array('pantheon-systems/drupal-integrations', $drupalScaffoldAllowedPackages, true)) {
+                $ignorePaths[] = '/.drush-lock-update';
+            }
+        }
+
+        return array_diff($ignorePaths, $this->getGitignorePaths());
+    }
+
+    /**
+     * Adds paths to .gitignore file.
+     *
+     * @param array $paths
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    protected function addGitignorePaths(array $paths): void
+    {
+        if (!count($paths)) {
+            return;
+        }
+
+        $gitignoreFile = fopen(Files::buildPath($this->getLocalSitePath(), '.gitignore'), 'a+');
+        if (false === $gitignoreFile) {
+            throw new TerminusException('Failed to open .gitignore file for writing');
+        }
+        fwrite(
+            $gitignoreFile,
+            "\n# Ignored paths added by Terminus Conversion Tools Plugin." . PHP_EOL
+        );
+        fwrite($gitignoreFile, implode(PHP_EOL, $paths));
+        fwrite($gitignoreFile, PHP_EOL);
+        fclose($gitignoreFile);
+
+        $this->getGit()->commit('Add Composer-generated paths to .gitignore', ['.gitignore']);
+        $this->log()->notice(
+            sprintf(
+                'The following paths have been added to .gitignore file: "%s".',
+                implode('", "', $paths)
+            )
+        );
+    }
+
+    /**
+     * Returns the list of paths from .gitignore file.
+     *
+     * @return array
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    private function getGitignorePaths(): array
+    {
+        $gitignoreFilePath = Files::buildPath($this->getLocalSitePath(), '.gitignore');
+        if (!is_file($gitignoreFilePath)) {
+            return [];
+        }
+
+        $gitignoreFileContent = file_get_contents($gitignoreFilePath);
+
+        return array_filter(
+            explode(PHP_EOL, $gitignoreFileContent),
+            fn($path) => !empty($path) && 0 !== strpos(trim($path), '#')
+        );
+    }
+
+    /**
+     * Deletes paths (directories or files) and commits the outcome.
+     *
+     * @param array $paths
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     */
+    protected function deletePaths(array $paths): void
+    {
+        $filesystem = new Filesystem();
+        foreach ($paths as $pathToDelete) {
+            $pathToDelete = trim($pathToDelete, '/\\');
+            $absolutePathToDelete = Files::buildPath($this->getLocalSitePath(), $pathToDelete);
+            if (!file_exists($absolutePathToDelete)) {
+                continue;
+            }
+
+            $this->log()->notice(sprintf('Deleting Composer-generated directory "%s"...', $pathToDelete));
+            try {
+                $filesystem->remove($absolutePathToDelete);
+            } catch (IOException $e) {
+                $this->log()->warning(sprintf('Failed deleting directory %s.', $pathToDelete));
+                continue;
+            }
+
+            if ($this->getGit()->isAnythingToCommit()) {
+                $this->getGit()->commit(sprintf('Delete Composer-generated path "%s"', $pathToDelete), [$pathToDelete]);
+            }
+
+            $this->log()->notice(sprintf('Directory "%s" has been deleted.', $pathToDelete));
+        }
     }
 }
