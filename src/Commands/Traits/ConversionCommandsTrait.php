@@ -315,7 +315,7 @@ EOD,
     }
 
     /**
-     * Creates the target local git branch based on Pantheon's "drupal-recommended" upstream and returns the name of
+     * Creates the target local git branch based on Pantheon's target upstream and returns the name of
      * the git remote.
      *
      * @param string $remoteUrl
@@ -636,7 +636,7 @@ EOD,
             return false;
         }
 
-        // Repository contents matches "drupal-recommended" upstream.
+        // Repository contents matches target upstream.
         $this->getGit()->addRemote(
             self::DRUPAL_TARGET_GIT_REMOTE_URL,
             self::DRUPAL_TARGET_UPSTREAM_ID
