@@ -151,7 +151,6 @@ This will push the multidev changes to the dev environment and will switch your 
 EOD,
                 $this->getBranch()
             ));
-
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }
