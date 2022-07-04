@@ -140,11 +140,20 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         if (!$options['dry-run']) {
             $this->pushTargetBranch();
             $this->executeDrushCacheRebuild($options);
+            $this->log()->notice(sprintf(
+                <<<EOD
+A multidev environment named "%s" has been created with the upstream changes.
+Please test this environment and when you are sure everything works as expected, run:
+
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
+
+This will push the multidev changes to the dev environment and will switch your site upstream.
+EOD,
+                $this->getBranch()
+            ));
         } else {
             $this->log()->warning('Push to multidev has skipped');
         }
-
-        $this->log()->notice('Done!');
     }
 
     /**
