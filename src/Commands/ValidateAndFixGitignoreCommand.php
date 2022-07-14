@@ -27,12 +27,12 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
     /**
      * @var string
      */
-    private $gitignoreFilePath;
+    private string $gitignoreFilePath;
 
     /**
      * @var bool
      */
-    private $isGitignoreHeaderAdded = false;
+    private bool $isGitignoreHeaderAdded = false;
 
     /**
      * ValidateAndFixGitignoreCommand constructor.
