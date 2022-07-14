@@ -128,7 +128,7 @@ EOD
         $gitignoreContentUpdated = str_replace('/web/libraries/', '/web/libraries/*', $gitignoreContent);
         if ($gitignoreContent !== $gitignoreContentUpdated) {
             file_put_contents(Files::buildPath($this->localSitePath, '.gitignore'), $gitignoreContentUpdated);
-            $this->getGit()->commit(sprintf('Fix libraries in .gitignore,'), ['.gitignore']);
+            $this->getGit()->commit('Fix libraries in .gitignore', ['.gitignore']);
         }
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
             $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
