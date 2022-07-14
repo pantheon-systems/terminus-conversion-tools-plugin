@@ -13,6 +13,7 @@ use Pantheon\TerminusConversionTools\Exceptions\TerminusCancelOperationException
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use Pantheon\TerminusConversionTools\Exceptions\Git\GitException;
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
