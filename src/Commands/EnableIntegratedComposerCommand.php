@@ -70,7 +70,9 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
         $this->executeDrushCacheRebuild($options);
 
-        $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
+        /** @var \Pantheon\Terminus\Models\Environment $env */
+        $env = $this->site()->getEnvironments()->get($this->getBranch());
+        $dashboardUrl = $env->dashboardUrl();
         $this->log()->notice(
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
