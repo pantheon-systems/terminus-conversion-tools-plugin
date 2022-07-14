@@ -75,7 +75,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
-        $remoteGitUrl = $options['vcs-repo'];
         $ignoreBuildTools = $options['ignore-build-tools'];
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
@@ -97,7 +96,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             true
         );
 
-        $remoteGitUrl = $isCustomUpstream ? $this->site()->getUpstream()->get('url') : null;
+        $remoteGitUrl = $isCustomUpstream ? $this->site()->getUpstream()->get('url') : ($options['vcs-repo'] ?? null);
         $upstreamBranch = $isCustomUpstream ? $this->site()->getUpstream()->get('branch') : null;
         if ($isCustomUpstream) {
             $this->getGit()->addRemote($remoteGitUrl, 'upstream');
