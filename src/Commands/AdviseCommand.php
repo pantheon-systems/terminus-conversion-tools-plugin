@@ -68,6 +68,7 @@ EOD,
         }
 
         if (!$options['skip-upgrade-checks']) {
+            /** @var \Pantheon\Terminus\Models\Environment $env */
             $env = $this->site()->getEnvironments()->get('dev');
             $status = $env->getUpstreamStatus();
             if ($status->hasUpdates() || $status->hasComposerUpdates()) {

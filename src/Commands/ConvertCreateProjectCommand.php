@@ -114,6 +114,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
             $this->log()->notice('No paths detected to add to .gitignore file.');
         }
 
+        /** @var \Pantheon\Terminus\Models\Environment $devEnv */
         $devEnv = $this->site->getEnvironments()->get('dev');
         $devEnv->changeConnectionMode('git');
         $connectionInfo = $devEnv->connectionInfo();
@@ -311,7 +312,9 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         // Locate organization.
         if (!is_null($orgId = $options['org'])) {
-            $org = $user->getOrganizationMemberships()->get($orgId)->getOrganization();
+            /** @var \Pantheon\Terminus\Models\OrganizationUserMembership $orgUserMembership */
+            $orgUserMembership = $user->getOrganizationMemberships()->get($orgId);
+            $org = $orgUserMembership->getOrganization();
             $workflowOptions['organization_id'] = $org->id;
         }
 
