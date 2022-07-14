@@ -146,6 +146,8 @@ EOD
      * Adds Drupal contrib project dependencies to composer.json.
      *
      * @param array $contribPackages
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function addDrupalComposerPackages(array $contribPackages): void
     {
@@ -307,6 +309,8 @@ EOD
      *     "package" - a package name;
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function addComposerPackages(array $packages): void
     {
@@ -461,7 +465,9 @@ EOD
     }
 
     /**
-     * Copy minimum stability setting
+     * Copy minimum stability setting.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function copyMinimumStability(): void
     {

@@ -263,6 +263,10 @@ EOD
 
     /**
      * Prints advice related to "drupal-recommended" upstream.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function adviseOnDrupalRecommended(): void
     {
@@ -300,6 +304,10 @@ EOD
 
     /**
      * Prints advice related to "drupal-project" upstream.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function adviseOnDrupalProject(): void
     {

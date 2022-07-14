@@ -48,11 +48,12 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      *   The name of a site to be created.
      * @param array $options
      *
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Exception
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function createProject(
         string $package,
@@ -138,6 +139,10 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      *   Path to target upstream repo.
      * @param \Symfony\Component\Filesystem\Filesystem $filesystem
      *   Filesystem object.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function matchComposerFromUpstream(string $path, string $targetUpstreamRepoPath, Filesystem $filesystem): void
     {
@@ -214,10 +219,16 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      * @param \Symfony\Component\Filesystem\Filesystem $filesystem
      *   Filesystem object.
      * @param string $localCopiesPath
-     *   Path to local copies folder.
+     *   Path to local copies' folder.
      *
      * @return string
      *   The path to the new project.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
     private function initialize(string $package, string $siteId, array $options, Filesystem $filesystem, string $localCopiesPath): string
     {
@@ -265,6 +276,15 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
     /**
      * Create new Pantheon site.
+     *
+     * @param $siteId
+     * @param $label
+     * @param $upstreamId
+     * @param null[] $options
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
     protected function createSite($siteId, $label, $upstreamId, $options = ['org' => null, 'region' => null,])
     {

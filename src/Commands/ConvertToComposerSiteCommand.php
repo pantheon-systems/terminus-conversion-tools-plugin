@@ -316,6 +316,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *     "name" is a module/theme name;
      *     "version" is a module/theme version.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -353,6 +354,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -441,6 +443,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @param array $customProjectsDirs
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
