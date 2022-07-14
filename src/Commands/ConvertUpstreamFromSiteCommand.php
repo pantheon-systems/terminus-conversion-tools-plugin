@@ -82,15 +82,17 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
     /**
      * Get the upstream repo from the composer.json.
      *
-     * @return string
+     * @return string|null
      *  The upstream repo.
      */
-    private function getUpstreamRepo(): string
+    private function getUpstreamRepo(): ?string
     {
         $composerJson = $this->getComposer()->getComposerJsonData();
         if (isset($composerJson['extra']['pantheon']['upstream-repo'])) {
             return $composerJson['extra']['pantheon']['upstream-repo'];
         }
+
+        return null;
     }
 
     /**
