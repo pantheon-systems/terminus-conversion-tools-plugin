@@ -50,7 +50,9 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
 
         $upstreamRepo = $options['repo'] ?? $this->getUpstreamRepo();
         if (!$upstreamRepo) {
-            throw new TerminusException('Upstream repo should either be passed via the --repo option or in the composer.json extra section.');
+            throw new TerminusException(
+                'Upstream repo should either be passed via the --repo option or in the composer.json extra section.'
+            );
         }
 
         $this->getGit()->addRemote($upstreamRepo, 'upstream');

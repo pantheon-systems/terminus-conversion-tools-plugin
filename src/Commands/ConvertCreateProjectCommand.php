@@ -68,7 +68,14 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         $localCopiesPath = $this->getLocalCopiesDir();
         $path = $this->initialize($package, $siteId, $options, $filesystem, $localCopiesPath);
 
-        $targetUpstreamRepoPath = Files::buildPath($localCopiesPath, sprintf('%s-%s', basename(self::TARGET_UPSTREAM_GIT_REMOTE_URL), bin2hex(random_bytes(2))));
+        $targetUpstreamRepoPath = Files::buildPath(
+            $localCopiesPath,
+            sprintf(
+                '%s-%s',
+                basename(self::TARGET_UPSTREAM_GIT_REMOTE_URL),
+                bin2hex(random_bytes(2))
+            )
+        );
         Git::clone($targetUpstreamRepoPath, self::TARGET_UPSTREAM_GIT_REMOTE_URL);
 
         // Mirror upstream-configuration folder.
@@ -144,8 +151,11 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    private function matchComposerFromUpstream(string $path, string $targetUpstreamRepoPath, Filesystem $filesystem): void
-    {
+    private function matchComposerFromUpstream(
+        string $path,
+        string $targetUpstreamRepoPath,
+        Filesystem $filesystem
+    ): void {
         // Composer require and configurations.
         $this->getComposer()->config('repositories.upstream-configuration', 'path', 'upstream-configuration');
         $this->getComposer()->require('pantheon-systems/drupal-integrations');
@@ -162,9 +172,15 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         if (!isset($composerJson['extra']['drupal-scaffold']['allowed-packages'])) {
             $composerJson['extra']['drupal-scaffold']['allowed-packages'] = [];
         }
-        $allowedPackagesDiff = array_diff($targetUpstreamComposerJson['extra']['drupal-scaffold']['allowed-packages'], $composerJson['extra']['drupal-scaffold']['allowed-packages']);
+        $allowedPackagesDiff = array_diff(
+            $targetUpstreamComposerJson['extra']['drupal-scaffold']['allowed-packages'],
+            $composerJson['extra']['drupal-scaffold']['allowed-packages']
+        );
         if (count($allowedPackagesDiff) > 0) {
-            $composerJson['extra']['drupal-scaffold']['allowed-packages'] = array_merge($composerJson['extra']['drupal-scaffold']['allowed-packages'], $allowedPackagesDiff);
+            $composerJson['extra']['drupal-scaffold']['allowed-packages'] = array_merge(
+                $composerJson['extra']['drupal-scaffold']['allowed-packages'],
+                $allowedPackagesDiff
+            );
         }
 
         foreach ($targetUpstreamComposerJson['scripts'] as $scriptName => $contents) {
@@ -177,20 +193,31 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
             }
         }
 
-        $scriptsDescriptionsDiff = array_diff($targetUpstreamComposerJson['scripts-descriptions'], $composerJson['scripts-descriptions'] ?? []);
+        $scriptsDescriptionsDiff = array_diff(
+            $targetUpstreamComposerJson['scripts-descriptions'],
+            $composerJson['scripts-descriptions'] ?? []
+        );
         if (count($scriptsDescriptionsDiff) > 0) {
-            $composerJson['scripts-descriptions'] = array_merge($composerJson['scripts-descriptions'] ?? [], $scriptsDescriptionsDiff);
+            $composerJson['scripts-descriptions'] = array_merge(
+                $composerJson['scripts-descriptions'] ?? [],
+                $scriptsDescriptionsDiff
+            );
         }
 
         if (!isset($composerJson['autoload']['classmap'])) {
             $composerJson['autoload']['classmap'] = [];
         }
-        $classmapDiff = array_diff($targetUpstreamComposerJson['autoload']['classmap'], $composerJson['autoload']['classmap']);
+        $classmapDiff = array_diff(
+            $targetUpstreamComposerJson['autoload']['classmap'],
+            $composerJson['autoload']['classmap']
+        );
         if (count($classmapDiff) > 0) {
             $composerJson['autoload']['classmap'] = array_merge($composerJson['autoload']['classmap'], $classmapDiff);
         }
 
-        $composerJson['extra']['installer-paths']['web/private/scripts/quicksilver/{$name}/'] = ['type:quicksilver-script'];
+        $composerJson['extra']['installer-paths']['web/private/scripts/quicksilver/{$name}/'] = [
+            'type:quicksilver-script',
+        ];
 
         $this->getComposer()->writeComposerJsonData($composerJson);
 
@@ -230,8 +257,13 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    private function initialize(string $package, string $siteId, array $options, Filesystem $filesystem, string $localCopiesPath): string
-    {
+    private function initialize(
+        string $package,
+        string $siteId,
+        array $options,
+        Filesystem $filesystem,
+        string $localCopiesPath
+    ): string {
         $label = $options['label'] ?? $siteId;
 
         $this->createSite($siteId, $label, self::EMPTY_UPSTREAM_ID, $options);
@@ -249,7 +281,14 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
 
         Git::init($path, '-b', 'master');
         $this->setGit($path);
-        $this->getGit()->commit(sprintf('Create new Pantheon site using "conversion:create-project" command and package %s.', $package));
+        $this
+            ->getGit()
+            ->commit(
+                sprintf(
+                    'Create new Pantheon site using "conversion:create-project" command and package %s.',
+                    $package
+                )
+            );
 
         if (!$filesystem->exists(Files::buildPath($path, self::WEB_ROOT))) {
             $webrootFixed = false;

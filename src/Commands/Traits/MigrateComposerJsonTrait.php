@@ -65,9 +65,11 @@ trait MigrateComposerJsonTrait
         $missingPackages = $this->getMissingComposerPackages($this->getComposer()->getComposerJsonData());
         $this->addComposerPackages($missingPackages);
         $this->log()->notice(
+            // phpcs:disable Generic.Files.LineLength.TooLong
             <<<EOD
 Composer repositories, require and require-dev sections have been migrated. Look at the logs for any errors in the process.
 EOD
+            // phpcs:enable Generic.Files.LineLength.TooLong
         );
         $this->log()->notice(
             <<<EOD
@@ -131,7 +133,10 @@ EOD
             $this->getGit()->commit('Fix libraries in .gitignore', ['.gitignore']);
         }
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
-            $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
+            $filesystem->mirror(
+                $folder->getPathname(),
+                Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname())
+            );
             $libraryPath = Files::buildPath('web/libraries', $folder->getRelativePathname());
             if ($this->getGit()->isIgnoredPath($libraryPath)) {
                 $this->getGit()->appendToIgnore(sprintf('!%s', $libraryPath));
@@ -163,7 +168,8 @@ EOD
 
                 $this->getComposer()->require(...$arguments);
                 if ($dependency['package'] === 'drupal/core') {
-                    // We should remove drupal/core-recommended because it's a conflict and it's required in the upstream.
+                    // We should remove drupal/core-recommended because it's a conflict,
+                    // and it's required in the upstream.
                     $this->getComposer()->remove('drupal/core-recommended', '--no-update');
                 }
                 if ($this->getGit()->isAnythingToCommit()) {
@@ -188,7 +194,9 @@ EOD
             );
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
 
         $errors = 0;
@@ -212,7 +220,9 @@ EOD
             }
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
     }
 
@@ -346,7 +356,9 @@ EOD
             }
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
     }
 

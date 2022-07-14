@@ -72,7 +72,17 @@ EOD,
             $env = $this->site()->getEnvironments()->get('dev');
             $status = $env->getUpstreamStatus();
             if ($status->hasUpdates() || $status->hasComposerUpdates()) {
-                $this->writeln("Notice: The site has upstream updates to be applied. Run `{$this->getTerminusExecutable()} upstream:updates:apply $siteId` to apply them.");
+                $upstreamUpdatesApplyCommand = sprintf(
+                    '%s upstream:updates:apply %s',
+                    $this->getTerminusExecutable(),
+                    $siteId
+                );
+                $this->writeln(
+                    sprintf(
+                        'Notice: The site has upstream updates to be applied. Run `%s` to apply them.',
+                        $upstreamUpdatesApplyCommand
+                    )
+                );
             }
             $phpVersion = $env->getPHPVersion();
             if (Comparator::lessThan($phpVersion, '7.4')) {
@@ -109,6 +119,7 @@ EOD,
     private function adviseOnUnknownUpstream(): void
     {
         $this->output()->writeln(
+            // phpcs:disable Generic.Files.LineLength.TooLong
             <<<EOD
 This site seems to be using a custom upstream.
 
@@ -132,6 +143,7 @@ Once you have tested this environment, the follow-on steps will be:
 
 You may run the conversion:advise command again to print this advise and see the next steps again.
 EOD
+            // phpcs:enable Generic.Files.LineLength.TooLong
         );
     }
 
@@ -141,6 +153,7 @@ EOD
     private function adviseDevAlreadyOnTargetUpstream(): void
     {
         $this->output()->writeln(
+            // phpcs:disable Generic.Files.LineLength.TooLong
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
@@ -152,6 +165,7 @@ This process has already been started and seems to be ready in the dev environme
 
 You may run the conversion:advise command again to confirm the conversion completed successfully.
 EOD
+            // phpcs:enable Generic.Files.LineLength.TooLong
         );
     }
 
@@ -161,6 +175,7 @@ EOD
     private function adviseConversionMultidevExists(): void
     {
         $this->output()->writeln(
+            // phpcs:disable Generic.Files.LineLength.TooLong
             <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
@@ -182,6 +197,7 @@ if you wish to start over.
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
+            // phpcs:enable Generic.Files.LineLength.TooLong
         );
     }
 
@@ -239,6 +255,7 @@ EOD
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
+                // phpcs:disable Generic.Files.LineLength.TooLong
                 <<<EOD
 Advice: We recommend that this site be converted to a Composer-managed upstream:
 
@@ -258,6 +275,7 @@ This command will create a new multidev named “conversion” that will contain
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
+                // phpcs:enable Generic.Files.LineLength.TooLong
             );
         }
     }
@@ -280,6 +298,7 @@ EOD
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
+                // phpcs:disable Generic.Files.LineLength.TooLong
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
@@ -299,6 +318,7 @@ This command will create a new multidev named “conversion” that will contain
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
+                // phpcs:enable Generic.Files.LineLength.TooLong
             );
         }
     }
@@ -328,7 +348,9 @@ EOD
         $this->setGit($localPath);
         $isBuildTools = $this->isBuildToolsSite();
         if ($isBuildTools) {
+            // phpcs:disable Generic.Files.LineLength.TooLong
             $this->writeln('Notice: This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
+            // phpcs:enable Generic.Files.LineLength.TooLong
         }
 
         if ($this->isDrupalComposerManagedSite()) {
@@ -347,6 +369,7 @@ EOD
             } else {
                 // Upstream is drupal-project or drupal-recommended.
                 $this->output()->writeln(
+                    // phpcs:disable Generic.Files.LineLength.TooLong
                     <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
@@ -366,6 +389,7 @@ This command will create a new multidev named “conversion” that will contain
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
+                    // phpcs:enable Generic.Files.LineLength.TooLong
                 );
             }
 
@@ -379,6 +403,7 @@ EOD
             } else {
                 // Build artifact created by Terminus Build Tools plugin is present.
                 $this->output()->writeln(
+                    // phpcs:disable Generic.Files.LineLength.TooLong
                     <<<EOD
 Advice: convert to drupal-composer-managed either by preserving your Build Tools Workflow or by removing it if you are
 NOT using Continuous Integration (e.g. running tests, compiling css, etc).
@@ -412,6 +437,7 @@ Once you have tested this environment, the follow-on steps will be:
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
+                    // phpcs:enable Generic.Files.LineLength.TooLong
                 );
             }
 
@@ -422,6 +448,7 @@ EOD
             $this->adviseConversionMultidevExists();
         } else {
             $this->output()->writeln(
+                // phpcs:disable Generic.Files.LineLength.TooLong
                 <<<EOD
 Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
 
@@ -443,6 +470,7 @@ You may run the conversion:advise command again to check your progress and see t
 
 You could also stay in the current upstream if you prefer so.
 EOD
+                // phpcs:enable Generic.Files.LineLength.TooLong
             );
         }
     }
