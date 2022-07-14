@@ -30,12 +30,12 @@ trait ConversionCommandsTrait
     /**
      * @var \Pantheon\Terminus\Helpers\LocalMachineHelper
      */
-    private $localMachineHelper;
+    private LocalMachineHelper $localMachineHelper;
 
     /**
      * @var \Pantheon\Terminus\Models\Site
      */
-    private $site;
+    private Site $site;
 
     /**
      * @var string
@@ -132,7 +132,7 @@ trait ConversionCommandsTrait
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function getLocalSitePath(?bool $force = null, string $remoteGitUrl = null)
+    protected function getLocalSitePath(?bool $force = null, string $remoteGitUrl = null): string
     {
         if (true !== $force && isset($this->localSitePath)) {
             return $this->localSitePath;

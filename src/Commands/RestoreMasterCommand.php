@@ -34,7 +34,7 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    public function restoreMaster(string $site_id, $options = ['run-cr' => true]): void
+    public function restoreMaster(string $site_id, array $options = ['run-cr' => true]): void
     {
         $this->setSite($site_id);
 

@@ -44,7 +44,7 @@ class DrupalProjects
      *     "version" - the version of the project;
      *     "path" - the project's path.
      */
-    public function getContribProjects()
+    public function getContribProjects(): array
     {
         $infoFiles = [];
         $finder = new Finder();

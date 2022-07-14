@@ -73,7 +73,7 @@ trait DrushCommandsTrait
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    private function runDrushCommand($command, $env): array
+    private function runDrushCommand(string $command, string $env): array
     {
         $fullCommand = sprintf('drush %s', $command);
         $sshCommand = $this->getConnectionString($env) . ' ' . escapeshellarg($fullCommand);

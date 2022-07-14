@@ -316,17 +316,21 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
     /**
      * Create new Pantheon site.
      *
-     * @param $siteId
-     * @param $label
-     * @param $upstreamId
+     * @param string $siteId
+     * @param string $label
+     * @param string $upstreamId
      * @param null[] $options
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
-    protected function createSite($siteId, $label, $upstreamId, $options = ['org' => null, 'region' => null,])
-    {
+    protected function createSite(
+        string $siteId,
+        string $label,
+        string $upstreamId,
+        array $options = ['org' => null, 'region' => null]
+    ): void {
         // This function's code is mostly copied from Terminus site:create command.
 
         if ($this->sites()->nameIsTaken($siteId)) {
