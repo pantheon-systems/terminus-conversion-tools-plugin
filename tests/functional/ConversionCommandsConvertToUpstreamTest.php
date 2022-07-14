@@ -114,8 +114,6 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
 
     /**
      * Executes the conversion Terminus command.
-     *
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     protected function executeConvertCommand(): void
     {
