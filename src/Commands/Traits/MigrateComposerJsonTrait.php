@@ -117,6 +117,8 @@ EOD
      *
      * @param string $librariesBackupPath
      *   Path to backup of libraries.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function restoreLibraries(string $librariesBackupPath): void
     {

@@ -184,6 +184,12 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
 
     /**
      * Copy and commit CI files based on build-providers.json content.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function copyCiTemplate(): void
     {
@@ -226,6 +232,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @return bool
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -248,6 +255,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function getDrupalAbsolutePath(): string
     {
@@ -263,6 +271,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      *
      * @return string
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -279,6 +288,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @return array
      *   The list of Composer package names.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
