@@ -5,6 +5,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 use Pantheon\Terminus\Exceptions\TerminusException;
 use Pantheon\Terminus\Tests\Traits\TerminusTestTrait;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Runner\BaseTestRunner;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -120,6 +121,11 @@ abstract class ConversionCommandsTestBase extends TestCase
      */
     protected function tearDown(): void
     {
+        if (getenv('TERMINUS_TESTS_SKIP_SITE_DELETE_ON_TEARDOWN')
+            && $this->getStatus() !== BaseTestRunner::STATUS_PASSED) {
+            return;
+        }
+
         $this->terminus(
             sprintf('site:delete %s', $this->siteName),
             ['--quiet'],
