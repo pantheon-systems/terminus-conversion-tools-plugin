@@ -112,7 +112,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                 $this->log()->error(
                     sprintf(
                         'Failed updating composer.json: %s',
-                        $t->getMessage()
+                        $e->getMessage()
                     )
                 );
             }
