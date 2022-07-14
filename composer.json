@@ -31,8 +31,8 @@
         }
     },
     "scripts": {
-        "cs": "vendor/bin/phpcs --standard=PSR2 -n src tests",
-        "cbf": "vendor/bin/phpcbf --standard=PSR2 -n src tests",
+        "cs": "vendor/bin/phpcs --standard=PSR2 src tests/functional tests/unit",
+        "cbf": "vendor/bin/phpcbf --standard=PSR2 src tests/functional tests/unit",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
         "tests:unit": "vendor/bin/phpunit --testsuit=unit --debug --do-not-cache-result -c ./phpunit.xml --verbose",
         "tests:functional": "vendor/bin/phpunit --testsuit=functional --debug --do-not-cache-result -c ./phpunit.xml --verbose",
