@@ -24,7 +24,7 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
         $this->httpClient = HttpClient::create();
 
-        $this->siteName = uniqid(sprintf('fixture-term3-conv-plugin-drupal8-'));
+        $this->siteName = uniqid('fixture-term3-conv-plugin-drupal8-');
         $command = sprintf(
             'site:create %s %s %s',
             $this->siteName,
