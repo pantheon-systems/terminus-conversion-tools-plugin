@@ -86,7 +86,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($path, 'pantheon.upstream.yml'));
         preg_match('/(\d+\.\d+)/', phpversion(), $matches);
         if (!$matches[1]) {
-            throw new TerminusException('An error ocurred getting current php version.');
+            throw new TerminusException('An error occurred getting current php version.');
         }
         $phpVersion = $matches[1];
         if ($phpVersion !== $pantheonYmlContent['php_version']) {
