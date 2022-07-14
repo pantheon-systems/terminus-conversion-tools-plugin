@@ -88,6 +88,7 @@ EOD
      *
      * @return bool
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */

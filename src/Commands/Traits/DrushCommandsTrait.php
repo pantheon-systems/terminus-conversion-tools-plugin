@@ -15,8 +15,12 @@ trait DrushCommandsTrait
      *
      * @param array $options
      *   The options passed to the original command.
-     * @param string $env
+     * @param string|null $env
      *   The environment to wait for code sync.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function executeDrushDatabaseUpdates(array $options, ?string $env = null): void
     {
@@ -35,8 +39,12 @@ trait DrushCommandsTrait
      *
      * @param array $options
      *   The options passed to the original command.
-     * @param string $env
+     * @param string|null $env
      *   The environment to wait for code sync.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function executeDrushCacheRebuild(array $options, ?string $env = null): void
     {
@@ -60,6 +68,10 @@ trait DrushCommandsTrait
      *
      * @return array
      *   The output and exit code of the command.
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     private function runDrushCommand($command, $env = 'dev'): array
     {

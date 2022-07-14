@@ -60,7 +60,9 @@ trait ConversionCommandsTrait
      *
      * @return string
      *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     protected function cloneSiteGitRepository(bool $force = true, string $remoteGitUrl = null): string
@@ -171,8 +173,6 @@ EOD,
      * @return string|null
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
     protected function detectLocalGitRepo(): ?string
     {
@@ -382,8 +382,6 @@ EOD,
      *   Whether to do a dry run.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      */
     protected function pushExternalRepository(string $remote = Git::DEFAULT_REMOTE, string $upstreamBranch = Git::DEFAULT_BRANCH, bool $dryRun = false): void
     {
@@ -592,6 +590,8 @@ EOD,
      *   External VCS url if found, null otherwise.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     protected function getExternalVcsUrl(): ?string
     {
@@ -630,6 +630,12 @@ EOD,
 
     /**
      * Determines whether the current site is a drupal-composer-managed site or not.
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     protected function isDrupalComposerManagedSite(): bool
     {
@@ -649,6 +655,12 @@ EOD,
 
     /**
      * Determines whether the current site is a drupal-recommended site or not.
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     protected function isDrupalRecommendedSite(): bool
     {
@@ -673,6 +685,12 @@ EOD,
 
     /**
      * Determines whether the current site is a drupal-project site or not.
+     *
+     * @return bool
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     protected function isDrupalProjectSite(): bool
     {
@@ -710,6 +728,7 @@ EOD,
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -782,6 +801,7 @@ EOD,
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */

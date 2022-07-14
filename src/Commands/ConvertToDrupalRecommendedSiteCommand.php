@@ -49,6 +49,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *   The name or UUID of a site to operate on
      * @param array $options
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
@@ -186,6 +187,8 @@ EOD,
      *
      * @param string $localPath
      * @param array $composerManagedComposerJson
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function updateComposerJsonMeta(string $localPath, array $composerManagedComposerJson): void
     {
