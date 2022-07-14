@@ -77,7 +77,6 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->setBranch($options['branch']);
         $remoteGitUrl = $options['vcs-repo'];
         $ignoreBuildTools = $options['ignore-build-tools'];
-        $isCustomUpstream = false;
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
@@ -92,14 +91,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
 
-        if (!in_array(
+        $isCustomUpstream = in_array(
             $this->site()->getUpstream()->get('machine_name'),
             $this->getSupportedSourceUpstreamIds(),
             true
-        )) {
-            $isCustomUpstream = true;
-            $remoteGitUrl = $this->site()->getUpstream()->get('url');
-            $upstreamBranch = $this->site()->getUpstream()->get('branch');
+        );
+
+        $remoteGitUrl = $isCustomUpstream ? $this->site()->getUpstream()->get('url') : null;
+        $upstreamBranch = $isCustomUpstream ? $this->site()->getUpstream()->get('branch') : null;
+        if ($isCustomUpstream) {
             $this->getGit()->addRemote($remoteGitUrl, 'upstream');
         }
 
