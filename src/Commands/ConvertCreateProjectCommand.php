@@ -13,7 +13,6 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\ComposerAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
-use Throwable;
 
 /**
  * Class ConvertToComposerSiteCommand.
