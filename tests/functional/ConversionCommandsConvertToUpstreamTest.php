@@ -106,8 +106,8 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
         $composerJsonData = json_decode(file_get_contents($composerJsonLocation), true);
 
         $this->assertEquals(
-            $composerJsonData['require']['drupal/core'],
             '8.9.19',
+            $composerJsonData['require']['drupal/core'],
             'Drupal core version should be resolved to 8.9.19'
         );
     }
