@@ -37,7 +37,7 @@ trait MigrateComposerJsonTrait
      *   Drupal contrib dependencies.
      * @param array $libraryProjects
      *   Drupal library dependencies.
-     * @param string $librariesBackupPath
+     * @param string|null $librariesBackupPath
      *   Path to backup of libraries.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
@@ -225,7 +225,7 @@ EOD
     /**
      * Returns the list of Drupal composer dependencies.
      *
-     * @param string $forceDrupalVersion
+     * @param string|null $forceDrupalVersion
      *   Force Drupal version to the once received.
      *
      * @return array[]

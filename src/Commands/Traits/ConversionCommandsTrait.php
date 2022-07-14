@@ -56,6 +56,7 @@ trait ConversionCommandsTrait
      * Clones the site repository to local machine and return the absolute path to the local copy.
      *
      * @param bool $force
+     * @param string|null $remoteGitUrl
      *
      * @return string
      *
@@ -121,7 +122,7 @@ trait ConversionCommandsTrait
      * Clones the site and returns the path to the local site copy.
      *
      * @param null|bool $force
-     * @param string $remoteGitUrl
+     * @param string|null $remoteGitUrl
      *
      * @return string
      *
@@ -587,7 +588,8 @@ EOD,
     /**
      * Get external vcs from build-metadata file.
      *
-     * @return string|void External VCS url if found, null otherwise.
+     * @return string|null
+     *   External VCS url if found, null otherwise.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
