@@ -709,7 +709,7 @@ EOD,
     {
         $workflows = $this->site->getWorkflows();
         $workflows->reset();
-        $workflowItems = $workflows->fetch(['paged' => false,])->all();
+        $workflowItems = $workflows->fetch()->all();
         $workflowToSearch = 'sync_code';
         foreach (array_slice($workflowItems, 0, 5) as $workflowItem) {
             $workflowType = str_replace('"', '', $workflowItem->get('type'));
