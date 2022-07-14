@@ -314,37 +314,7 @@ EOD
      */
     private function adviseOnDrupalProject(): void
     {
-        $localPath = $this->getLocalSitePath(false);
-        $this->setGit($localPath);
-
-        if ($this->isDrupalComposerManagedSite()) {
-            $this->adviseDevAlreadyOnTargetUpstream();
-        } elseif ($this->isConversionMultidevExist()) {
-            $this->adviseConversionMultidevExists();
-        } else {
-            $this->output()->writeln(
-                <<<EOD
-Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
-
-    Drupal Composer Managed (drupal-composer-managed)
-
-This process may be done manually by following the instructions in the guide:
-
-    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
-
-An automated process to convert this site is available. To begin, run:
-
-    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
-
-This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
-
-    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
-
-You may run the conversion:advise command again to check your progress and see the next steps again.
-EOD
-            );
-        }
+        $this->adviseOnDrupalRecommended();
     }
 
     /**
