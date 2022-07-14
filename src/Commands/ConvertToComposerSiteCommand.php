@@ -108,7 +108,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if ($treatAsBuildToolsSite) {
             $this->log()->warning(
                 sprintf(
-                    'A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.',
+                    <<<EOD
+A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.
+EOD,
                     $options['branch']
                 )
             );
@@ -119,7 +121,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 );
             }
             $this->setGit($this->getLocalSitePath(true, $remoteGitUrl));
-            $this->getLocalMachineHelper()->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
+            $this
+                ->getLocalMachineHelper()
+                ->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
         }
         $sourceComposerJson = $this->getComposerJson();
 
@@ -194,7 +198,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     private function copyCiTemplate(): void
     {
         $path = Files::buildPath($this->getLocalCopiesDir(), 'tbt-ci-templates');
-        $this->getLocalMachineHelper()->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
+        $this
+            ->getLocalMachineHelper()
+            ->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
 
         $buildProvidersPath = Files::buildPath($this->getLocalSitePath(), 'build-providers.json');
         $buildProvidersJson = json_decode(file_get_contents($buildProvidersPath), true);
@@ -208,13 +214,19 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $composerJson = $this->composer->getComposerJsonData();
         if (!isset($composerJson['scripts']['unit-test'])) {
             $composerJson['scripts']['unit-test'] = "echo 'No unit test step defined.'";
-            $composerJson['scripts']['lint'] = "find web/modules/custom web/themes/custom -name '*.php' -exec php -l {} \\;";
+            $composerJson['scripts']['lint'] =
+                "find web/modules/custom web/themes/custom -name '*.php' -exec php -l {} \\;";
+
+            $executable = './vendor/bin/phpcs';
+            $extensions = '--extensions=php,module,inc,install,test,profile,theme,css,info,txt,md';
+            $ignore = ' --ignore=node_modules,bower_components,vendor';
             $composerJson['scripts']['code-sniff'] = [
-                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
-                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
-                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
-                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
+                sprintf('%s --standard=Drupal %s %s ./web/modules/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=Drupal %s %s ./web/themes/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=DrupalPractice %s %s ./web/modules/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=DrupalPractice %s %s ./web/themes/custom', $executable, $extensions, $ignore),
             ];
+
             $composerJson['extra']['build-env']['export-configuration'] = "drush config-export --yes";
             $this->composer->writeComposerJsonData($composerJson);
         }
@@ -431,7 +443,8 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYmlContent = $pantheonYmlContentOriginal = Yaml::parseFile($path);
 
-        if (isset($pantheonYmlContent['php_version']) && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
+        if (isset($pantheonYmlContent['php_version'])
+            && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
             $pantheonYmlContent['php_version'] = 7.4;
         }
 

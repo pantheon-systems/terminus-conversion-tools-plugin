@@ -102,7 +102,11 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
 
         $this->executeConvertCommand();
 
-        $composerJsonLocation = sprintf('%s/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json', getenv('HOME'), $this->siteName);
+        $composerJsonLocation = sprintf(
+            '%s/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json',
+            getenv('HOME'),
+            $this->siteName
+        );
         $composerJsonData = json_decode(file_get_contents($composerJsonLocation), true);
 
         $this->assertEquals(
@@ -117,6 +121,12 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
      */
     protected function executeConvertCommand(): void
     {
-        $this->terminus(sprintf('conversion:convert-upstream-from-site %s --repo=%s --dry-run', $this->siteName, 'git@github.com:/foo/bar.git'));
+        $this->terminus(
+            sprintf(
+                'conversion:convert-upstream-from-site %s --repo=%s --dry-run',
+                $this->siteName,
+                'git@github.com:/foo/bar.git'
+            )
+        );
     }
 }

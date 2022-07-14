@@ -48,7 +48,9 @@ final class ConversionCommandsEmptyUpstreamAdviseCommandScenariosTest extends Co
                 return 'switch the upstream to "drupal-composer-managed" with Terminus';
             case self::SCENARIO_ON_TOP_OF_DRUPAL_RECOMMENDED:
             case self::SCENARIO_ON_TOP_OF_DRUPAL_PROJECT:
+                // phpcs:disable Generic.Files.LineLength.TooLong
                 return 'Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream';
+                // phpcs:enable Generic.Files.LineLength.TooLong
             default:
                 return '';
         }

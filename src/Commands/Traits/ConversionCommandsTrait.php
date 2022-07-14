@@ -46,7 +46,7 @@ trait ConversionCommandsTrait
      * @var string
      */
     private string $terminusExecutable;
-  
+
     /**
      * @var string
      */
@@ -161,7 +161,9 @@ EOD,
             ? $this->cloneSiteGitRepository(false, $remoteGitUrl)
             : $this->cloneSiteGitRepository($force, $remoteGitUrl);
 
-        $this->getLocalMachineHelper()->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
+        $this
+            ->getLocalMachineHelper()
+            ->exec(sprintf('git -C %s checkout %s', $this->localSitePath, Git::DEFAULT_BRANCH));
         $this->log()->notice(sprintf('Local git repository path is set to "%s".', $this->localSitePath));
 
         return $this->localSitePath;
@@ -329,8 +331,10 @@ EOD,
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function createLocalGitBranchFromRemote(string $remoteUrl, string $remoteBranch = Git::DEFAULT_BRANCH): string
-    {
+    protected function createLocalGitBranchFromRemote(
+        string $remoteUrl,
+        string $remoteBranch = Git::DEFAULT_BRANCH
+    ): string {
         $targetGitRemoteName = 'target-upstream';
         $this->log()->notice(
             sprintf('Creating "%s" git branch based on the target upstream...', $this->getBranch())
@@ -383,9 +387,11 @@ EOD,
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    protected function pushExternalRepository(string $remote = Git::DEFAULT_REMOTE, string $upstreamBranch = Git::DEFAULT_BRANCH, bool $dryRun = false): void
-    {
-
+    protected function pushExternalRepository(
+        string $remote = Git::DEFAULT_REMOTE,
+        string $upstreamBranch = Git::DEFAULT_BRANCH,
+        bool $dryRun = false
+    ): void {
         $backupBranch = sprintf('%s-backup', $this->getBranch());
         $this->getGit()->branch($backupBranch);
         $this->getGit()->fetch($remote);
@@ -640,7 +646,12 @@ EOD,
     protected function isDrupalComposerManagedSite(): bool
     {
         $localPath = $this->getLocalSitePath(false);
-        $upstreamConfScriptsFilePath = Files::buildPath($localPath, 'upstream-configuration', 'scripts', 'ComposerScripts.php');
+        $upstreamConfScriptsFilePath = Files::buildPath(
+            $localPath,
+            'upstream-configuration',
+            'scripts',
+            'ComposerScripts.php'
+        );
         if (!is_file($upstreamConfScriptsFilePath)) {
             return false;
         }
@@ -715,13 +726,17 @@ EOD,
         foreach (array_slice($workflowItems, 0, 5) as $workflowItem) {
             $workflowType = str_replace('"', '', $workflowItem->get('type'));
             $firstWorkflowType = $firstWorkflowType ?? $workflowType;
-            if (strpos($workflowType, $workflowToSearch) !== false && $workflowItem->get('environment_id') === $environment) {
+            if (strpos($workflowType, $workflowToSearch) !== false
+                && $workflowItem->get('environment_id') === $environment) {
                 $this->processWorkflow($workflowItem);
                 return;
             }
         }
 
-        $this->log()->notice("Current workflow is '{current}'; waiting for '{expected}'. Giving up searching for the right workflow.", ['current' => $firstWorkflowType, 'expected' => $workflowToSearch]);
+        $this->log()->notice(
+            "Current workflow is '{current}'; waiting for '{expected}'. Giving up searching for the right workflow.",
+            ['current' => $firstWorkflowType, 'expected' => $workflowToSearch]
+        );
     }
 
     /**

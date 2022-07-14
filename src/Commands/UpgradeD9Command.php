@@ -69,7 +69,9 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
         $this->setGit($localSitePath);
         $this->setComposer($localSitePath);
 
-        if (!$this->isDrupalRecommendedSite() && !$this->isDrupalProjectSite() && !$this->isDrupalComposerManagedSite()) {
+        if (!$this->isDrupalRecommendedSite()
+            && !$this->isDrupalProjectSite()
+            && !$this->isDrupalComposerManagedSite()) {
             $this->log()->warning(
                 <<<EOD
 Site does not seem to match the expected upstream repos:
