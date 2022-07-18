@@ -59,6 +59,7 @@ trait MigrateComposerJsonTrait
 
         $this->copyMinimumStability();
         $this->copyComposerRepositories();
+        $this->copyAllowPluginsConfiguration();
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
@@ -489,6 +490,25 @@ EOD
         if (isset($this->sourceComposerJson['minimum-stability'])) {
             $currentComposerJson['minimum-stability'] = $this->sourceComposerJson['minimum-stability'];
         }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copies "allow-plugins" config.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    private function copyAllowPluginsConfiguration(): void
+    {
+        if (!isset($this->sourceComposerJson['config']['allow-plugins'])) {
+            return;
+        }
+
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        $currentComposerJson['config']['allow-plugins'] = array_merge(
+            $currentComposerJson['config']['allow-plugins'] ?? [],
+            $this->sourceComposerJson['config']['allow-plugins']
+        );
         $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
 }
