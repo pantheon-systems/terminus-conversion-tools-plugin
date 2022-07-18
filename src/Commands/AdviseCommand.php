@@ -414,10 +414,6 @@ This command will update the existing multidev with the new upstream structure. 
 
     1) Merge the Pull/Merge request in your external VCS (e.g. GitHub)
     2) Wait for CI to complete and push the branch to Pantheon
-    3) Set the right upstream using Terminus:
-
-        {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
-
 
 
 If you wish to remove your Build Tools Workflow, this process may be done manually by following the instructions in the guide:
