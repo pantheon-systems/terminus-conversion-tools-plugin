@@ -109,7 +109,7 @@ abstract class ConversionCommandsUpstreamTestBase extends ConversionCommandsTest
             'google_analytics',
           //  'adminimal_theme',
          //   'bootstrap',
-            'omega',
+          //  'omega',
             'custom1',
             'custom2',
             'custom3',
