@@ -191,6 +191,9 @@ abstract class ConversionCommandsTestBase extends TestCase
     {
         $this->terminus($command);
         sleep(30);
+        if (false !== strpos($command, 'conversion:restore-dev')) {
+            $this->terminus(sprintf('connection:set %s.%s %s', $this->siteName, $env, 'sftp'));
+        }
         $this->terminus(sprintf('env:clear-cache %s.%s', $this->siteName, $env), [], false);
 
         $drushCrCommand = sprintf('drush %s.%s -- cache-rebuild', $this->siteName, $env);
