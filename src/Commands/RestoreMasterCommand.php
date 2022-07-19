@@ -88,6 +88,8 @@ class RestoreMasterCommand extends TerminusCommand implements SiteAwareInterface
         $devEnv = $this->site()->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
+        $this->log()->notice(sprintf('Dev environment has been restored from the multidev env %s', $backupBranchName));
+
         $this->log()->notice('Done!');
     }
 }
