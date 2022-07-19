@@ -168,7 +168,6 @@ Advice: We recommend that this site be converted to use "drupal-composer-managed
 This process has already been started and a conversion multidev environment exists. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You could also delete the multidev environment:
 
@@ -255,7 +254,6 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to a Composer-managed site. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -293,7 +291,6 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -331,7 +328,6 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -387,7 +383,6 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
@@ -419,10 +414,6 @@ This command will update the existing multidev with the new upstream structure. 
 
     1) Merge the Pull/Merge request in your external VCS (e.g. GitHub)
     2) Wait for CI to complete and push the branch to Pantheon
-    3) Set the right upstream using Terminus:
-
-        {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
-
 
 
 If you wish to remove your Build Tools Workflow, this process may be done manually by following the instructions in the guide:
@@ -436,7 +427,6 @@ An automated process to convert this site is available. To begin, run:
 Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 
 
@@ -468,7 +458,6 @@ An automated process to convert this site is available. To begin, run:
 This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
 
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 
