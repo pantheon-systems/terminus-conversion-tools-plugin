@@ -24,7 +24,7 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
         $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
         $this->httpClient = HttpClient::create();
 
-        $this->siteName = uniqid(sprintf('fixture-term3-conv-plugin-drupal8-'));
+        $this->siteName = uniqid('fixture-term3-conv-plugin-drupal8-');
         $command = sprintf(
             'site:create %s %s %s',
             $this->siteName,
@@ -102,23 +102,31 @@ final class ConversionCommandsConvertToUpstreamTest extends ConversionCommandsUp
 
         $this->executeConvertCommand();
 
-        $composerJsonLocation = sprintf('%s/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json', getenv('HOME'), $this->siteName);
+        $composerJsonLocation = sprintf(
+            '%s/pantheon-local-copies/%s_terminus_conversion_plugin/composer.json',
+            getenv('HOME'),
+            $this->siteName
+        );
         $composerJsonData = json_decode(file_get_contents($composerJsonLocation), true);
 
         $this->assertEquals(
-            $composerJsonData['require']['drupal/core'],
             '8.9.19',
+            $composerJsonData['require']['drupal/core'],
             'Drupal core version should be resolved to 8.9.19'
         );
     }
 
     /**
      * Executes the conversion Terminus command.
-     *
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     protected function executeConvertCommand(): void
     {
-        $this->terminus(sprintf('conversion:convert-upstream-from-site %s --repo=%s --dry-run', $this->siteName, 'git@github.com:/foo/bar.git'));
+        $this->terminus(
+            sprintf(
+                'conversion:convert-upstream-from-site %s --repo=%s --dry-run',
+                $this->siteName,
+                'git@github.com:/foo/bar.git'
+            )
+        );
     }
 }

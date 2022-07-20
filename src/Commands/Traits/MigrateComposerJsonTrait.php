@@ -37,7 +37,7 @@ trait MigrateComposerJsonTrait
      *   Drupal contrib dependencies.
      * @param array $libraryProjects
      *   Drupal library dependencies.
-     * @param string $librariesBackupPath
+     * @param string|null $librariesBackupPath
      *   Path to backup of libraries.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
@@ -59,15 +59,18 @@ trait MigrateComposerJsonTrait
 
         $this->copyMinimumStability();
         $this->copyComposerRepositories();
+        $this->copyAllowPluginsConfiguration();
         $this->addDrupalComposerPackages($contribProjects);
         $this->addComposerPackages($libraryProjects);
 
         $missingPackages = $this->getMissingComposerPackages($this->getComposer()->getComposerJsonData());
         $this->addComposerPackages($missingPackages);
         $this->log()->notice(
+            // phpcs:disable Generic.Files.LineLength.TooLong
             <<<EOD
 Composer repositories, require and require-dev sections have been migrated. Look at the logs for any errors in the process.
 EOD
+            // phpcs:enable Generic.Files.LineLength.TooLong
         );
         $this->log()->notice(
             <<<EOD
@@ -117,6 +120,8 @@ EOD
      *
      * @param string $librariesBackupPath
      *   Path to backup of libraries.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function restoreLibraries(string $librariesBackupPath): void
     {
@@ -126,10 +131,13 @@ EOD
         $gitignoreContentUpdated = str_replace('/web/libraries/', '/web/libraries/*', $gitignoreContent);
         if ($gitignoreContent !== $gitignoreContentUpdated) {
             file_put_contents(Files::buildPath($this->localSitePath, '.gitignore'), $gitignoreContentUpdated);
-            $this->getGit()->commit(sprintf('Fix libraries in .gitignore,'), ['.gitignore']);
+            $this->getGit()->commit('Fix libraries in .gitignore', ['.gitignore']);
         }
         foreach ($finder->directories()->in($librariesBackupPath)->depth(0) as $folder) {
-            $filesystem->mirror($folder->getPathname(), Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname()));
+            $filesystem->mirror(
+                $folder->getPathname(),
+                Files::buildPath($this->localSitePath, '/web/libraries/', $folder->getRelativePathname())
+            );
             $libraryPath = Files::buildPath('web/libraries', $folder->getRelativePathname());
             if ($this->getGit()->isIgnoredPath($libraryPath)) {
                 $this->getGit()->appendToIgnore(sprintf('!%s', $libraryPath));
@@ -146,6 +154,8 @@ EOD
      * Adds Drupal contrib project dependencies to composer.json.
      *
      * @param array $contribPackages
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function addDrupalComposerPackages(array $contribPackages): void
     {
@@ -159,7 +169,8 @@ EOD
 
                 $this->getComposer()->require(...$arguments);
                 if ($dependency['package'] === 'drupal/core') {
-                    // We should remove drupal/core-recommended because it's a conflict and it's required in the upstream.
+                    // We should remove drupal/core-recommended because it's a conflict,
+                    // and it's required in the upstream.
                     $this->getComposer()->remove('drupal/core-recommended', '--no-update');
                 }
                 if ($this->getGit()->isAnythingToCommit()) {
@@ -184,7 +195,9 @@ EOD
             );
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
 
         $errors = 0;
@@ -208,7 +221,9 @@ EOD
             }
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
     }
 
@@ -225,7 +240,7 @@ EOD
     /**
      * Returns the list of Drupal composer dependencies.
      *
-     * @param string $forceDrupalVersion
+     * @param string|null $forceDrupalVersion
      *   Force Drupal version to the once received.
      *
      * @return array[]
@@ -307,6 +322,8 @@ EOD
      *     "package" - a package name;
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function addComposerPackages(array $packages): void
     {
@@ -340,7 +357,9 @@ EOD
             }
         }
         if ($errors) {
-            throw new ComposerException('There have been errors adding composer packages, please review previous messages.');
+            throw new ComposerException(
+                'There have been errors adding composer packages, please review previous messages.'
+            );
         }
     }
 
@@ -461,7 +480,9 @@ EOD
     }
 
     /**
-     * Copy minimum stability setting
+     * Copy minimum stability setting.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function copyMinimumStability(): void
     {
@@ -469,6 +490,25 @@ EOD
         if (isset($this->sourceComposerJson['minimum-stability'])) {
             $currentComposerJson['minimum-stability'] = $this->sourceComposerJson['minimum-stability'];
         }
+        $this->getComposer()->writeComposerJsonData($currentComposerJson);
+    }
+
+    /**
+     * Copies "allow-plugins" config.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     */
+    private function copyAllowPluginsConfiguration(): void
+    {
+        if (!isset($this->sourceComposerJson['config']['allow-plugins'])) {
+            return;
+        }
+
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        $currentComposerJson['config']['allow-plugins'] = array_merge(
+            $currentComposerJson['config']['allow-plugins'] ?? [],
+            $this->sourceComposerJson['config']['allow-plugins']
+        );
         $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
 }

@@ -53,10 +53,13 @@ class Composer
      * @param array $options
      *   Additional options.
      *
-     * @return Pantheon\TerminusConversionTools\Utils\Composer
+     * @return \Pantheon\TerminusConversionTools\Utils\Composer
      *   Created instance.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
-    public static function createProject(string $package, string $projectPath, ...$options): static
+    public static function createProject(string $package, string $projectPath, ...$options): Composer
     {
         if (is_dir($projectPath)) {
             throw new TerminusException(

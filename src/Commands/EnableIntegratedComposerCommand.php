@@ -9,7 +9,6 @@ use Pantheon\TerminusConversionTools\Commands\Traits\ConversionCommandsTrait;
 use Pantheon\TerminusConversionTools\Commands\Traits\DrushCommandsTrait;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
-use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -71,7 +70,9 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
 
         $this->executeDrushCacheRebuild($options);
 
-        $dashboardUrl = $this->site()->getEnvironments()->get($this->getBranch())->dashboardUrl();
+        /** @var \Pantheon\Terminus\Models\Environment $env */
+        $env = $this->site()->getEnvironments()->get($this->getBranch());
+        $dashboardUrl = $env->dashboardUrl();
         $this->log()->notice(
             <<<EOD
 Pantheon Integrated Composer has been enabled for "{$this->getBranch()}" environment ($dashboardUrl).
@@ -88,6 +89,7 @@ EOD
      *
      * @return bool
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */

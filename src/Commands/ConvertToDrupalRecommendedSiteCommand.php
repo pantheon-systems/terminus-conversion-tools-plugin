@@ -35,7 +35,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
     private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
 
     /**
-     * Converts a deprecated Drupal 9 upstream-based site (drupal-project or drupal-recommended) into "drupal-composer-managed" upstream-based one.
+     * Converts a deprecated Drupal 9 upstream-based site (drupal-project or drupal-recommended) into
+     * "drupal-composer-managed" upstream-based one.
      *
      * @command conversion:update-from-deprecated-upstream
      *
@@ -49,6 +50,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
      *   The name or UUID of a site to operate on
      * @param array $options
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
@@ -68,7 +70,8 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->setBranch($options['branch']);
 
         $upstream_id = $this->site()->getUpstream()->get('machine_name');
-        if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id && self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $upstream_id) {
+        if (self::DRUPAL_PROJECT_UPSTREAM_ID !== $upstream_id
+            && self::DRUPAL_RECOMMENDED_UPSTREAM_ID !== $upstream_id) {
             throw new TerminusException(
                 'The site {site_name} is not a "drupal-project" or "drupal-recommended" upstream-based site.',
                 ['site_name' => $this->site()->getName()]
@@ -80,8 +83,16 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
         $this->setGit($localPath);
         $this->setComposer($localPath);
 
-        $targetGitRemoteName = $this->createLocalGitBranchFromRemote($options['target-upstream-git-url'], $options['target-upstream-git-branch']);
-        if (!$this->areGitReposWithCommonCommits($targetGitRemoteName, 'origin', $options['target-upstream-git-branch'], 'master')) {
+        $targetGitRemoteName = $this->createLocalGitBranchFromRemote(
+            $options['target-upstream-git-url'],
+            $options['target-upstream-git-branch']
+        );
+        if (!$this->areGitReposWithCommonCommits(
+            $targetGitRemoteName,
+            'origin',
+            $options['target-upstream-git-branch'],
+            'master'
+        )) {
             throw new TerminusException(
                 'The site repository and "drupal-composer-managed" upstream repository have unrelated histories.'
             );
@@ -111,7 +122,7 @@ class ConvertToDrupalRecommendedSiteCommand extends TerminusCommand implements S
                 $this->log()->error(
                     sprintf(
                         'Failed updating composer.json: %s',
-                        $t->getMessage()
+                        $e->getMessage()
                     )
                 );
             }
@@ -186,13 +197,17 @@ EOD,
      *
      * @param string $localPath
      * @param array $composerManagedComposerJson
+     *
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function updateComposerJsonMeta(string $localPath, array $composerManagedComposerJson): void
     {
         $composerJson = file_get_contents(Files::buildPath($localPath, 'composer.json'));
         $composerJson = json_decode($composerJson, true);
 
+        // phpcs:disable Generic.Files.LineLength.TooLong
         $composerJson['require']['pantheon-upstreams/upstream-configuration'] = $composerManagedComposerJson['require']['pantheon-upstreams/upstream-configuration'];
+        // phpcs:enable Generic.Files.LineLength.TooLong
         $composerJson['require']['drush/drush'] = $composerManagedComposerJson['require']['drush/drush'];
 
         // Change installer-paths for contrib projects.
@@ -210,14 +225,22 @@ EOD,
 
         foreach (['autoload', 'scripts', 'scripts-descriptions'] as $item) {
             if (!isset($composerManagedComposerJson[$item])) {
-                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: %s; can not continue.', $item));
+                // phpcs:disable Generic.Files.LineLength.TooLong
+                throw new TerminusException(
+                    sprintf('drupal-composer-managed upstream missing expected portion of composer.json: %s; can not continue.', $item)
+                );
+                // phpcs:enable Generic.Files.LineLength.TooLong
             }
             $composerJson[$item] = $composerManagedComposerJson[$item];
         }
 
         foreach (['sort-packages', 'allow-plugins'] as $item) {
             if (!isset($composerManagedComposerJson['config'][$item])) {
-                throw new TerminusException(sprintf('drupal-composer-managed upstream missing expected portion of composer.json: config.%s; can not continue.', $item));
+                // phpcs:disable Generic.Files.LineLength.TooLong
+                throw new TerminusException(
+                    sprintf('drupal-composer-managed upstream missing expected portion of composer.json: config.%s; can not continue.', $item)
+                );
+                // phpcs:enable Generic.Files.LineLength.TooLong
             }
             $composerJson['config'][$item] = $composerManagedComposerJson['config'][$item];
         }
@@ -280,8 +303,12 @@ EOD,
      * @param string $upstreamName
      *   The upstream name.
      */
-    private function detectUpstreamDiff(string $localPath, string $remoteUrl, string $upstreamId, string $upstreamName): void
-    {
+    private function detectUpstreamDiff(
+        string $localPath,
+        string $remoteUrl,
+        string $upstreamId,
+        string $upstreamName
+    ): void {
         $this->log()->notice(sprintf(
             <<<EOD
 Detecting and applying the differences between the site code and its upstream ("%s")...
@@ -316,6 +343,7 @@ EOD,
             } catch (GitMergeConflictException $e) {
                 $this->log()->warning(
                     sprintf(
+                        // phpcs:disable Generic.Files.LineLength.TooLong
                         <<<EOD
 Automatic merge has failed!
 The next step in the site conversion process is to resolve the code merge conflicts manually in %s branch:
@@ -323,6 +351,7 @@ The next step in the site conversion process is to resolve the code merge confli
 2. commit the changes - `git add -u && git commit -m 'Copy site-specific code related to "%s" upstream'`
 3. run `{$this->getTerminusExecutable()} conversion:push-to-multidev %s` Terminus command to push the code to a multidev env.
 EOD,
+                        // phpcs:enable Generic.Files.LineLength.TooLong
                         self::TARGET_GIT_BRANCH,
                         $localPath,
                         implode(', ', $e->getUnmergedFiles()),
@@ -358,7 +387,12 @@ EOD,
      */
     private function detectDrupalProjectDiff(string $localPath): void
     {
-        $this->detectUpstreamDiff($localPath, self::DRUPAL_PROJECT_GIT_REMOTE_URL, self::DRUPAL_PROJECT_UPSTREAM_ID, 'drupal-project');
+        $this->detectUpstreamDiff(
+            $localPath,
+            self::DRUPAL_PROJECT_GIT_REMOTE_URL,
+            self::DRUPAL_PROJECT_UPSTREAM_ID,
+            'drupal-project'
+        );
     }
 
     /**
@@ -371,6 +405,11 @@ EOD,
      */
     private function detectDrupalRecommendedDiff(string $localPath): void
     {
-        $this->detectUpstreamDiff($localPath, self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL, self::DRUPAL_RECOMMENDED_UPSTREAM_ID, 'drupal-recommended');
+        $this->detectUpstreamDiff(
+            $localPath,
+            self::DRUPAL_RECOMMENDED_GIT_REMOTE_URL,
+            self::DRUPAL_RECOMMENDED_UPSTREAM_ID,
+            'drupal-recommended'
+        );
     }
 }
