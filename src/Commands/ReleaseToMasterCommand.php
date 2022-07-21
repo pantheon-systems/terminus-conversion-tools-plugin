@@ -24,8 +24,8 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
     /**
      * Releases a converted Drupal site managed by Composer to the dev environment :
      * 1) creates a backup for the dev environment branch;
-     * 2) replaces the dev environment git branch and its commit history with the source Multidev's commit history (a converted
-     * Drupal site).
+     * 2) replaces the dev environment git branch and its commit history with the source Multidev's commit history
+     * (a converted Drupal site).
      *
      * @command conversion:release-to-dev
      *

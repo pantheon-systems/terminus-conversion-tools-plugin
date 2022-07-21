@@ -75,9 +75,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
     ): void {
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
-        $remoteGitUrl = $options['vcs-repo'];
         $ignoreBuildTools = $options['ignore-build-tools'];
-        $isCustomUpstream = false;
 
         if (!$this->site()->getFramework()->isDrupal8Framework()) {
             throw new TerminusException(
@@ -92,14 +90,15 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         $this->drupalProjects = new DrupalProjects($this->getDrupalAbsolutePath());
         $this->setGit($this->getLocalSitePath());
 
-        if (!in_array(
+        $isCustomUpstream = in_array(
             $this->site()->getUpstream()->get('machine_name'),
             $this->getSupportedSourceUpstreamIds(),
             true
-        )) {
-            $isCustomUpstream = true;
-            $remoteGitUrl = $this->site()->getUpstream()->get('url');
-            $upstreamBranch = $this->site()->getUpstream()->get('branch');
+        );
+
+        $remoteGitUrl = $isCustomUpstream ? $this->site()->getUpstream()->get('url') : ($options['vcs-repo'] ?? null);
+        $upstreamBranch = $isCustomUpstream ? $this->site()->getUpstream()->get('branch') : null;
+        if ($isCustomUpstream) {
             $this->getGit()->addRemote($remoteGitUrl, 'upstream');
         }
 
@@ -108,7 +107,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
         if ($treatAsBuildToolsSite) {
             $this->log()->warning(
                 sprintf(
-                    'A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.',
+                    <<<EOD
+A branch and a Pull/Merge Request is a pre-requisite for this conversion. Using branch %s as source.
+EOD,
                     $options['branch']
                 )
             );
@@ -119,7 +120,9 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
                 );
             }
             $this->setGit($this->getLocalSitePath(true, $remoteGitUrl));
-            $this->getLocalMachineHelper()->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
+            $this
+                ->getLocalMachineHelper()
+                ->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
         }
         $sourceComposerJson = $this->getComposerJson();
 
@@ -205,11 +208,19 @@ EOD
 
     /**
      * Copy and commit CI files based on build-providers.json content.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
      */
     private function copyCiTemplate(): void
     {
         $path = Files::buildPath($this->getLocalCopiesDir(), 'tbt-ci-templates');
-        $this->getLocalMachineHelper()->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
+        $this
+            ->getLocalMachineHelper()
+            ->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
 
         $buildProvidersPath = Files::buildPath($this->getLocalSitePath(), 'build-providers.json');
         $buildProvidersJson = json_decode(file_get_contents($buildProvidersPath), true);
@@ -223,13 +234,19 @@ EOD
         $composerJson = $this->composer->getComposerJsonData();
         if (!isset($composerJson['scripts']['unit-test'])) {
             $composerJson['scripts']['unit-test'] = "echo 'No unit test step defined.'";
-            $composerJson['scripts']['lint'] = "find web/modules/custom web/themes/custom -name '*.php' -exec php -l {} \\;";
+            $composerJson['scripts']['lint'] =
+                "find web/modules/custom web/themes/custom -name '*.php' -exec php -l {} \\;";
+
+            $executable = './vendor/bin/phpcs';
+            $extensions = '--extensions=php,module,inc,install,test,profile,theme,css,info,txt,md';
+            $ignore = ' --ignore=node_modules,bower_components,vendor';
             $composerJson['scripts']['code-sniff'] = [
-                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
-                "./vendor/bin/phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
-                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/modules/custom",
-                "./vendor/bin/phpcs --standard=DrupalPractice --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md --ignore=node_modules,bower_components,vendor ./web/themes/custom",
+                sprintf('%s --standard=Drupal %s %s ./web/modules/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=Drupal %s %s ./web/themes/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=DrupalPractice %s %s ./web/modules/custom', $executable, $extensions, $ignore),
+                sprintf('%s --standard=DrupalPractice %s %s ./web/themes/custom', $executable, $extensions, $ignore),
             ];
+
             $composerJson['extra']['build-env']['export-configuration'] = "drush config-export --yes";
             $this->composer->writeComposerJsonData($composerJson);
         }
@@ -247,6 +264,7 @@ EOD
      *
      * @return bool
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -269,6 +287,7 @@ EOD
      *
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     private function getDrupalAbsolutePath(): string
     {
@@ -284,6 +303,7 @@ EOD
      *
      * @return string
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -300,6 +320,7 @@ EOD
      * @return array
      *   The list of Composer package names.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -337,6 +358,7 @@ EOD
      *     "name" is a module/theme name;
      *     "version" is a module/theme version.
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -374,6 +396,7 @@ EOD
      *
      * @return array
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
@@ -440,7 +463,8 @@ EOD
         $path = Files::buildPath($this->getLocalSitePath(), 'pantheon.yml');
         $pantheonYmlContent = $pantheonYmlContentOriginal = Yaml::parseFile($path);
 
-        if (isset($pantheonYmlContent['php_version']) && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
+        if (isset($pantheonYmlContent['php_version'])
+            && in_array($pantheonYmlContent['php_version'], ['7.0', '7.1', '7.2', '7.3'])) {
             $pantheonYmlContent['php_version'] = 7.4;
         }
 
@@ -462,6 +486,7 @@ EOD
      *
      * @param array $customProjectsDirs
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Psr\Container\ContainerExceptionInterface
      */

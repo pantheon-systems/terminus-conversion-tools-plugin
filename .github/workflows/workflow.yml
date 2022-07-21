@@ -11,6 +11,10 @@ on:
         description: Enable tmate debugging
         required: true
         default: 0
+      tests_skip_site_delete_on_teardown:
+        description: Do not delete fixture-term3-conv-plugin-* sites on failures
+        required: true
+        default: 0
       distros_override:
         description: distros to test (separated by ,)
         required: false
@@ -83,6 +87,7 @@ jobs:
       TERMINUS_TEST_DISTROS_OVERRIDE: ${{ github.event.inputs.distros_override }}
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
+      TERMINUS_TESTS_SKIP_SITE_DELETE_ON_TEARDOWN: ${{ github.event.inputs.tests_skip_site_delete_on_teardown }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2

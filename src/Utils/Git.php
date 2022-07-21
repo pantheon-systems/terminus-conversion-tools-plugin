@@ -52,6 +52,12 @@ class Git
 
     /**
      * Clone a remote repository.
+     *
+     * @param string $repoPath
+     * @param string $repoUrl
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     public static function clone(string $repoPath, string $repoUrl): void
     {
@@ -69,11 +75,13 @@ class Git
     /**
      * Initialize git repository.
      *
+     * @param $repoPath
      * @param array $options
      *
      * @return string
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     public static function init($repoPath, ...$options): string
     {
@@ -464,6 +472,8 @@ class Git
      *
      * @param string $path
      *   Path to ignore.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
     public function appendToIgnore(string $path): void
     {

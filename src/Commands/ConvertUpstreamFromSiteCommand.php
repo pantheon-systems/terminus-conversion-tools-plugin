@@ -29,9 +29,9 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
      *   The name or UUID of a site to operate on.
      * @param array $options
      *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
     public function convertUpstream(string $site_id, array $options = [
@@ -50,7 +50,9 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
 
         $upstreamRepo = $options['repo'] ?? $this->getUpstreamRepo();
         if (!$upstreamRepo) {
-            throw new TerminusException('Upstream repo should either be passed via the --repo option or in the composer.json extra section.');
+            throw new TerminusException(
+                'Upstream repo should either be passed via the --repo option or in the composer.json extra section.'
+            );
         }
 
         $this->getGit()->addRemote($upstreamRepo, 'upstream');
@@ -82,15 +84,17 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
     /**
      * Get the upstream repo from the composer.json.
      *
-     * @return string
+     * @return string|null
      *  The upstream repo.
      */
-    private function getUpstreamRepo(): string
+    private function getUpstreamRepo(): ?string
     {
         $composerJson = $this->getComposer()->getComposerJsonData();
         if (isset($composerJson['extra']['pantheon']['upstream-repo'])) {
             return $composerJson['extra']['pantheon']['upstream-repo'];
         }
+
+        return null;
     }
 
     /**
@@ -100,8 +104,7 @@ class ConvertUpstreamFromSiteCommand extends TerminusCommand implements SiteAwar
      *   Name of the pushed branch.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
-     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Exception
      */
     private function pushToUpstream(): string
     {
