@@ -195,7 +195,9 @@ EOD
             }
         } else {
             $this->log()->warning('Push to multidev has been skipped.');
-            $this->log()->notice('To push to the target multidev, re-run the same command without the "--dry-run" option.');
+            $this->log()->notice(
+                'To push to the target multidev, re-run the same command without the "--dry-run" option.'
+            );
         }
 
         $this->log()->notice('Done!');
