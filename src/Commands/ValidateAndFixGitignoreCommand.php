@@ -19,6 +19,8 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
     use ConversionCommandsTrait;
     use ComposerAwareTrait;
 
+    private const TARGET_GIT_BRANCH = 'conversion';
+
     /**
      * @var \Symfony\Component\Filesystem\Filesystem
      */
@@ -49,6 +51,9 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      *
      * @command conversion:validate-gitignore
      *
+     * @option branch The target branch name for multidev env.
+     * @option dry-run Skip creating multidev and pushing composerify branch.
+     *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
      *
@@ -58,9 +63,13 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      */
-    public function validateAndFixGitignore(string $site_id): void
+    public function validateAndFixGitignore(string $site_id, array $options = [
+        'branch' => self::TARGET_GIT_BRANCH,
+        'dry-run' => false,
+    ]): void
     {
         $this->setSite($site_id);
+        $this->setBranch($options['branch']);
 
         $this->setComposer($this->getLocalSitePath());
         $this->log()->notice('Installing Composer dependencies...');
@@ -68,6 +77,10 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
 
         $this->gitignoreFilePath = Files::buildPath($this->getLocalSitePath(), '.gitignore');
         $this->setGit($this->getLocalSitePath());
+        $this->getGit()->checkout(
+            '-b',
+            $this->getBranch()
+        );
         $this->validateGitignoreExists();
 
         $this->log()->notice('Analyzing Composer installation paths...');
@@ -114,6 +127,23 @@ class ValidateAndFixGitignoreCommand extends TerminusCommand implements SiteAwar
             if (is_array($pathRuleToIgnore)) {
                 $this->addPathToIgnore($pathRuleToIgnore['pattern'], $pathRuleToIgnore['paths']);
             }
+        }
+
+        if (!$options['dry-run']) {
+            $this->pushTargetBranch();
+            $this->log()->notice(sprintf(
+                <<<EOD
+A multidev environment named "%s" has been created with the gitignore changes.
+Please test this environment and when you are sure everything works as expected, run:
+
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
+
+This will push the multidev changes to the dev environment.
+EOD,
+                $this->getBranch()
+            ));
+        } else {
+            $this->log()->warning('Push to multidev has skipped');
         }
 
         $this->log()->notice('Done!');

@@ -139,6 +139,13 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
         $devEnv = $this->site()->getEnvironments()->get('dev');
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
 
+        $this->output()->writeln(
+            <<<EOD
+Now that the code has been pushed to the dev environment, you can test everything there and when
+everything is ready, you can deploy to the test and live environments when it makes sense to you.
+EOD
+        );
+
         $this->log()->notice('Done!');
     }
 }

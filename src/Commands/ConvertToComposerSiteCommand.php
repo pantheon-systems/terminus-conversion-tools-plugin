@@ -165,12 +165,30 @@ EOD,
             if ($treatAsBuildToolsSite) {
                 $this->pushExternalRepository();
                 $this->log()->notice('Push done to external VCS repository.');
+                $this->output()->writeln(
+                    <<<EOD
+
+You should now create a Pull/Merge Request there and wait for CI to build a multidev environment.
+Once done, you will test your changes there and merge it to the main branch to get CI to
+push it to the Pantheon dev environment.
+EOD
+                );
             } else {
                 if ($isCustomUpstream) {
                     // Do not push to upstream repo if running tests in CI.
                     $dryRun = (bool) getenv('CI');
                     $this->pushExternalRepository('upstream', $upstreamBranch, $dryRun);
                     $this->log()->notice('Push to upstream repo done.');
+
+                    $this->output()->writeln(
+                        <<<EOD
+
+This command will now push your changes to a multidev environment so that you can test your site.
+Once tested, you can merge the created upstream branch into the "${upstreamBranch}" branch and apply
+the upstream updates to a pilot site to confirm everything works as expected.
+
+EOD
+                    );
                 }
                 $this->pushTargetBranch();
                 $this->addCommitToTriggerBuild();
@@ -179,7 +197,10 @@ EOD,
                 $this->log()->notice('Target branch pushed to Pantheon.');
             }
         } else {
-            $this->log()->warning('Push to multidev has skipped');
+            $this->log()->warning('Push to multidev has been skipped.');
+            $this->log()->notice(
+                'To push to the target multidev, re-run the same command without the "--dry-run" option.'
+            );
         }
 
         $this->log()->notice('Done!');

@@ -52,6 +52,16 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
         $this->executeDrushDatabaseUpdates($options);
         $this->executeDrushCacheRebuild($options);
 
+        $this->output()->writeln(
+            <<<EOD
+The multidev environment has been created. Once you have tested this environment, the follow-on steps will be:
+
+{$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
+
+You may run the conversion:advise command again to check your progress and see the next steps.
+EOD
+        );
+
         $this->log()->notice('Done!');
     }
 }
