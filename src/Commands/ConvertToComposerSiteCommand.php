@@ -224,7 +224,8 @@ EOD
         $path = Files::buildPath($this->getLocalCopiesDir(), 'tbt-ci-templates');
         $this
             ->getLocalMachineHelper()
-            ->cloneGitRepository('git@github.com:pantheon-systems/tbt-ci-templates.git', $path, true);
+            // @todo Make it configurable.
+            ->cloneGitRepository('git@github.com:kporras07/tbt-ci-templates.git', $path, true);
 
         $buildProvidersPath = Files::buildPath($this->getLocalSitePath(), 'build-providers.json');
         $buildProvidersJson = json_decode(file_get_contents($buildProvidersPath), true);
