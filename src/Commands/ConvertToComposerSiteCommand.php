@@ -14,6 +14,7 @@ use Pantheon\TerminusConversionTools\Utils\Git;
 use Symfony\Component\Yaml\Yaml;
 use Pantheon\Terminus\Friends\LocalCopiesTrait;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Throwable;
 
 /**
@@ -274,7 +275,23 @@ EOD
             return $this->isWebRootSite;
         }
 
-        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
+        $pantheonYmlContent = $pantheonUpstreamYmlContent = [];
+
+        try {
+            $pantheonYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.yml'));
+        } catch (ParseException $e) {
+            $this->log()->warning('pantheon.yml file could not be parsed.');
+        }
+
+        try {
+            $pantheonUpstreamYmlContent = Yaml::parseFile(Files::buildPath($this->getLocalSitePath(), 'pantheon.upstream.yml'));
+        } catch (ParseException $e) {
+            $this->log()->warning('pantheon.yml file could not be parsed.');
+        }
+
+        // Merge so that pantheon.yml takes precedence.
+        $pantheonYmlContent = array_merge($pantheonUpstreamYmlContent, $pantheonYmlContent);
+
         $this->isWebRootSite = $pantheonYmlContent['web_docroot'] ?? false;
 
         return $this->isWebRootSite;
