@@ -351,52 +351,7 @@ EOD
             // phpcs:disable Generic.Files.LineLength.TooLong
             $this->writeln('Notice: This site was created by the process described by the Terminus Build Tools guide (https://pantheon.io/docs/guides/build-tools/).');
             // phpcs:enable Generic.Files.LineLength.TooLong
-        }
 
-        if ($this->isDrupalComposerManagedSite()) {
-            $this->output()->writeln(
-                <<<EOD
-Advice: switch the upstream to "drupal-composer-managed" with Terminus:
-
-    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
-EOD
-            );
-
-            return;
-        } elseif ($this->isDrupalProjectSite() || $this->isDrupalRecommendedSite()) {
-            if ($this->isConversionMultidevExist()) {
-                $this->adviseConversionMultidevExists();
-            } else {
-                // Upstream is drupal-project or drupal-recommended.
-                $this->output()->writeln(
-                    // phpcs:disable Generic.Files.LineLength.TooLong
-                    <<<EOD
-Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
-
-    Drupal Composer Managed (drupal-composer-managed)
-
-This process may be done manually by following the instructions in the guide:
-
-    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
-
-An automated process to convert this site is available. To begin, run:
-
-    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
-
-This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
-
-    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
-
-You may run the conversion:advise command again to check your progress and see the next steps again.
-EOD
-                    // phpcs:enable Generic.Files.LineLength.TooLong
-                );
-            }
-
-            return;
-        }
-
-        if ($isBuildTools) {
             // @todo: Accept different branch name than default.
             if ($this->isConversionMultidevExist()) {
                 $this->adviseConversionMultidevExists();
@@ -434,6 +389,49 @@ Once you have tested this environment, the follow-on steps will be:
     {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
 
 
+
+You may run the conversion:advise command again to check your progress and see the next steps again.
+EOD
+                    // phpcs:enable Generic.Files.LineLength.TooLong
+                );
+            }
+
+            return;
+        }
+
+        if ($this->isDrupalComposerManagedSite()) {
+            $this->output()->writeln(
+                <<<EOD
+Advice: switch the upstream to "drupal-composer-managed" with Terminus:
+
+    {$this->getTerminusExecutable()} site:upstream:set {$this->site()->getName()} drupal-composer-managed
+EOD
+            );
+
+            return;
+        } elseif ($this->isDrupalProjectSite() || $this->isDrupalRecommendedSite()) {
+            if ($this->isConversionMultidevExist()) {
+                $this->adviseConversionMultidevExists();
+            } else {
+                // Upstream is drupal-project or drupal-recommended.
+                $this->output()->writeln(
+                    // phpcs:disable Generic.Files.LineLength.TooLong
+                    <<<EOD
+Advice: We recommend that this site be converted to use "drupal-composer-managed" Pantheon upstream:
+
+    Drupal Composer Managed (drupal-composer-managed)
+
+This process may be done manually by following the instructions in the guide:
+
+    https://pantheon.io/docs/guides/switch-drupal-recommended-upstream
+
+An automated process to convert this site is available. To begin, run:
+
+    {$this->getTerminusExecutable()} conversion:update-from-deprecated-upstream {$this->site()->getName()}
+
+This command will create a new multidev named “conversion” that will contain a copy of your site converted to the recommended upstream. Once you have tested this environment, the follow-on steps will be:
+
+    {$this->getTerminusExecutable()} conversion:release-to-dev {$this->site()->getName()}
 
 You may run the conversion:advise command again to check your progress and see the next steps again.
 EOD
