@@ -393,7 +393,6 @@ EOD,
         bool $dryRun = false
     ): void {
         $backupBranch = sprintf('%s-backup', $this->getBranch());
-        $this->getGit()->branch($backupBranch);
         $this->getGit()->fetch($remote);
         try {
             $this->getGit()->clean('-dfx', '.');

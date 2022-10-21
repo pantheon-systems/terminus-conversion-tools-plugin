@@ -124,6 +124,9 @@ EOD,
             $this
                 ->getLocalMachineHelper()
                 ->exec(sprintf('git -C %s branch -D %s', $this->localSitePath, $options['branch']));
+
+            $backupBranch = sprintf('%s-backup', $options['branch']);
+            $this->getGit()->branch($backupBranch);
         }
         $sourceComposerJson = $this->getComposerJson();
 
