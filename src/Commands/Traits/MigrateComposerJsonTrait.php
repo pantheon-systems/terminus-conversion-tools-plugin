@@ -259,7 +259,12 @@ EOD
 
         $drupalPackage = $this->sourceHasDrupalCoreRecommended() ? 'drupal/core-recommended' : 'drupal/core';
 
-        $drupalIntegrationsConstraint = preg_match('/^[^0-9]*9/', $drupalConstraint) ? '^9' : '^8';
+        preg_match('/^\^?([0-9]{1,2}).*/', $drupalConstraint, $matches);
+        $drupalIntegrationsConstraint = "^" . $matches[1] ?? '^8|^9|^10';
+
+        if ($drupalIntegrationsConstraint === "^10") {
+            $this->getComposer()->config('platform.php', '8.1');
+        }
 
         $packages = [
             [
@@ -273,19 +278,22 @@ EOD
                 'is_dev' => false,
             ],
             [
+                'package' => 'drupal/core-composer-scaffold',
+                'version' => $drupalConstraint,
+                'is_dev' => false,
+            ],
+            [
                 'package' => 'drupal/core-dev',
                 'version' => $drupalConstraint,
                 'is_dev' => true,
             ],
         ];
 
-        if (preg_match('/^[^0-9]*8/', $drupalConstraint)) {
-            $packages[] = [
-                'package' => 'drush/drush',
-                'version' => '^10',
-                'is_dev' => false,
-            ];
-        }
+        $packages[] = [
+            'package' => 'drush/drush',
+            'version' => '^10|^11',
+            'is_dev' => false,
+        ];
 
         return $packages;
     }
