@@ -112,6 +112,11 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
 
         $this->terminus($command);
         sleep(30);
+        $clearCacheComamnd = sprintf(
+            'drush %s.dev cr',
+            $this->siteName,
+        );
+        $this->terminus($clearCacheComamnd);
 
         $this->assertPagesExists(self::DEV_ENV);
 
