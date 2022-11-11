@@ -187,7 +187,8 @@ EOD,
     /**
      * Set current php version for the site.
      */
-    private function setPhpVersion(string $path) {
+    private function setPhpVersion(string $path)
+    {
         $pantheonYmlContent = Yaml::parseFile(Files::buildPath($path, 'pantheon.yml'));
         preg_match('/(\d+\.\d+)/', phpversion(), $matches);
         if (!$matches[1]) {
