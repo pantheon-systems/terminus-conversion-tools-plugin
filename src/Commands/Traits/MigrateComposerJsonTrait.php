@@ -508,15 +508,18 @@ EOD
      */
     private function copyAllowPluginsConfiguration(): void
     {
-        if (!isset($this->sourceComposerJson['config']['allow-plugins'])) {
-            return;
+        $currentComposerJson = $this->getComposer()->getComposerJsonData();
+        $currentComposerJson['config']['allow-plugins']['drupal/core-project-message'] = true;
+        $currentComposerJson['config']['allow-plugins']['drupal/core-vendor-hardening'] = true;
+        $currentComposerJson['config']['allow-plugins']['phpstan/extension-installer'] = true;
+
+        if (isset($this->sourceComposerJson['config']['allow-plugins'])) {
+            $currentComposerJson['config']['allow-plugins'] = array_merge(
+                $currentComposerJson['config']['allow-plugins'],
+                $this->sourceComposerJson['config']['allow-plugins']
+            );
         }
 
-        $currentComposerJson = $this->getComposer()->getComposerJsonData();
-        $currentComposerJson['config']['allow-plugins'] = array_merge(
-            $currentComposerJson['config']['allow-plugins'] ?? [],
-            $this->sourceComposerJson['config']['allow-plugins']
-        );
         $this->getComposer()->writeComposerJsonData($currentComposerJson);
     }
 }
