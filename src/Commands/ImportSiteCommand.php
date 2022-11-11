@@ -177,6 +177,9 @@ EOD,
 
         $this->executeDrushCacheRebuild($options, 'dev');
 
+        // A second cache clear seems to be needed.
+        $this->executeDrushCacheRebuild($options, 'dev');
+
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
     }
