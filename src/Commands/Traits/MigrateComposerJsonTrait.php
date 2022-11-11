@@ -181,7 +181,7 @@ EOD
                 }
             }
 
-            $this->getComposer()->install('--no-dev');
+            $this->getComposer()->update('--no-dev');
             if ($this->getGit()->isAnythingToCommit()) {
                 $this->getGit()->commit('Install composer packages');
             }
