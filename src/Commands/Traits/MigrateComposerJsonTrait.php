@@ -7,6 +7,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\TerminusConversionTools\Utils\Files;
 use Throwable;
 use Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Trait MigrateComposerJsonTrait.
@@ -235,6 +236,33 @@ EOD
     private function sourceHasDrupalCoreRecommended(): bool
     {
         return isset($this->sourceComposerJson['require']['drupal/core-recommended']);
+    }
+
+    /**
+     * Set current php version for the site.
+     */
+    private function setPhpVersion(string $path, float $phpVersion = 0)
+    {
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($path, 'pantheon.yml'));
+        if (!$phpVersion) {
+            preg_match('/(\d+\.\d+)/', phpversion(), $matches);
+            if (!$matches[1]) {
+                throw new TerminusException('An error occurred getting current php version.');
+            }
+            $phpVersion = $matches[1];
+        }
+
+        $currentVersion = $pantheonYmlContent['php_version'] ?? 0;
+        if ($phpVersion !== $currentVersion) {
+            $pantheonYmlContent['php_version'] = (float) $phpVersion;
+            $pantheonYmlFile = fopen(Files::buildPath($path, 'pantheon.yml'), 'wa+');
+            fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+            fclose($pantheonYmlFile);
+        }
+
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Set PHP version to ' . $phpVersion);
+        }
     }
 
     /**
