@@ -204,7 +204,7 @@ EOD
             );
         }
         if ($editorsToConvert) {
-            $this->log()->notice('Remember to export configuration if you make any editor change.');
+            $this->log()->notice('Remember to export configuration if you make any editor changes.');
         }
 
         $this->log()->notice(sprintf('Site %s has been upgraded to Drupal 10', $this->site()->getName()));
