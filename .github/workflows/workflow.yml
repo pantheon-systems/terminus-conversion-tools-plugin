@@ -70,6 +70,8 @@ jobs:
             group: validate_and_fix_gitignore_command
           - name: conversion:upgrade-d9
             group: upgrade_d9_command
+          - name: conversion:upgrade-d10
+            group: upgrade_d10_command
           - name: create site from distro
             group: from_distro
       fail-fast: false
