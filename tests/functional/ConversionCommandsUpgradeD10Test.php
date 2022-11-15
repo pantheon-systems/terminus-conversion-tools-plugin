@@ -5,7 +5,7 @@ namespace Pantheon\TerminusConversionTools\Tests\Functional;
 /**
  * Class ConversionCommandsUpgradeD10Test.
  *
- * Uses a site fixture based on https://github.com/pantheon-fixtures/site-drupal-recommended-8 custom upstream.
+ * Uses a site fixture based on https://github.com/pantheon-fixtures/site-drupal-composer-managed custom upstream.
  *
  * @package Pantheon\TerminusConversionTools\Tests\Functional
  */
