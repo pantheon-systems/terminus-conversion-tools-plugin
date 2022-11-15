@@ -313,7 +313,7 @@ EOD
                 'ckeditor',
                 'color',
                 'hal',
-                'quick_edit',
+                'quickedit',
                 'rdf',
             ],
             'themes' => [

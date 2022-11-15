@@ -55,7 +55,7 @@ final class ConversionCommandsUpgradeD10Test extends ConversionCommandsUpstreamT
             'pathauto',
             'google_analytics',
             'aggregator',
-            'quick_edit',
+            'quickedit',
             'rdf',
         ];
     }
