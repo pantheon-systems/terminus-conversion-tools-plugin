@@ -123,10 +123,9 @@ EOD
             }
         }
 
-        $this->log()->notice(
-            'There will be a configuration export as part of this process,
-            you should import configuration once merged to the dev environment.'
-        );
+        // phpcs:disable Generic.Files.LineLength.TooLong
+        $this->log()->notice('There will be a configuration export as part of this process, you should import configuration once merged to the dev environment.');
+        // phpcs:enable Generic.Files.LineLength.TooLong
 
         $masterBranch = Git::DEFAULT_BRANCH;
         $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
@@ -194,13 +193,15 @@ EOD
         }
 
         foreach ($editorsToConvert as $editor) {
-            $this->log()->notice(sprintf(
-                'If you wish to convert the editor %s to ckeditor5, you should visit your site
-                /admin/config/content/formats/manage/%s and make the change.
-                See https://www.drupal.org/node/3308362 for reference.',
-                $editor,
-                $editor
-            ));
+            $this->log()->notice(
+                sprintf(
+                    // phpcs:disable Generic.Files.LineLength.TooLong
+                    'If you wish to convert the editor %s to ckeditor5, you should visit your site /admin/config/content/formats/manage/%s and make the change. See https://www.drupal.org/node/3308362 for reference.',
+                    // phpcs:enable Generic.Files.LineLength.TooLong
+                    $editor,
+                    $editor
+                )
+            );
         }
         if ($editorsToConvert) {
             $this->log()->notice('Remember to export configuration if you make any editor change.');
@@ -226,15 +227,17 @@ EOD
             $newTheme = $newThemes[$theme];
             if ($newTheme) {
                 return sprintf(
-                    'Theme %s was removed from Drupal 10 and re-added to your site via contrib project.
-                    Please consider using %s theme instead.',
+                    // phpcs:disable Generic.Files.LineLength.TooLong
+                    'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. Please consider using %s theme instead.',
+                    // phpcs:enable Generic.Files.LineLength.TooLong
                     $theme,
                     $newTheme
                 );
             }
             return sprintf(
-                'Theme %s was removed from Drupal 10 and re-added to your site via contrib project.
-                It is suggested to use the new themes starterkits instead.',
+                // phpcs:disable Generic.Files.LineLength.TooLong
+                'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. It is suggested to use the new themes starterkits instead.',
+                // phpcs:enable Generic.Files.LineLength.TooLong
                 $theme
             );
         }
