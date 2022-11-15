@@ -78,10 +78,11 @@ abstract class ConversionCommandsTestBase extends TestCase
      */
     protected function setUpFixtureSite(): void
     {
-        $this->branch = sprintf('test-%s', substr(uniqid(), -6, 6));
+        $uniqId = substr(uniqid(), -6, 6);
+        $this->branch = sprintf('test-%s', $uniqId);
         $this->httpClient = HttpClient::create();
 
-        $this->siteName = uniqid(sprintf('fixture-term3-conv-plugin-%s-', $this->getRealUpstreamId()));
+        $this->siteName = sprintf('fixture-conv-plugin-%s-%s', $this->getRealUpstreamId(), $uniqId);
         $command = sprintf(
             'site:create %s %s %s',
             $this->siteName,
