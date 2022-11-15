@@ -24,7 +24,7 @@ class UpgradeD10Command extends TerminusCommand implements SiteAwareInterface
     use MigrateComposerJsonTrait;
     use DrushCommandsTrait;
 
-    private const TARGET_GIT_BRANCH = 'conversion';
+    private const TARGET_GIT_BRANCH = 'drupal10';
 
     private const DRUPAL_RECOMMENDED_UPSTREAM_ID = 'drupal-recommended';
     private const DRUPAL_RECOMMENDED_GIT_REMOTE_URL = 'https://github.com/pantheon-upstreams/drupal-recommended.git';
@@ -39,9 +39,6 @@ class UpgradeD10Command extends TerminusCommand implements SiteAwareInterface
      *
      * @option branch The target branch name for multidev env.
      * @option skip-upgrade-status Skip upgrade status checks.
-     * @option dry-run Skip creating multidev and pushing the branch.
-     * @option run-updb Run `drush updb` after conversion.
-     * @option run-cr Run `drush cr` after conversion.
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on.
@@ -58,11 +55,11 @@ class UpgradeD10Command extends TerminusCommand implements SiteAwareInterface
         array $options = [
             'branch' => self::TARGET_GIT_BRANCH,
             'skip-upgrade-status' => false,
-            'dry-run' => false,
-            'run-updb' => true,
-            'run-cr' => true,
         ]
     ): void {
+        $options['run-updb'] = true;
+        $options['run-cr'] = true;
+
         $this->setSite($site_id);
         $this->setBranch($options['branch']);
         $localSitePath = $this->getLocalSitePath();
@@ -126,11 +123,24 @@ EOD
             }
         }
 
+        $this->log()->notice('There will be a configuration export as part of this process, you should import configuration once merged to the dev environment.');
+
         $masterBranch = Git::DEFAULT_BRANCH;
         $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
 
         // Phpstan was included in Drupal 10, so it needs to be allowed.
         $this->getComposer()->config('--no-plugins', 'allow-plugins.phpstan/extension-installer', 'true');
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit(
+                'Add phpstan/extension-installer to allow-plugins'
+            );
+        }
+        $this->pushTargetBranch();
+
+        $this->enableNewModules();
+        $editorsToConvert = $this->getEditorsToConvert();
+
+        $required = $this->requireRemovedProjects();
 
         foreach ($this->getDrupalComposerDependencies('^10') as $dependency) {
             $arguments = [$dependency['package'], $dependency['version'], '--no-update'];
@@ -154,17 +164,174 @@ EOD
 
         $this->setPhpVersion($this->getLocalSitePath(), 8.1);
 
-        if (!$options['dry-run']) {
-            $this->pushTargetBranch();
-            $this->executeDrushDatabaseUpdates($options);
-            $this->executeDrushCacheRebuild($options);
-            $this->addCommitToTriggerBuild();
-        } else {
-            $this->log()->warning('Push to multidev has been skipped.');
+        $this->getGit()->push($this->getBranch());
+        $this->executeDrushDatabaseUpdates($options);
+        $this->executeDrushCacheRebuild($options);
+
+        $env = $this->site()->getEnvironments()->get($this->getBranch());
+        $workflow = $env->changeConnectionMode('sftp');
+        $this->processWorkflow($workflow);
+        $command = 'config:export -y';
+        $result = $this->runDrushCommand($command, $this->getBranch());
+        if (0 !== $result['exit_code']) {
+            throw new TerminusException(
+                'Fail to export configuration. Error: {error}',
+                [
+                    'error' => $result['stderr'],
+                ]
+            );
+        }
+
+        $this->processWorkflow($env->commitChanges('Export configuration changes after Drupal 10 upgrade.'));
+        $this->log()->notice('Your code was committed.');
+
+        foreach ($required['themes'] as $theme) {
+            $themeRecommendation = $this->getThemeRecommendation($theme);
+            $this->log()->warning($themeRecommendation);
+        }
+
+        foreach ($editorsToConvert as $editor) {
+            $this->log()->notice(sprintf('If you wish to convert the editor %s to ckeditor5, you should visit your site /admin/config/content/formats/manage/%s and make the change. See https://www.drupal.org/node/3308362 for reference.', $editor, $editor));
+        }
+        if ($editorsToConvert) {
+            $this->log()->notice('Remember to export configuration if you make any editor change.');
         }
 
         $this->log()->notice(sprintf('Site %s has been upgraded to Drupal 10', $this->site()->getName()));
 
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Get theme recommendation.
+     */
+    protected function getThemeRecommendation(string $theme): string
+    {
+        $newThemes = [
+            'bartik' => 'olivero',
+            'seven' => 'claro',
+            'classy' => '',
+            'stable' => '',
+        ];
+        if (isset($newThemes[$theme])) {
+            $newTheme = $newThemes[$theme];
+            if ($newTheme) {
+                return sprintf('Theme %s was removed from Drupal 10 and re-added to your site via contrib project. Please consider using %s theme instead.', $theme, $newTheme);
+            }
+            return sprintf('Theme %s was removed from Drupal 10 and re-added to your site via contrib project. It is suggested to use the new themes starterkits instead.', $theme);
+        }
+    }
+
+    /**
+     * Enable new mysql module while still on Drupal 9.
+     */
+    protected function enableNewModules(): void
+    {
+        $command = 'en -y mysql ckeditor5';
+        $result = $this->runDrushCommand($command, $this->getBranch());
+
+        if (0 !== $result['exit_code']) {
+            throw new TerminusException(
+                'Enable mysql command not found or not successful. Error: {error}',
+                [
+                    'error' => $result['stderr'],
+                ]
+            );
+        }
+    }
+
+    /**
+     * Convert text formats to use Ckeditor 5.
+     */
+    protected function getEditorsToConvert(): array
+    {
+        $editorsToConvert = [];
+        $command = "sqlq \"SELECT distinct(name) FROM config WHERE name LIKE 'editor.editor.%'\"";
+        $result = $this->runDrushCommand($command, $this->getBranch());
+        if (0 !== $result['exit_code']) {
+            throw new TerminusException(
+                'Error querying text formats to convert them to ckeditor5. Error: {error}',
+                [
+                    'error' => $result['stderr'],
+                ]
+            );
+        }
+        $editors = explode("\n", trim($result['output']));
+        foreach ($editors as $editor) {
+            $command = sprintf("config:get %s editor", $editor);
+            $result = $this->runDrushCommand($command, $this->getBranch());
+            if (0 !== $result['exit_code']) {
+                throw new TerminusException(
+                    'Error getting text editor {editor}. Error: {error}',
+                    [
+                        'editor' => $editor,
+                        'error' => $result['stderr'],
+                    ]
+                );
+            }
+            $editorPluginOutput = trim($result['output']);
+            if (preg_match("/'[a-z\.\:\_]+'\:\s(.*)/", $editorPluginOutput, $matches)) {
+                $editorPlugin = $matches[1] ?? '';
+                if ($editorPlugin === 'ckeditor') {
+                    preg_match('/editor\.editor\.([a-z_]+)/', $editor, $matches);
+                    $editorsToConvert[] = $matches[1];
+                }
+            }
+        }
+        return $editorsToConvert;
+    }
+
+    /**
+     * Require projects that will be removed from Drupal 10.
+     */
+    protected function requireRemovedProjects(): array
+    {
+        $candidates = [
+            'modules' => [
+                'aggregator',
+                'ckeditor',
+                'color',
+                'hal',
+                'quick_edit',
+                'rdf',
+            ],
+            'themes' => [
+                'classy',
+                'stable',
+                'bartik',
+                'seven',
+            ],
+        ];
+        $required = [
+            'modules' => [],
+            'themes' => [],
+        ];
+
+        $command = 'pm:list --type=module,theme --status=enabled --core --field=name';
+        $result = $this->runDrushCommand($command, $this->getBranch());
+        if (0 !== $result['exit_code']) {
+            throw new TerminusException(
+                'Error getting enabled modules and themes. Error: {error}',
+                [
+                    'error' => $result['stderr'],
+                ]
+            );
+        }
+        $enabled = explode("\n", trim($result['output']));
+
+        foreach ($candidates as $type => $projects) {
+            foreach ($projects as $project) {
+                if (in_array($project, $enabled)) {
+                    $this->getComposer()->require(sprintf("drupal/%s", $project), null, '--no-update');
+                    $required[$type][] = $project;
+                }
+            }
+        }
+        $this->getComposer()->update();
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Require modules and themes to be removed in Drupal 10.');
+            $this->log()->notice('Composer update has been executed.');
+        }
+        return $required;
     }
 }
