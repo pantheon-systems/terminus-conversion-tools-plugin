@@ -54,7 +54,7 @@ class ReleaseToMasterCommand extends TerminusCommand implements SiteAwareInterfa
 
         $this->setGit($localPath);
 
-        $this->getGit()->fetch();
+        $this->getGit()->fetch('origin');
         $this->getGit()->merge('origin/master');
 
         if (!$this->getGit()->isRemoteBranchExists($sourceBranch)) {
