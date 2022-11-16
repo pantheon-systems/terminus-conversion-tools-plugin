@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       functional_tests_are_enabled:
-        description: Include functonal tests
+        description: Include functional tests
         required: true
         default: 1
       tmate_enabled:
