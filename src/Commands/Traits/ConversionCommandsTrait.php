@@ -292,7 +292,8 @@ EOD,
             'd8' => 'drupal8',
             'em' => 'empty',
             'd9' => 'drupal9',
-            'dr' => 'drupal-recommended'
+            'dr' => 'drupal-recommended',
+            'dc' => 'drupal-composer-managed',
         ];
     }
 

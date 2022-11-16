@@ -131,7 +131,10 @@ EOD
         $this->getGit()->checkout('-b', $this->getBranch(), Git::DEFAULT_REMOTE . '/' . $masterBranch);
 
         // Phpstan was included in Drupal 10, so it needs to be allowed.
-        $this->getComposer()->config('allow-plugins.phpstan/extension-installer', 'true');
+        $composerJsonData = $this->getComposer()->getComposerJsonData();
+        $composerJsonData['config']['allow-plugins']['phpstan/extension-installer'] = true;
+        $this->getComposer()->writeComposerJsonData($composerJsonData);
+
         if ($this->getGit()->isAnythingToCommit()) {
             $this->getGit()->commit(
                 'Add phpstan/extension-installer to allow-plugins'
