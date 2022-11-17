@@ -14,6 +14,7 @@ use Pantheon\TerminusConversionTools\Utils\Files;
 use Pantheon\TerminusConversionTools\Utils\Git;
 use PharData;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportSiteCommand.
@@ -176,8 +177,34 @@ EOD,
 
         $this->executeDrushCacheRebuild($options, 'dev');
 
+        // A second cache clear seems to be needed.
+        $this->executeDrushCacheRebuild($options, 'dev');
+
         $this->log()->notice(sprintf('Link to "dev" environment dashboard: %s', $devEnv->dashboardUrl()));
         $this->log()->notice('Done!');
+    }
+
+    /**
+     * Set current php version for the site.
+     */
+    private function setPhpVersion(string $path)
+    {
+        $pantheonYmlContent = Yaml::parseFile(Files::buildPath($path, 'pantheon.yml'));
+        preg_match('/(\d+\.\d+)/', phpversion(), $matches);
+        if (!$matches[1]) {
+            throw new TerminusException('An error occurred getting current php version.');
+        }
+        $phpVersion = $matches[1];
+        if ($phpVersion !== $pantheonYmlContent['php_version']) {
+            $pantheonYmlContent['php_version'] = (float) $phpVersion;
+            $pantheonYmlFile = fopen(Files::buildPath($path, 'pantheon.yml'), 'wa+');
+            fwrite($pantheonYmlFile, Yaml::dump($pantheonYmlContent, 2, 2));
+            fclose($pantheonYmlFile);
+        }
+
+        if ($this->getGit()->isAnythingToCommit()) {
+            $this->getGit()->commit('Set PHP version to ' . $phpVersion);
+        }
     }
 
     /**
@@ -206,6 +233,10 @@ EOD,
 
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
+
+        $this->setPhpVersion($localPath);
+        $this->getGit()->push(Git::DEFAULT_BRANCH);
+        $this->waitForSyncCodeWorkflow('dev');
 
         $this->log()->notice('Copying the site code from the archive...');
         $this->fs->mirror($codePath, $localPath);
