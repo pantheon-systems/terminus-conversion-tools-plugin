@@ -231,7 +231,12 @@ EOD,
         $this->processWorkflow($workflow);
         $this->site->unsetEnvironments();
 
-        return $this->site->getEnvironments()->get($branch);
+
+
+        $env = $this->site->getEnvironments()->get($branch);
+        $env->wake();
+
+        return $env;
     }
 
     /**

@@ -142,9 +142,6 @@ EOD
         }
         $this->pushTargetBranch();
 
-        // @todo remove?
-        sleep(5);
-
         $this->enableNewModules();
         $editorsToConvert = $this->getEditorsToConvert();
 
