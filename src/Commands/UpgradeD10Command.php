@@ -142,6 +142,9 @@ EOD
         }
         $this->pushTargetBranch();
 
+        // @todo remove?
+        sleep(5);
+
         $this->enableNewModules();
         $editorsToConvert = $this->getEditorsToConvert();
 
@@ -256,7 +259,7 @@ EOD
 
         if (0 !== $result['exit_code']) {
             throw new TerminusException(
-                'Enable mysql command not found or not successful. Error: {error}',
+                'Enable modules command not successful. Error: {error}',
                 [
                     'error' => $result['stderr'],
                 ]
