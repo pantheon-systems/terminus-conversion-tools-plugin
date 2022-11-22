@@ -231,7 +231,10 @@ EOD,
         $this->processWorkflow($workflow);
         $this->site->unsetEnvironments();
 
-        return $this->site->getEnvironments()->get($branch);
+        $env = $this->site->getEnvironments()->get($branch);
+        $env->wake();
+
+        return $env;
     }
 
     /**
@@ -292,7 +295,8 @@ EOD,
             'd8' => 'drupal8',
             'em' => 'empty',
             'd9' => 'drupal9',
-            'dr' => 'drupal-recommended'
+            'dr' => 'drupal-recommended',
+            'dc' => 'drupal-composer-managed',
         ];
     }
 
