@@ -91,6 +91,7 @@ jobs:
       TERMINUS_ORG: ${{ secrets.TERMINUS_ORG }}
       TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
       TERMINUS_TESTS_SKIP_SITE_DELETE_ON_TEARDOWN: ${{ github.event.inputs.tests_skip_site_delete_on_teardown }}
+      TERMINUS_ALLOW_UNSUPPORTED_NEWER_PHP: 1
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
