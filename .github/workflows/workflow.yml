@@ -29,7 +29,7 @@ jobs:
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.0
+          php-version: 8.2
           coverage: pcov
       - name: Install dependencies
         run: composer install
@@ -98,7 +98,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           coverage: pcov
-          php-version: 8.0
+          php-version: 8.2
       - name: Install dependencies
         run: composer install
       - name: Setup SSH key
