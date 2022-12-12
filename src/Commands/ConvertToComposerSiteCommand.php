@@ -184,7 +184,7 @@ EOD
                         <<<EOD
 
 This command will now push your changes to a multidev environment so that you can test your site.
-Once tested, you can merge the created upstream branch into the "${upstreamBranch}" branch and apply
+Once tested, you can merge the created upstream branch into the "{$upstreamBranch}" branch and apply
 the upstream updates to a pilot site to confirm everything works as expected.
 
 EOD
