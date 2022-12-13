@@ -69,7 +69,7 @@ class Composer
         }
         mkdir($projectPath);
         $composer = new static($projectPath, true);
-        $composer->execute(['composer', 'create-project', $package, '.', ...$options]);
+        $composer->execute(['composer', 'create-project', $package, '.', ...$options], 300);
         return $composer;
     }
 
@@ -189,15 +189,16 @@ class Composer
      * Executes the Composer command.
      *
      * @param array $command
+     * @param int $timeout
      *
      * @return string
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
-    private function execute(array $command): string
+    private function execute(array $command, int $timeout = 180): string
     {
         try {
-            $process = new Process($command, $this->projectPath, null, null, 180);
+            $process = new Process($command, $this->projectPath, null, null, $timeout);
             $process->mustRun();
 
             return $process->getOutput();
