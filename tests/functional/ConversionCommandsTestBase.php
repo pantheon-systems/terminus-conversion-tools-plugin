@@ -175,7 +175,7 @@ abstract class ConversionCommandsTestBase extends TestCase
     protected function executeConvertCommand(): void
     {
         $this->assertCommand(
-            sprintf('conversion:composer %s --branch=%s', $this->siteName, $this->branch),
+            sprintf('conversion:composer %s --branch=%s --php-version=%s', $this->siteName, $this->branch, 7.4),
             $this->branch
         );
     }
