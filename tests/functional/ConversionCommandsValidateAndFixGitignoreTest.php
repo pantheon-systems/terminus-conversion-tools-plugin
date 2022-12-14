@@ -78,10 +78,10 @@ EOD,
 
         // After deleting some Composer-installed assets and a non-gitignored test file.
         $fs->remove(Files::buildPath($localSitePath, 'web/themes/composer'));
-        $this->assertEquals(
-            ['web/themes/composer/this_file_must_not_be_gitignored.txt'],
+        $this->assertContains(
+            'web/themes/composer/this_file_must_not_be_gitignored.txt',
             $git->diffFileList(),
-            'Git diff must have exactly one deleted file "web/themes/composer/this_file_must_not_be_gitignored.txt"'
+            'Git diff must contain deleted file "web/themes/composer/this_file_must_not_be_gitignored.txt"'
         );
     }
 }
