@@ -133,7 +133,7 @@ jobs:
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
       - name: Finish sesssion
-        if: ${{ github.event.inputs.tmate_enabled == 1 }}
+        if: ${{ always() && github.event.inputs.tmate_enabled == 1 }}
         run: |
           while [ ! -f /tmp/finish ]
           do
