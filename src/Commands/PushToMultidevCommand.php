@@ -30,10 +30,13 @@ class PushToMultidevCommand extends TerminusCommand implements SiteAwareInterfac
      *   The name or UUID of a site to operate on.
      * @param array $options
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusAlreadyExistsException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function pushToMd(string $site_id, array $options = [
         'branch' => self::TARGET_GIT_BRANCH,
