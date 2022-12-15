@@ -231,6 +231,7 @@ EOD,
         $this->processWorkflow($workflow);
         $this->site->unsetEnvironments();
 
+        /** @var \Pantheon\Terminus\Models\Environment $env */
         $env = $this->site->getEnvironments()->get($branch);
         $env->wake();
 
@@ -492,7 +493,10 @@ EOD,
      *
      * @param string $siteId
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function setSite(string $siteId): void
     {
