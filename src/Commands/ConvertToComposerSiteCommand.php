@@ -52,6 +52,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
      * @option ignore-build-tools If true, a Build Tools Pantheon site will be treated as a regular Pantheon site.
      * @option run-updb Run `drush updb` after conversion.
      * @option run-cr Run `drush cr` after conversion.
+     * @option php-version PHP Version to set for the site running on Pantheon (empty to use your current php version).
      *
      * @param string $site_id
      *   The name or UUID of a site to operate on
@@ -71,6 +72,7 @@ class ConvertToComposerSiteCommand extends TerminusCommand implements SiteAwareI
             'ignore-build-tools' => false,
             'run-updb' => true,
             'run-cr' => true,
+            'php-version' => 0,
         ]
     ): void {
         $this->setSite($site_id);
@@ -145,6 +147,8 @@ EOD,
         $this->copyCustomProjects($customProjectsDirs);
         $this->copySettingsPhp();
 
+        $this->setPhpVersion($this->localSitePath, $options['php-version']);
+
         $this->migrateComposerJson(
             $sourceComposerJson,
             $this->getLocalSitePath(),
@@ -184,7 +188,7 @@ EOD
                         <<<EOD
 
 This command will now push your changes to a multidev environment so that you can test your site.
-Once tested, you can merge the created upstream branch into the "${upstreamBranch}" branch and apply
+Once tested, you can merge the created upstream branch into the "{$upstreamBranch}" branch and apply
 the upstream updates to a pilot site to confirm everything works as expected.
 
 EOD

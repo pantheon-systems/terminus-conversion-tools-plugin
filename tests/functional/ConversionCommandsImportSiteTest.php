@@ -105,9 +105,10 @@ class ConversionCommandsImportSiteTest extends ConversionCommandsTestBase
     public function testConversionCommands(): void
     {
         $command = sprintf(
-            'conversion:import-site %s %s',
+            'conversion:import-site %s %s --php-version=%s',
             $this->siteName,
-            $this->archiveFilePath
+            $this->archiveFilePath,
+            8.0,
         );
 
         $this->terminus($command);

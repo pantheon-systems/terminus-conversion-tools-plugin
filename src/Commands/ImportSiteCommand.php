@@ -62,6 +62,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
      * @option files Import Drupal files.
      * @option files_path Import Drupal files from specified directory. Has higher priority over "path" argument.
      * @option run-cr Run `drush cr` after conversion.
+     * @option php-version PHP Version to set for the site running on Pantheon (empty to use your current php version).
      *
      * @param string $site_name
      *   The name or UUID of a site to operate on.
@@ -96,6 +97,7 @@ class ImportSiteCommand extends TerminusCommand implements SiteAwareInterface
             'files' => null,
             'files_path' => null,
             'run-cr' => true,
+            'php-version' => 0,
         ]
     ): void {
         $extractDir = null;
@@ -161,7 +163,7 @@ EOD,
 
         if ($options['code']) {
             $codeComponentPath = $options['code_path'] ?? Files::buildPath($extractDir, self::COMPONENT_CODE);
-            $this->importCode($devEnv, $codeComponentPath);
+            $this->importCode($devEnv, $codeComponentPath, $options['php-version']);
         }
 
         if ($options['db']) {
@@ -191,6 +193,8 @@ EOD,
      *   The environment.
      * @param string $codePath
      *   The path to the code files directory.
+     * @param float $phpVersion
+     *   The PHP version to use.
      *
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
@@ -198,7 +202,7 @@ EOD,
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
      */
-    private function importCode(Environment $env, string $codePath)
+    private function importCode(Environment $env, string $codePath, float $phpVersion = 0)
     {
         $this->log()->notice('Importing code...');
 
@@ -211,7 +215,7 @@ EOD,
         $localPath = $this->getLocalSitePath();
         $this->setGit($localPath);
 
-        $this->setPhpVersion($localPath);
+        $this->setPhpVersion($localPath, $phpVersion);
         $this->getGit()->push(Git::DEFAULT_BRANCH);
         $this->waitForSyncCodeWorkflow('dev');
 

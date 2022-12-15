@@ -54,9 +54,8 @@ final class ConversionCommandsValidateAndFixGitignoreTest extends ConversionComm
 # Added by Terminus Conversion Tools Plugin.
 /vendor
 /web/core
+/web/themes/composer/bootstrap
 /web/modules/composer/*
-/web/themes/composer/*
-!/web/themes/composer/this_file_must_not_be_gitignored.txt
 
 EOD,
             file_get_contents($gitignoreFilePath)
@@ -79,10 +78,10 @@ EOD,
 
         // After deleting some Composer-installed assets and a non-gitignored test file.
         $fs->remove(Files::buildPath($localSitePath, 'web/themes/composer'));
-        $this->assertEquals(
-            ['web/themes/composer/this_file_must_not_be_gitignored.txt'],
+        $this->assertContains(
+            'web/themes/composer/this_file_must_not_be_gitignored.txt',
             $git->diffFileList(),
-            'Git diff must have exactly one deleted file "web/themes/composer/this_file_must_not_be_gitignored.txt"'
+            'Git diff must contain deleted file "web/themes/composer/this_file_must_not_be_gitignored.txt"'
         );
     }
 }

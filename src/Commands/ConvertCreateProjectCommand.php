@@ -158,7 +158,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
     ): void {
         // Composer require and configurations.
         $this->getComposer()->config('repositories.upstream-configuration', 'path', 'upstream-configuration');
-        $this->getComposer()->require('pantheon-systems/drupal-integrations');
+        $this->getComposer()->require('pantheon-systems/drupal-integrations', '*');
 
         if (!$filesystem->exists(Files::buildPath($path, 'vendor', 'drush', 'drush'))) {
             $this->getComposer()->require('drush/drush', '^12|^11|^10', '-W');
