@@ -59,8 +59,6 @@ final class ConversionCommandsBuildToolsUpstreamTest extends ConversionCommandsU
 
     /**
      * @inheritdoc
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     protected function setUp(): void
     {
