@@ -2,6 +2,7 @@
 
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
+use Pantheon\Terminus\Exceptions\TerminusException;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\TerminusConversionTools\Utils\Files;
