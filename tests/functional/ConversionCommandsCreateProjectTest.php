@@ -24,8 +24,6 @@ final class ConversionCommandsCreateProjectTest extends ConversionCommandsTestBa
 
     /**
      * @inheritdoc
-     *
-     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     protected function setUp(): void
     {

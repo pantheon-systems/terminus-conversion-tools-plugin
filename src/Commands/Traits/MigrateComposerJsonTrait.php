@@ -2,6 +2,7 @@
 
 namespace Pantheon\TerminusConversionTools\Commands\Traits;
 
+use Pantheon\Terminus\Exceptions\TerminusException;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Filesystem\Filesystem;
 use Pantheon\TerminusConversionTools\Utils\Files;
@@ -240,6 +241,13 @@ EOD
 
     /**
      * Set current php version for the site.
+     *
+     * @param string $path
+     * @param float $phpVersion
+     *
+     * @return void
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
      */
     private function setPhpVersion(string $path, float $phpVersion = 0)
     {
@@ -276,6 +284,8 @@ EOD
      *     "package" - a package name;
      *     "version" - a version constraint;
      *     "is_dev" - a "dev" package flag.
+     *
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      */
     private function getDrupalComposerDependencies(string $forceDrupalVersion = null): array
     {

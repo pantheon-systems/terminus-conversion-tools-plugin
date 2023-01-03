@@ -47,11 +47,13 @@ class UpgradeD9Command extends TerminusCommand implements SiteAwareInterface
      *   The name or UUID of a site to operate on.
      * @param array $options
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function upgradeToD9(
         string $site_id,

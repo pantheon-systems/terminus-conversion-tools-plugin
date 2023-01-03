@@ -33,10 +33,12 @@ class EnableIntegratedComposerCommand extends TerminusCommand implements SiteAwa
      *   The name or UUID of a site to operate on
      * @param array $options
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function enableIntegratedComposer(
         string $site_id,

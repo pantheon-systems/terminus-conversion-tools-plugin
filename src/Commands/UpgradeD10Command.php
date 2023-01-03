@@ -44,11 +44,13 @@ class UpgradeD10Command extends TerminusCommand implements SiteAwareInterface
      *   The name or UUID of a site to operate on.
      * @param array $options
      *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
      * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
      * @throws \Pantheon\Terminus\Exceptions\TerminusException
      * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
      * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function upgradeToD10(
         string $site_id,
@@ -172,6 +174,7 @@ EOD
         $this->executeDrushDatabaseUpdates($options);
         $this->executeDrushCacheRebuild($options);
 
+        /** @var \Pantheon\Terminus\Models\Environment $env */
         $env = $this->site()->getEnvironments()->get($this->getBranch());
         $workflow = $env->changeConnectionMode('sftp');
         $this->processWorkflow($workflow);
@@ -224,26 +227,34 @@ EOD
             'classy' => '',
             'stable' => '',
         ];
-        if (isset($newThemes[$theme])) {
-            $newTheme = $newThemes[$theme];
-            if ($newTheme) {
-                return sprintf(
-                    // phpcs:ignore Generic.Files.LineLength.TooLong
-                    'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. Please consider using %s theme instead.',
-                    $theme,
-                    $newTheme
-                );
-            }
+        if (!isset($newThemes[$theme])) {
+            return '';
+        }
+
+        $newTheme = $newThemes[$theme];
+        if ($newTheme) {
             return sprintf(
                 // phpcs:ignore Generic.Files.LineLength.TooLong
-                'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. It is suggested to use the new themes starterkits instead.',
-                $theme
+                'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. Please consider using %s theme instead.',
+                $theme,
+                $newTheme
             );
         }
+        return sprintf(
+            // phpcs:ignore Generic.Files.LineLength.TooLong
+            'Theme %s was removed from Drupal 10 and re-added to your site via contrib project. It is suggested to use the new themes starterkits instead.',
+            $theme
+        );
     }
 
     /**
      * Enable new mysql module while still on Drupal 9.
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function enableNewModules(): void
     {
@@ -262,6 +273,14 @@ EOD
 
     /**
      * Convert text formats to use Ckeditor 5.
+     *
+     * @return array
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function getEditorsToConvert(): array
     {
@@ -303,6 +322,16 @@ EOD
 
     /**
      * Require projects that will be removed from Drupal 10.
+     *
+     * @return array
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Composer\ComposerException
+     * @throws \Pantheon\TerminusConversionTools\Exceptions\Git\GitException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusException
+     * @throws \Pantheon\Terminus\Exceptions\TerminusNotFoundException
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function requireRemovedProjects(): array
     {
