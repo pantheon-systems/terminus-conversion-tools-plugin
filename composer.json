@@ -34,10 +34,15 @@
         "cs": "vendor/bin/phpcs --standard=PSR2 src tests/functional tests/unit",
         "cbf": "vendor/bin/phpcbf --standard=PSR2 src tests/functional tests/unit",
         "lint": "find src -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "tests:lint": [
+            "@lint",
+            "@cs"
+        ],
         "tests:unit": "vendor/bin/phpunit --testsuit=unit --debug --do-not-cache-result -c ./phpunit.xml --verbose",
         "tests:functional": "vendor/bin/phpunit --testsuit=functional --debug --do-not-cache-result -c ./phpunit.xml --verbose",
         "tests:functional:group": "vendor/bin/phpunit --testsuit=functional --debug --do-not-cache-result -c ./phpunit.xml --verbose --group",
         "tests:all": [
+            "@tests:lint",
             "@tests:unit",
             "@tests:functional"
         ]
