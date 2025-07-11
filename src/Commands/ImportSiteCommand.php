@@ -450,7 +450,7 @@ EOD,
 
         $workflow = $this->sites()->create($workflowOptions);
         $this->processWorkflow($workflow);
-        $site = $this->getSite($workflow->get('waiting_for_task')->site_id);
+        $site = $this->getSiteById($workflow->get('waiting_for_task')->site_id);
         $upstream = $user->getUpstreams()->get(self::DRUPAL_TARGET_UPSTREAM_ID);
         $this->processWorkflow($site->deployProduct($upstream->get('id')));
         $this->setSite($site->get('id'));
