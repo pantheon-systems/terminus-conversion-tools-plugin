@@ -500,7 +500,7 @@ EOD,
      */
     protected function setSite(string $siteId): void
     {
-        $this->site = $this->getSite($siteId);
+        $this->site = $this->getSiteById($siteId);
     }
 
     /**
