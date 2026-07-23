@@ -371,7 +371,7 @@ class ConvertCreateProjectCommand extends TerminusCommand implements SiteAwareIn
         $this->processWorkflow($workflow);
 
         // Deploy the upstream.
-        if ($site = $this->getSite($workflow->get('waiting_for_task')->site_id)) {
+        if ($site = $this->getSiteById($workflow->get('waiting_for_task')->site_id)) {
             $this->log()->notice('Deploying CMS...');
             $this->processWorkflow($site->deployProduct($upstream->id));
             $this->log()->notice('Deployed CMS');
