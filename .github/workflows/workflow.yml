@@ -25,7 +25,7 @@ jobs:
     name: Build
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
         with:
@@ -94,7 +94,7 @@ jobs:
       TERMINUS_ALLOW_UNSUPPORTED_NEWER_PHP: 1
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
         with:
@@ -103,7 +103,7 @@ jobs:
       - name: Install dependencies
         run: composer install
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.TERMINUS_SITE_OWNER_SSH_PRIVATE_KEY }}
       - name: Setup Git username and email
