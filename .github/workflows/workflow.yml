@@ -25,9 +25,9 @@ jobs:
     name: Build
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
       - name: Setup PHP with PECL extension
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: 8.2
           coverage: pcov
@@ -94,16 +94,16 @@ jobs:
       TERMINUS_ALLOW_UNSUPPORTED_NEWER_PHP: 1
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
       - name: Setup PHP with PECL extension
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           coverage: pcov
           php-version: 8.2
       - name: Install dependencies
         run: composer install
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@5f066a372ec13036ab7cb9a8adf18c936f8d2043 # v0.5.3
         with:
           ssh-private-key: ${{ secrets.TERMINUS_SITE_OWNER_SSH_PRIVATE_KEY }}
       - name: Setup Git username and email
@@ -128,7 +128,7 @@ jobs:
           ./terminus.phar conversion:composer -h
       - name: Setup tmate session
         if: ${{ github.event.inputs.tmate_enabled == 1 }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3.24
       - name: Run functional tests
         working-directory: ../terminus-conversion-tools-plugin
         run: composer tests:functional:group -- ${{ matrix.testing_groups.group }}
