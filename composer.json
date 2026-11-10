@@ -21,7 +21,7 @@
     },
     "require-dev": {
         "pantheon-systems/terminus": "^3",
-        "phpunit/phpunit": "^9",
+        "phpunit/phpunit": "^13",
         "squizlabs/php_codesniffer": "^3.6",
         "symfony/http-client": "^5.3"
     },
