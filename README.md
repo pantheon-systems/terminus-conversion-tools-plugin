@@ -168,3 +168,15 @@ Run `conversion:validate-gitignore` to validate Git/Composer project and update 
 
 
 Learn more about Terminus Plugins in the [Terminus Plugins documentation](https://pantheon.io/docs/terminus/plugins)
+
+## Rollback
+
+**When:** a release of this plugin breaks users and a fix will take more than a few hours. Otherwise fix forward with the next patch tag.
+
+**Recover:** revert the bad change on `main` and tag the next patch version. Never delete or move a published tag. Users who already installed the bad version can pin the last good one with `terminus self:plugin:install pantheon-systems/terminus-conversion-tools-plugin:<previous>`.
+
+**Verify:** a clean scratch install (commands in [DEPLOYMENT.md](DEPLOYMENT.md#how-to-confirm-it-deployed)) shows the intended version, and Packagist lists the fixed tag first.
+
+**Who to page:** the `developer-experience` team via `#ask-hosting`.
+
+Full procedure: [DEPLOYMENT.md](DEPLOYMENT.md#rollback).
